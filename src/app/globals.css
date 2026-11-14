@@ -1,26 +1,84 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-canvas: #FFFFFF;
+  --color-surface: #F7F8FA;
+  --color-surface-alt: #EFF2F7;
+  --color-ink: #111827;
+  --color-ink-soft: #6B7280;
+  --color-line: #E5E7EB;
+
+  --color-primary: #1E5EFF;
+  --color-primary-hover: #1549D6;
+  --color-primary-50: #EEF4FF;
+  --color-accent: #FFD60A;
+  --color-accent-hover: #F0C800;
+  --color-pine: #0D9488;
+  --color-pine-50: #CCFBF1;
+
+  --color-success: #166534;
+  --color-success-50: #DCFCE7;
+  --color-warning: #92400E;
+  --color-warning-50: #FEF3C7;
+  --color-danger: #DC2626;
+  --color-danger-50: #FEE2E2;
+  --color-info: #1D4ED8;
+  --color-info-50: #DBEAFE;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-card: 20px;
+
+  --shadow-card: 0 2px 10px rgb(17 24 39 / 0.05);
+  --shadow-card-hover: 0 8px 24px rgb(30 94 255 / 0.12);
+  --shadow-float: 0 10px 25px rgb(17 24 39 / 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--color-primary-50);
+  }
+  @media (min-width: 768px) {
+    body {
+      font-size: 15px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Utilitas sembunyikan scrollbar untuk chip kategori horizontal */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
