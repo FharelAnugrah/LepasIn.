@@ -8,7 +8,6 @@ import {
   Trash2,
   Star,
   Loader2,
-  AlertCircle,
   Plus,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -24,7 +23,6 @@ export default function ImageUploader({
 }) {
   const toast = useToast();
   const fileInputRef = useRef(null);
-  const mobileCameraInputRef = useRef(null);
 
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -150,7 +148,7 @@ export default function ImageUploader({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* Area Drag & Drop / Tombol Unggah & Kamera */}
+      {/* Area Drag & Drop / 2 Tombol Utama: Kamera & Upload File */}
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -166,60 +164,40 @@ export default function ImageUploader({
         </div>
 
         <h3 className="text-sm md:text-base font-bold text-ink">
-          Unggah Foto Barang Preloved
+          Foto Barang Preloved
         </h3>
         <p className="text-xs text-ink-soft max-w-sm mt-1 mb-4 leading-relaxed">
-          Ambil foto langsung dengan kamera ponsel/laptop atau pilih file dari galeri perangkat.
+          Ambil foto langsung melalui kamera atau upload file gambar dari perangkatmu.
           <br />
           <span className="font-semibold text-primary">Hanya format JPG/JPEG dan PNG</span> (maks. 10 MB per foto).
         </p>
 
-        {/* Tombol Utama: Kamera & File Galeri */}
+        {/* 2 Fitur Saja: Kamera atau Upload File */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          {/* Tombol Kamera Web / Browser */}
+          {/* Fitur 1: Kamera */}
           <Button
             type="button"
             variant="primary"
             pill
             disabled={uploading || images.length >= maxImages}
             onClick={() => setCameraModalOpen(true)}
-            className="text-xs md:text-sm font-bold shadow-xs"
+            className="text-xs md:text-sm font-bold shadow-xs px-5 py-2.5"
           >
-            <Camera className="w-4 h-4 mr-1.5" />
-            <span>Buka Kamera Langsung</span>
+            <Camera className="w-4 h-4 mr-2" />
+            <span>Kamera</span>
           </Button>
 
-          {/* Tombol Kamera Bawaan HP (capture="environment") */}
-          <label className="cursor-pointer">
-            <input
-              ref={mobileCameraInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/jpg"
-              capture="environment"
-              className="hidden"
-              disabled={uploading || images.length >= maxImages}
-              onChange={(e) => {
-                if (e.target.files) handleFiles(e.target.files);
-                e.target.value = '';
-              }}
-            />
-            <span className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border border-line bg-canvas hover:bg-surface text-ink text-xs md:text-sm font-bold transition shadow-xs">
-              <Camera className="w-4 h-4 text-ink-soft" />
-              <span>Kamera HP</span>
-            </span>
-          </label>
-
-          {/* Tombol Pilih dari Galeri */}
+          {/* Fitur 2: Upload File */}
           <Button
             type="button"
             variant="secondary"
             pill
             disabled={uploading || images.length >= maxImages}
             onClick={() => fileInputRef.current?.click()}
-            className="text-xs md:text-sm font-bold shadow-xs"
+            className="text-xs md:text-sm font-bold shadow-xs px-5 py-2.5"
           >
-            <UploadCloud className="w-4 h-4 mr-1.5" />
-            <span>Pilih dari Galeri / File</span>
+            <UploadCloud className="w-4 h-4 mr-2" />
+            <span>Upload File</span>
           </Button>
 
           <input
