@@ -62,6 +62,10 @@ export default function CategoriesManager({ initialCategories }) {
   };
 
   const handleOpenEdit = (category) => {
+    if (/^(lainnya|lain-lain)$/i.test(category.name?.trim())) {
+      toast.error('Nama kategori "Lainnya" adalah kategori sistem dan tidak dapat diubah.');
+      return;
+    }
     setModalState({
       isOpen: true,
       mode: 'edit',
@@ -105,11 +109,12 @@ export default function CategoriesManager({ initialCategories }) {
         return;
       }
 
-      if (isAdd) {
+      if (data.categories) {
+        setCategories(sortCategoriesWithLainnyaLast(data.categories));
+      } else if (isAdd) {
         setCategories((prev) =>
           sortCategoriesWithLainnyaLast([...prev, { ...data.category, product_count: 0 }])
         );
-        toast.success(`Kategori "${modalState.name}" berhasil ditambahkan`);
       } else {
         setCategories((prev) =>
           sortCategoriesWithLainnyaLast(
@@ -118,6 +123,11 @@ export default function CategoriesManager({ initialCategories }) {
             )
           )
         );
+      }
+
+      if (isAdd) {
+        toast.success(`Kategori "${modalState.name}" berhasil ditambahkan`);
+      } else {
         toast.success('Nama kategori berhasil diperbarui');
       }
 
@@ -134,6 +144,10 @@ export default function CategoriesManager({ initialCategories }) {
   };
 
   const handleOpenDelete = (category) => {
+    if (/^(lainnya|lain-lain)$/i.test(category.name?.trim())) {
+      toast.error('Kategori "Lainnya" adalah kategori sistem dan tidak dapat dihapus.');
+      return;
+    }
     if (category.product_count > 0) {
       toast.error(
         `Kategori "${category.name}" masih digunakan oleh ${category.product_count} produk dan tidak boleh dihapus.`
@@ -166,7 +180,11 @@ export default function CategoriesManager({ initialCategories }) {
         return;
       }
 
-      setCategories((prev) => prev.filter((c) => c.id !== category.id));
+      if (data.categories) {
+        setCategories(sortCategoriesWithLainnyaLast(data.categories));
+      } else {
+        setCategories((prev) => prev.filter((c) => c.id !== category.id));
+      }
       toast.success(`Kategori "${category.name}" berhasil dihapus`);
       setDeleteDialog({ isOpen: false, category: null, loading: false });
       router.refresh();
@@ -226,57 +244,73 @@ export default function CategoriesManager({ initialCategories }) {
                   </td>
                 </tr>
               ) : (
-                filteredCategories.map((c) => (
-                  <tr key={c.id} className="hover:bg-surface/50 transition-colors">
-                    <td className="py-4 px-5 text-center font-mono font-bold text-ink-soft">
-                      {c.id}
-                    </td>
-                    <td className="py-4 px-5 font-bold text-ink flex items-center gap-2">
-                      <Tags className="w-4 h-4 text-primary shrink-0" />
-                      <span>{c.name}</span>
-                    </td>
-                    <td className="py-4 px-5">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          c.product_count > 0
-                            ? 'bg-primary-50 text-primary'
-                            : 'bg-surface text-ink-soft'
-                        }`}
-                      >
-                        <Package className="w-3.5 h-3.5" />
-                        <span>{c.product_count} produk</span>
-                      </span>
-                    </td>
-                    <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          pill
-                          icon={Edit2}
-                          onClick={() => handleOpenEdit(c)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          pill
-                          icon={Trash2}
-                          onClick={() => handleOpenDelete(c)}
-                          disabled={c.product_count > 0}
-                          title={
+                filteredCategories.map((c) => {
+                  const isSystemCategory = /^(lainnya|lain-lain)$/i.test(c.name?.trim());
+                  return (
+                    <tr key={c.id} className="hover:bg-surface/50 transition-colors">
+                      <td className="py-4 px-5 text-center font-mono font-bold text-ink-soft">
+                        {c.id}
+                      </td>
+                      <td className="py-4 px-5 font-bold text-ink flex items-center gap-2">
+                        <Tags className="w-4 h-4 text-primary shrink-0" />
+                        <span>{c.name}</span>
+                        {isSystemCategory && (
+                          <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-primary-50 text-primary">
+                            Sistem
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4 px-5">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
                             c.product_count > 0
-                              ? 'Tidak bisa dihapus karena masih ada produk di kategori ini'
-                              : 'Hapus kategori'
-                          }
+                              ? 'bg-primary-50 text-primary'
+                              : 'bg-surface text-ink-soft'
+                          }`}
                         >
-                          Hapus
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          <Package className="w-3.5 h-3.5" />
+                          <span>{c.product_count} produk</span>
+                        </span>
+                      </td>
+                      <td className="py-4 px-5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            pill
+                            icon={Edit2}
+                            onClick={() => handleOpenEdit(c)}
+                            disabled={isSystemCategory}
+                            title={
+                              isSystemCategory
+                                ? 'Kategori sistem tidak dapat diubah'
+                                : 'Edit nama kategori'
+                            }
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            pill
+                            icon={Trash2}
+                            onClick={() => handleOpenDelete(c)}
+                            disabled={c.product_count > 0 || isSystemCategory}
+                            title={
+                              isSystemCategory
+                                ? 'Kategori sistem tidak dapat dihapus'
+                                : c.product_count > 0
+                                ? 'Tidak bisa dihapus karena masih ada produk di kategori ini'
+                                : 'Hapus kategori'
+                            }
+                          >
+                            Hapus
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
