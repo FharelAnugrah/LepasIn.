@@ -6,15 +6,11 @@ import Link from 'next/link';
 import {
   Package,
   ArrowLeft,
-  Plus,
-  Trash2,
   Image as ImageIcon,
-  DollarSign,
-  Tag,
-  Check,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input, { Textarea, Select } from '@/components/ui/Input';
+import ImageUploader from '@/components/ui/ImageUploader';
 import { useToast } from '@/components/ui/Toast';
 
 export default function NewProductForm({ categories = [] }) {
@@ -28,32 +24,19 @@ export default function NewProductForm({ categories = [] }) {
   const [originalPrice, setOriginalPrice] = useState('');
   const [stock, setStock] = useState('1');
   const [description, setDescription] = useState('');
-  const [imageUrls, setImageUrls] = useState(['']);
+  const [images, setImages] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
-  const handleAddImageUrl = () => {
-    if (imageUrls.length < 5) {
-      setImageUrls([...imageUrls, '']);
-    }
-  };
-
-  const handleImageUrlChange = (index, val) => {
-    const updated = [...imageUrls];
-    updated[index] = val;
-    setImageUrls(updated);
-  };
-
-  const handleRemoveImageUrl = (index) => {
-    setImageUrls(imageUrls.filter((_, i) => i !== index));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
 
-    const validUrls = imageUrls.map((u) => u.trim()).filter(Boolean);
+    if (images.length === 0) {
+      toast.error('Mohon unggah minimal 1 foto barang.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -68,7 +51,7 @@ export default function NewProductForm({ categories = [] }) {
           original_price: originalPrice ? Number(originalPrice) : null,
           stock: Number(stock),
           description: description.trim(),
-          image_urls: validUrls,
+          image_urls: images,
         }),
       });
 
@@ -198,50 +181,14 @@ export default function NewProductForm({ categories = [] }) {
             required
           />
 
-          {/* Section Foto Produk (Maks 5 URL) */}
+          {/* Section Foto Produk (Kamera Langsung & Unggah File JPG/PNG) */}
           <div className="flex flex-col gap-2 pt-2 border-t border-line/60">
-            <div className="flex items-center justify-between">
-              <label className="text-xs md:text-sm font-semibold text-ink flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-primary" />
-                <span>Foto Barang (URL Gambar, Maksimal 5)</span>
-              </label>
-              {imageUrls.length < 5 && (
-                <button
-                  type="button"
-                  onClick={handleAddImageUrl}
-                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Link Foto</span>
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2.5">
-              {imageUrls.map((url, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <Input
-                    placeholder={`https://example.com/foto-barang-${idx + 1}.jpg`}
-                    value={url}
-                    onChange={(e) => handleImageUrlChange(idx, e.target.value)}
-                    className="flex-1"
-                  />
-                  {imageUrls.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImageUrl(idx)}
-                      className="p-3 text-ink-soft hover:text-danger rounded-xl hover:bg-surface transition"
-                      aria-label="Hapus link foto"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-ink-soft">
-              Masukkan tautan foto yang bisa diakses publik (Unsplash, Imgur, Cloudinary, dsb.).
-            </p>
+            <ImageUploader
+              images={images}
+              onChange={setImages}
+              maxImages={5}
+              folder="products"
+            />
           </div>
         </div>
 

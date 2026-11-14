@@ -13,7 +13,7 @@ const updateProductSchema = z.object({
   stock: z.coerce.number().int().min(0).optional(),
   condition: z.enum(['like_new', 'good', 'fair', 'minor_defect']).optional(),
   category_id: z.coerce.number().int().positive().optional(),
-  image_urls: z.array(z.string().trim().url()).max(5).optional(),
+  image_urls: z.array(z.string().trim().min(1)).max(5).optional(),
 });
 
 export async function GET(request, { params }) {

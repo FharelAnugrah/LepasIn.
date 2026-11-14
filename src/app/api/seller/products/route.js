@@ -13,7 +13,7 @@ const productSchema = z.object({
   stock: z.coerce.number().int().min(0, 'Stok minimal 0').default(1),
   condition: z.enum(['like_new', 'good', 'fair', 'minor_defect']),
   category_id: z.coerce.number().int().positive('Kategori wajib dipilih'),
-  image_urls: z.array(z.string().trim().url('URL gambar tidak valid')).max(5, 'Maksimal 5 gambar').default([]),
+  image_urls: z.array(z.string().trim().min(1, 'Path foto tidak valid')).max(5, 'Maksimal 5 gambar').default([]),
 });
 
 export async function GET() {
