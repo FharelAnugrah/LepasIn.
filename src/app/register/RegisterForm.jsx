@@ -126,10 +126,12 @@ export default function RegisterForm() {
       errs.email = 'Format email tidak valid (contoh: nama@kampus.ac.id)';
     }
 
-    if (trimmedPhone) {
+    if (!trimmedPhone) {
+      errs.phone = 'Nomor WhatsApp/HP wajib diisi';
+    } else {
       const cleaned = trimmedPhone.replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0');
       if (!/^08[0-9]{8,12}$/.test(cleaned)) {
-        errs.phone = 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit)';
+        errs.phone = 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit, contoh: 081234567890)';
       }
     }
 
@@ -141,6 +143,11 @@ export default function RegisterForm() {
         errs.store_name = 'Nama toko/lapak wajib diisi untuk penjual';
       } else if (storeName.trim().length < 2) {
         errs.store_name = 'Nama toko minimal 2 karakter';
+      }
+      if (!location.trim()) {
+        errs.location = 'Detail lokasi/area kost wajib diisi untuk penjual';
+      } else if (location.trim().length < 2) {
+        errs.location = 'Detail lokasi minimal 2 karakter';
       }
     }
 
@@ -370,7 +377,8 @@ export default function RegisterForm() {
               clearFieldError('phone');
             }}
             error={fieldErrors.phone}
-            helperText="Diperlukan untuk koordinasi COD sekampus atau pengiriman"
+            helperText="Wajib diisi untuk koordinasi COD sekampus atau pengiriman"
+            required
           />
 
           {/* Selektor Kampus */}
@@ -431,6 +439,7 @@ export default function RegisterForm() {
                 }}
                 error={fieldErrors.location}
                 helperText="Lokasi favorit COD atau patokan sekitar kampus"
+                required={role === 'seller'}
               />
             </div>
           )}

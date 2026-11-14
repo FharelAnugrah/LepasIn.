@@ -9,29 +9,28 @@ export const dynamic = 'force-dynamic';
 const registerSchema = z
   .object({
     name: z
-      .string({ required_error: 'Nama lengkap wajib diisi' })
+      .string({ message: 'Nama lengkap wajib diisi' })
       .trim()
       .min(1, 'Nama lengkap wajib diisi')
       .min(2, 'Nama lengkap minimal 2 karakter')
       .max(100, 'Nama lengkap maksimal 100 karakter'),
     email: z
-      .string({ required_error: 'Alamat email wajib diisi' })
+      .string({ message: 'Alamat email wajib diisi' })
       .trim()
       .min(1, 'Alamat email wajib diisi')
       .email('Format email tidak valid (contoh: nama@kampus.ac.id)')
       .max(255, 'Alamat email maksimal 255 karakter'),
     phone: z
-      .string()
+      .string({ message: 'Nomor WhatsApp/HP wajib diisi' })
       .trim()
-      .optional()
-      .or(z.literal('')),
+      .min(1, 'Nomor WhatsApp/HP wajib diisi'),
     password: z
-      .string({ required_error: 'Password wajib diisi' })
+      .string({ message: 'Password wajib diisi' })
       .min(1, 'Password wajib diisi')
       .min(8, 'Password minimal 8 karakter')
       .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'Password harus memuat kombinasi huruf dan angka'),
     confirmPassword: z
-      .string({ required_error: 'Konfirmasi password wajib diisi' })
+      .string({ message: 'Konfirmasi password wajib diisi' })
       .min(1, 'Konfirmasi password wajib diisi'),
     role: z.enum(['buyer', 'seller'], {
       errorMap: () => ({ message: 'Pilih peran sebagai Pembeli atau Penjual' }),
@@ -44,6 +43,19 @@ const registerSchema = z
     message: 'Konfirmasi password tidak cocok dengan password yang dimasukkan',
     path: ['confirmPassword'],
   })
+  .refine(
+    (data) => {
+      if (!data.phone || data.phone.trim().length === 0) {
+        return false;
+      }
+      const cleaned = data.phone.trim().replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0');
+      return /^08[0-9]{8,12}$/.test(cleaned);
+    },
+    {
+      message: 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit, contoh: 081234567890)',
+      path: ['phone'],
+    }
+  )
   .refine(
     (data) => {
       if (data.role === 'seller') {
@@ -70,15 +82,14 @@ const registerSchema = z
   )
   .refine(
     (data) => {
-      if (data.phone && data.phone.trim().length > 0) {
-        const cleaned = data.phone.trim().replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0');
-        return /^08[0-9]{8,12}$/.test(cleaned);
+      if (data.role === 'seller') {
+        return !!data.location && data.location.trim().length >= 2;
       }
       return true;
     },
     {
-      message: 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit, contoh: 081234567890)',
-      path: ['phone'],
+      message: 'Detail lokasi/area kost wajib diisi untuk penjual (minimal 2 karakter)',
+      path: ['location'],
     }
   );
 
