@@ -13,7 +13,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
   // Default untuk perangkat 2 kamera: kamera depan ('user')
   const [facingMode, setFacingMode] = useState('user');
-  const [cameras, setCameras] = useState([]);
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [switchNotice, setSwitchNotice] = useState(null);
@@ -25,58 +25,117 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     }
   }, []);
 
-  const startCamera = useCallback(async (mode) => {
-    stopStream();
-    setCameraError(null);
-    setLoading(true);
+  /**
+   * Deteksi apakah perangkat memiliki 2 kamera (kamera depan & kamera belakang).
+   * Pada laptop/PC biasa: hanya ada 1 webcam (tidak punya kamera belakang).
+   * Pada smartphone/tablet: umumnya terdapat minimal 2 kamera fisik (depan & belakang).
+   */
+  const checkCameraConfiguration = useCallback((stream, devicesList) => {
+    // 1. Cek User Agent: apakah perangkat adalah smartphone / tablet
+    const isMobileDevice =
+      typeof navigator !== 'undefined' &&
+      (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) ||
+        (typeof navigator.maxTouchPoints === 'number' &&
+          navigator.maxTouchPoints > 1 &&
+          !/Windows NT/i.test(navigator.userAgent)));
 
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Kamera tidak didukung oleh browser ini.');
+    // 2. Filter videoinput unik (buang duplikat 'default' atau IR sensor Windows Hello)
+    const validVideoInputs = (devicesList || []).filter((d) => {
+      if (d.kind !== 'videoinput') return false;
+      const lbl = (d.label || '').toLowerCase();
+      if (lbl.includes('ir ') || lbl.includes('infrared')) return false;
+      return true;
+    });
+
+    // 3. Cek capability facingMode dari track kamera yang aktif
+    let supportsDualFacing = false;
+    if (stream) {
+      const track = stream.getVideoTracks()[0];
+      if (track && typeof track.getCapabilities === 'function') {
+        const capabilities = track.getCapabilities();
+        if (
+          Array.isArray(capabilities?.facingMode) &&
+          capabilities.facingMode.includes('user') &&
+          capabilities.facingMode.includes('environment')
+        ) {
+          supportsDualFacing = true;
+        }
       }
-
-      // Request stream video dengan ideal facingMode
-      // Untuk perangkat 1 kamera, ideal: 'user' otomatis membuka kamera tunggal yang tersedia
-      // Untuk perangkat 2 kamera, ideal: 'user' membuka kamera depan
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: mode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setLoading(false);
-
-      // Setelah izin didapat, deteksi jumlah kamera fisik yang tersedia
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoInputs = devices.filter((d) => d.kind === 'videoinput');
-        setCameras(videoInputs);
-      } catch (enumErr) {
-        console.warn('Gagal membaca daftar perangkat kamera:', enumErr);
-      }
-    } catch (err) {
-      console.error('Camera access error:', err);
-      setCameraError(
-        err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
-          ? 'Izin akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.'
-          : 'Tidak dapat mengakses kamera perangkat. Silakan gunakan tombol unggah file di bawah.'
-      );
-      setLoading(false);
     }
-  }, [stopStream]);
 
-  // Buka kamera saat modal aktif
+    // 4. Cek apakah ada label depan & belakang yang jelas
+    const hasFrontAndBackLabels =
+      validVideoInputs.some((d) => /front|user|depan|selfie/i.test(d.label)) &&
+      validVideoInputs.some((d) => /back|rear|environment|belakang/i.test(d.label));
+
+    // Perangkat dianggap memiliki 2 kamera (depan & belakang) hanya jika:
+    // - Mendukung dual facingMode, ATAU
+    // - Merupakan mobile device dengan minimal 2 kamera videoinput, ATAU
+    // - Memiliki label kamera depan & belakang yang jelas
+    const isDualCamera =
+      supportsDualFacing ||
+      (isMobileDevice && validVideoInputs.length >= 2) ||
+      hasFrontAndBackLabels;
+
+    setHasMultipleCameras(isDualCamera);
+    return isDualCamera;
+  }, []);
+
+  const startCamera = useCallback(
+    async (mode) => {
+      stopStream();
+      setCameraError(null);
+      setLoading(true);
+
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Kamera tidak didukung oleh browser ini.');
+        }
+
+        // Buka kamera dengan ideal facingMode
+        // Default awal mode = 'user' (kamera depan untuk perangkat 2 kamera, atau kamera tunggal laptop)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: mode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        });
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setLoading(false);
+
+        // Setelah stream aktif, baca daftar perangkat dan evaluasi konfigurasi kamera
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          checkCameraConfiguration(stream, devices);
+        } catch (enumErr) {
+          console.warn('Gagal membaca enumerateDevices:', enumErr);
+        }
+      } catch (err) {
+        console.error('Camera access error:', err);
+        setCameraError(
+          err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+            ? 'Izin akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.'
+            : 'Tidak dapat mengakses kamera perangkat. Silakan gunakan opsi Upload File.'
+        );
+        setLoading(false);
+      }
+    },
+    [stopStream, checkCameraConfiguration]
+  );
+
+  // Buka kamera saat modal dibuka
   useEffect(() => {
     if (isOpen && !capturedBlob) {
       // Default: buka kamera depan ('user')
-      startCamera(facingMode);
+      startCamera('user');
     } else {
       stopStream();
     }
@@ -87,22 +146,25 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         URL.revokeObjectURL(previewUrl);
       }
     };
-  }, [isOpen, facingMode, capturedBlob, startCamera, stopStream, previewUrl]);
+  }, [isOpen, capturedBlob, startCamera, stopStream, previewUrl]);
 
   /**
-   * Logika Switch Kamera:
-   * 1. Jika perangkat memiliki 2 kamera atau lebih: switch antara kamera depan dan belakang.
-   * 2. Jika perangkat hanya memiliki 1 kamera: tetap mengarah ke kamera yang aktif.
+   * Logika Switch Kamera Sesuai Permintaan:
+   * 1. Jika perangkat memiliki 2 kamera (depan & belakang):
+   *    Switch antara kamera depan dan kamera belakang.
+   * 2. Jika perangkat hanya memiliki 1 kamera (seperti laptop):
+   *    Kamera TETAP mengarah ke kamera yang aktif dan mirror TIDAK BERUBAH.
    */
   const handleToggleCamera = () => {
-    // Cek jika perangkat hanya terdeteksi 1 kamera
-    if (cameras.length === 1) {
-      setSwitchNotice('Perangkat hanya memiliki 1 kamera. Kamera aktif tetap dipertahankan.');
+    // Jika laptop / hanya 1 kamera:
+    // TETAP mengarah ke kamera yang aktif, mirror tidak boleh berubah!
+    if (!hasMultipleCameras) {
+      setSwitchNotice('Perangkat Anda hanya memiliki 1 kamera. Kamera aktif tetap dipertahankan.');
       setTimeout(() => setSwitchNotice(null), 2500);
       return;
     }
 
-    // Jika memiliki 2 kamera atau lebih: beralih antara depan ('user') dan belakang ('environment')
+    // Jika perangkat memiliki 2 kamera (smartphone/tablet):
     const nextMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(nextMode);
     startCamera(nextMode);
@@ -114,6 +176,11 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     setTimeout(() => setSwitchNotice(null), 2000);
   };
 
+  // Status apakah tampilan sedang di-mirror:
+  // Kamera depan ('user') atau kamera laptop tunggal di-mirror secara alami
+  // Kamera belakang ('environment') pada perangkat dual-kamera TIDAK di-mirror
+  const isMirrored = !hasMultipleCameras || facingMode === 'user';
+
   const handleTakePhoto = () => {
     if (!videoRef.current) return;
 
@@ -124,8 +191,8 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
     const ctx = canvas.getContext('2d');
 
-    // Jika sedang memakai kamera depan, balik gambar secara horizontal (mirror)
-    if (facingMode === 'user') {
+    // Jika tampilan di-mirror (kamera depan / webcam laptop), simpan foto sesuai yang dilihat
+    if (isMirrored) {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
     }
@@ -172,7 +239,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     setCapturedBlob(null);
     setCameraError(null);
     setSwitchNotice(null);
-    // Reset facing mode ke depan ('user') untuk pembukaan berikutnya
     setFacingMode('user');
     onClose();
   };
@@ -198,11 +264,11 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Status Kamera Saat Ini */}
+            {/* Status Indikator Kamera */}
             {!cameraError && !previewUrl && (
               <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/15 text-white/90">
-                {cameras.length <= 1
-                  ? '1 Kamera Aktif'
+                {!hasMultipleCameras
+                  ? 'Kamera Laptop (1 Kamera)'
                   : facingMode === 'user'
                   ? 'Kamera Depan'
                   : 'Kamera Belakang'}
@@ -212,7 +278,8 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
             <button
               type="button"
               onClick={handleClose}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+              aria-label="Tutup kamera"
             >
               <X className="w-5 h-5" />
             </button>
@@ -223,7 +290,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         <div className="relative flex-1 bg-black flex items-center justify-center min-h-[360px] sm:min-h-[420px] overflow-hidden">
           {/* Banner Pemberitahuan Switch Kamera */}
           {switchNotice && (
-            <div className="absolute top-4 z-20 px-4 py-2 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-float flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute top-4 z-20 px-4 py-2 rounded-full bg-black/85 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-float flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <Sparkles className="w-3.5 h-3.5 text-accent" />
               <span>{switchNotice}</span>
             </div>
@@ -266,7 +333,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
                 playsInline
                 muted
                 className={`w-full h-full object-cover ${
-                  facingMode === 'user' ? 'scale-x-[-1]' : ''
+                  isMirrored ? 'scale-x-[-1]' : ''
                 }`}
               />
               {loading && (
@@ -309,8 +376,8 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
                 onClick={handleToggleCamera}
                 className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer flex items-center gap-1.5"
                 title={
-                  cameras.length <= 1
-                    ? '1 kamera terdeteksi'
+                  !hasMultipleCameras
+                    ? 'Perangkat hanya memiliki 1 kamera'
                     : facingMode === 'user'
                     ? 'Ganti ke Kamera Belakang'
                     : 'Ganti ke Kamera Depan'
