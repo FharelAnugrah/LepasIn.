@@ -16,7 +16,12 @@ export default async function AdminCategoriesPage() {
     FROM categories c
     LEFT JOIN products p ON p.category_id = c.id
     GROUP BY c.id
-    ORDER BY c.id ASC
+    ORDER BY 
+      CASE 
+        WHEN LOWER(c.name) = 'lainnya' OR LOWER(c.name) = 'lain-lain' THEN 1 
+        ELSE 0 
+      END ASC, 
+      c.id ASC
   `);
 
   return <CategoriesManager initialCategories={res.rows} />;

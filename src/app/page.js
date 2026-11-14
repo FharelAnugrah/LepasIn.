@@ -26,8 +26,16 @@ export default async function HomePage({ searchParams }) {
   const selectedCampusId = sp?.campus ? Number(sp.campus) : (user?.campus_id || null);
   const selectedCategoryId = sp?.category ? Number(sp.category) : null;
 
-  // 1. Ambil Kategori
-  const categoriesRes = await query(`SELECT id, name FROM categories ORDER BY id ASC`);
+  // 1. Ambil Kategori (posisi 'Lainnya' selalu berada di paling akhir)
+  const categoriesRes = await query(`
+    SELECT id, name FROM categories 
+    ORDER BY 
+      CASE 
+        WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1 
+        ELSE 0 
+      END ASC, 
+      id ASC
+  `);
   const categories = categoriesRes.rows;
 
   // 2. Ambil Kampus Terpilih (jika ada)

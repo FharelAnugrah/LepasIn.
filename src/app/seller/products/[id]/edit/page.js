@@ -43,7 +43,15 @@ export default async function EditProductPage({ params }) {
   );
   const images = imagesRes.rows;
 
-  const catRes = await query('SELECT id, name FROM categories ORDER BY name ASC');
+  const catRes = await query(`
+    SELECT id, name FROM categories 
+    ORDER BY 
+      CASE 
+        WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1 
+        ELSE 0 
+      END ASC, 
+      id ASC
+  `);
   const categories = catRes.rows;
 
   return (

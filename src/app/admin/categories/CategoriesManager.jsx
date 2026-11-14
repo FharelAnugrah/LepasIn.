@@ -9,11 +9,24 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
 
+// Helper agar "Lainnya" selalu berada di paling akhir urutan kategori
+const sortCategoriesWithLainnyaLast = (list = []) => {
+  return [...list].sort((a, b) => {
+    const isALainnya = /^(lainnya|lain-lain|lainnya \/ other)$/i.test(a.name?.trim());
+    const isBLainnya = /^(lainnya|lain-lain|lainnya \/ other)$/i.test(b.name?.trim());
+    if (isALainnya && !isBLainnya) return 1;
+    if (!isALainnya && isBLainnya) return -1;
+    return a.id - b.id;
+  });
+};
+
 export default function CategoriesManager({ initialCategories }) {
   const router = useRouter();
   const toast = useToast();
 
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState(() =>
+    sortCategoriesWithLainnyaLast(initialCategories || [])
+  );
   const [search, setSearch] = useState('');
 
   // Modal Tambah / Edit
@@ -93,12 +106,16 @@ export default function CategoriesManager({ initialCategories }) {
       }
 
       if (isAdd) {
-        setCategories((prev) => [...prev, { ...data.category, product_count: 0 }]);
+        setCategories((prev) =>
+          sortCategoriesWithLainnyaLast([...prev, { ...data.category, product_count: 0 }])
+        );
         toast.success(`Kategori "${modalState.name}" berhasil ditambahkan`);
       } else {
         setCategories((prev) =>
-          prev.map((c) =>
-            c.id === modalState.category.id ? { ...c, name: modalState.name.trim() } : c
+          sortCategoriesWithLainnyaLast(
+            prev.map((c) =>
+              c.id === modalState.category.id ? { ...c, name: modalState.name.trim() } : c
+            )
           )
         );
         toast.success('Nama kategori berhasil diperbarui');

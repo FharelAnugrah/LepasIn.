@@ -85,7 +85,15 @@ export default async function ProductsPage({ searchParams }) {
   const [productsRes, countRes, categoriesRes, campusesRes] = await Promise.all([
     query(sql, [...filterParams, limit, offset]),
     query(countSql, filterParams),
-    query(`SELECT id, name FROM categories ORDER BY id ASC`),
+    query(`
+      SELECT id, name FROM categories 
+      ORDER BY 
+        CASE 
+          WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1 
+          ELSE 0 
+        END ASC, 
+        id ASC
+    `),
     query(`SELECT id, name, short_name, city, province FROM campuses ORDER BY name ASC`),
   ]);
 

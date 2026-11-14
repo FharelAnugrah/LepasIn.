@@ -43,6 +43,15 @@ export default function ProductCatalog({
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice || '');
   const [sort, setSort] = useState(filters.sort || 'latest');
 
+  // Pastikan kategori "Lainnya" selalu berada di urutan paling akhir
+  const sortedCategories = [...(categories || [])].sort((a, b) => {
+    const isALainnya = /^(lainnya|lain-lain|lainnya \/ other)$/i.test(a.name?.trim());
+    const isBLainnya = /^(lainnya|lain-lain|lainnya \/ other)$/i.test(b.name?.trim());
+    if (isALainnya && !isBLainnya) return 1;
+    if (!isALainnya && isBLainnya) return -1;
+    return a.id - b.id;
+  });
+
   const conditionsList = [
     { id: 'like_new', label: 'Seperti Baru' },
     { id: 'good', label: 'Baik' },
@@ -253,7 +262,7 @@ export default function ProductCatalog({
                 <span>Semua Kategori</span>
                 {category === null && <Check className="w-3.5 h-3.5 text-primary" />}
               </button>
-              {categories.map((cat) => {
+              {sortedCategories.map((cat) => {
                 const isSelected = category === cat.id;
                 return (
                   <button
@@ -506,7 +515,7 @@ export default function ProductCatalog({
               >
                 Semua Kategori
               </button>
-              {categories.map((c) => (
+              {sortedCategories.map((c) => (
                 <button
                   key={c.id}
                   type="button"
