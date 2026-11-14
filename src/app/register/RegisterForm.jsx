@@ -153,10 +153,17 @@ export default function RegisterForm() {
 
     if (!password) {
       errs.password = 'Password wajib diisi';
-    } else if (password.length < 8) {
-      errs.password = 'Password terlalu pendek (minimal 8 karakter)';
-    } else if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
-      errs.password = 'Password harus memuat kombinasi huruf dan angka';
+    } else {
+      const nonSpaceLength = password.replace(/\s/g, '').length;
+      const allowedRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`\s]+$/;
+
+      if (nonSpaceLength < 8) {
+        errs.password = 'Password minimal 8 karakter (spasi tidak dihitung)';
+      } else if (!allowedRegex.test(password)) {
+        errs.password = 'Password hanya boleh memuat huruf, angka, dan simbol';
+      } else if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
+        errs.password = 'Password harus memuat kombinasi huruf dan angka';
+      }
     }
 
     if (!confirmPassword) {
@@ -458,6 +465,7 @@ export default function RegisterForm() {
                 clearFieldError('password');
               }}
               error={fieldErrors.password}
+              helperText="Min. 8 karakter kombinasi huruf & angka, simbol diperbolehkan (spasi tidak dihitung)"
               required
               iconRight={
                 <button

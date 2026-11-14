@@ -26,9 +26,7 @@ const registerSchema = z
       .min(1, 'Nomor WhatsApp/HP wajib diisi'),
     password: z
       .string({ message: 'Password wajib diisi' })
-      .min(1, 'Password wajib diisi')
-      .min(8, 'Password minimal 8 karakter')
-      .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'Password harus memuat kombinasi huruf dan angka'),
+      .min(1, 'Password wajib diisi'),
     confirmPassword: z
       .string({ message: 'Konfirmasi password wajib diisi' })
       .min(1, 'Konfirmasi password wajib diisi'),
@@ -39,6 +37,36 @@ const registerSchema = z
     store_name: z.string().trim().max(100).optional(),
     location: z.string().trim().max(150).optional(),
   })
+  .refine(
+    (data) => {
+      const nonSpaceLength = (data.password || '').replace(/\s/g, '').length;
+      return nonSpaceLength >= 8;
+    },
+    {
+      message: 'Password minimal 8 karakter (spasi tidak dihitung)',
+      path: ['password'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Hanya menerima angka, huruf, dan simbol (spasi tidak dihitung)
+      const allowedRegex = /^[a-zA-Z0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`\s]+$/;
+      return allowedRegex.test(data.password || '');
+    },
+    {
+      message: 'Password hanya boleh memuat huruf, angka, dan simbol',
+      path: ['password'],
+    }
+  )
+  .refine(
+    (data) => {
+      return /^(?=.*[A-Za-z])(?=.*\d)/.test(data.password || '');
+    },
+    {
+      message: 'Password harus memuat kombinasi huruf dan angka',
+      path: ['password'],
+    }
+  )
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Konfirmasi password tidak cocok dengan password yang dimasukkan',
     path: ['confirmPassword'],
