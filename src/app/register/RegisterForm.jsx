@@ -14,11 +14,24 @@ import {
   EyeOff,
   ShoppingBag,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import CampusSelector from '@/components/ui/CampusSelector';
 import { useToast } from '@/components/ui/Toast';
+
+const fieldLabels = {
+  name: 'Nama Lengkap',
+  email: 'Alamat Email',
+  phone: 'Nomor WhatsApp / HP',
+  password: 'Password',
+  confirmPassword: 'Ulangi Password',
+  role: 'Peran Akun',
+  campus_id: 'Asal Kampus',
+  store_name: 'Nama Toko / Lapak',
+  location: 'Detail Lokasi Toko',
+};
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -41,10 +54,128 @@ export default function RegisterForm() {
   const [generalError, setGeneralError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Helper untuk menghapus error saat user mengetik kembali
+  const clearFieldError = (fieldName) => {
+    if (fieldErrors[fieldName]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[fieldName];
+        return next;
+      });
+    }
+    if (generalError) {
+      setGeneralError('');
+    }
+  };
+
+  // Helper scroll otomatis ke input yang bermasalah pertama kali
+  const scrollToFirstError = (errs) => {
+    const firstKey = Object.keys(errs || {})[0];
+    if (!firstKey) return;
+    setTimeout(() => {
+      const el =
+        document.getElementById(firstKey) ||
+        document.getElementById('register-error-banner');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof el.focus === 'function') {
+          el.focus();
+        }
+      }
+    }, 100);
+  };
+
+  // Notifikasi toast yang spesifik dan informatif
+  const notifyErrors = (errs = {}, fallbackMsg = '') => {
+    const errorKeys = Object.keys(errs);
+    if (errorKeys.length === 1) {
+      const key = errorKeys[0];
+      const msg = errs[key];
+      toast.error(msg);
+    } else if (errorKeys.length > 1) {
+      const labels = errorKeys
+        .map((k) => fieldLabels[k] || k)
+        .slice(0, 3)
+        .join(', ');
+      toast.error(
+        `Pendaftaran belum lengkap: Periksa ${labels}${
+          errorKeys.length > 3 ? ' dan data lainnya' : ''
+        }`
+      );
+    } else if (fallbackMsg) {
+      toast.error(fallbackMsg);
+    }
+  };
+
+  // Validasi di sisi klien sebelum submit
+  const validateClientForm = () => {
+    const errs = {};
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+
+    if (!trimmedName) {
+      errs.name = 'Nama lengkap wajib diisi';
+    } else if (trimmedName.length < 2) {
+      errs.name = 'Nama lengkap minimal 2 karakter';
+    }
+
+    if (!trimmedEmail) {
+      errs.email = 'Alamat email wajib diisi';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      errs.email = 'Format email tidak valid (contoh: nama@kampus.ac.id)';
+    }
+
+    if (trimmedPhone) {
+      const cleaned = trimmedPhone.replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0');
+      if (!/^08[0-9]{8,12}$/.test(cleaned)) {
+        errs.phone = 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit)';
+      }
+    }
+
+    if (role === 'seller') {
+      if (!campus || !campus.id) {
+        errs.campus_id = 'Penjual wajib memilih kampus tempat berjualan';
+      }
+      if (!storeName.trim()) {
+        errs.store_name = 'Nama toko/lapak wajib diisi untuk penjual';
+      } else if (storeName.trim().length < 2) {
+        errs.store_name = 'Nama toko minimal 2 karakter';
+      }
+    }
+
+    if (!password) {
+      errs.password = 'Password wajib diisi';
+    } else if (password.length < 8) {
+      errs.password = 'Password terlalu pendek (minimal 8 karakter)';
+    } else if (!/^(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
+      errs.password = 'Password harus memuat kombinasi huruf dan angka';
+    }
+
+    if (!confirmPassword) {
+      errs.confirmPassword = 'Ulangi password untuk konfirmasi';
+    } else if (password !== confirmPassword) {
+      errs.confirmPassword = 'Konfirmasi password tidak cocok dengan password yang dimasukkan';
+    }
+
+    return errs;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFieldErrors({});
     setGeneralError('');
+
+    // 1. Validasi awal di browser
+    const clientErrs = validateClientForm();
+    if (Object.keys(clientErrs).length > 0) {
+      setFieldErrors(clientErrs);
+      setGeneralError('Terdapat data yang belum sesuai. Silakan periksa rincian di bawah.');
+      notifyErrors(clientErrs);
+      scrollToFirstError(clientErrs);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -71,11 +202,13 @@ export default function RegisterForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.errors) {
-          setFieldErrors(data.errors);
-        } else {
-          setGeneralError(data.error || 'Gagal melakukan pendaftaran');
-        }
+        const errs = data.errors || {};
+        const mainMsg = data.error || 'Pendaftaran belum berhasil. Silakan periksa formulir.';
+
+        setFieldErrors(errs);
+        setGeneralError(mainMsg);
+        notifyErrors(errs, mainMsg);
+        scrollToFirstError(errs);
         setLoading(false);
         return;
       }
@@ -90,7 +223,9 @@ export default function RegisterForm() {
       router.refresh();
     } catch (err) {
       console.error('Registration submit error:', err);
-      setGeneralError('Terjadi gangguan koneksi. Silakan periksa jaringanmu.');
+      const networkError = 'Terjadi gangguan koneksi. Silakan periksa jaringan internetmu.';
+      setGeneralError(networkError);
+      toast.error(networkError);
       setLoading(false);
     }
   };
@@ -150,49 +285,96 @@ export default function RegisterForm() {
           </button>
         </div>
 
-        {/* Notifikasi General Error */}
-        {generalError && (
-          <div className="mb-5 p-3 rounded-[14px] bg-danger-50 border border-danger/20 text-danger text-xs md:text-sm font-medium">
-            {generalError}
+        {/* Notifikasi Informative Error Banner */}
+        {(generalError || Object.keys(fieldErrors).length > 0) && (
+          <div
+            id="register-error-banner"
+            className="mb-6 p-4 rounded-2xl bg-danger-50 border border-danger/30 text-danger animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-danger" />
+              <div className="flex-1">
+                <h4 className="font-bold text-ink text-xs md:text-sm">
+                  Pendaftaran Belum Berhasil
+                </h4>
+                {generalError && (
+                  <p className="text-xs md:text-sm text-danger font-medium mt-1">
+                    {generalError}
+                  </p>
+                )}
+                {Object.keys(fieldErrors).length > 0 && (
+                  <div className="mt-2.5 pt-2.5 border-t border-danger/20">
+                    <p className="text-[11px] uppercase tracking-wider text-ink-soft font-semibold mb-1.5">
+                      Rincian bagian yang perlu diperbaiki:
+                    </p>
+                    <ul className="space-y-1 text-xs md:text-sm">
+                      {Object.entries(fieldErrors).map(([key, msg]) => (
+                        <li key={key} className="flex items-start gap-1.5 font-medium">
+                          <span className="text-danger font-bold">•</span>
+                          <span>
+                            <strong className="text-ink font-semibold">
+                              {fieldLabels[key] || key}:
+                            </strong>{' '}
+                            {msg}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Input
+            id="name"
             label="Nama Lengkap"
             placeholder="Contoh: Dinda Putri"
             icon={User}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              clearFieldError('name');
+            }}
             error={fieldErrors.name}
             required
           />
 
           <Input
+            id="email"
             label="Alamat Email Mahasiswa"
             type="email"
             placeholder="nama@kampus.ac.id"
             icon={Mail}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              clearFieldError('email');
+            }}
             error={fieldErrors.email}
             helperText="Gunakan email aktif untuk konfirmasi dan transaksi"
             required
           />
 
           <Input
+            id="phone"
             label="Nomor WhatsApp / HP"
             type="tel"
             placeholder="081234567890"
             icon={Phone}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              clearFieldError('phone');
+            }}
             error={fieldErrors.phone}
             helperText="Diperlukan untuk koordinasi COD sekampus atau pengiriman"
           />
 
           {/* Selektor Kampus */}
-          <div className="flex flex-col gap-1.5">
+          <div id="campus_id" className="flex flex-col gap-1.5">
             <label className="text-xs md:text-sm font-semibold text-ink flex items-center justify-between">
               <span>Asal Kampus {role === 'seller' ? '(Wajib)' : '(Opsional)'}</span>
               {role === 'buyer' && (
@@ -205,9 +387,7 @@ export default function RegisterForm() {
               value={campus}
               onChange={(c) => {
                 setCampus(c);
-                if (fieldErrors.campus_id) {
-                  setFieldErrors((prev) => ({ ...prev, campus_id: null }));
-                }
+                clearFieldError('campus_id');
               }}
               allowAll={false}
               placeholder="Pilih kampusmu di Indonesia..."
@@ -225,22 +405,30 @@ export default function RegisterForm() {
               </div>
 
               <Input
+                id="store_name"
                 label="Nama Toko"
                 placeholder="Contoh: Lapak Dinda UNHAS"
                 icon={Store}
                 value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
+                onChange={(e) => {
+                  setStoreName(e.target.value);
+                  clearFieldError('store_name');
+                }}
                 error={fieldErrors.store_name}
                 helperText="Nama toko yang akan dilihat pembeli di katalog"
                 required={role === 'seller'}
               />
 
               <Input
+                id="location"
                 label="Detail Lokasi / Area Kost"
                 placeholder="Contoh: Tamalanrea, Pintu 1 UNHAS"
                 icon={MapPin}
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => {
+                  setLocation(e.target.value);
+                  clearFieldError('location');
+                }}
                 error={fieldErrors.location}
                 helperText="Lokasi favorit COD atau patokan sekitar kampus"
               />
@@ -250,12 +438,16 @@ export default function RegisterForm() {
           {/* Password & Konfirmasi Password */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
+              id="password"
               label="Password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Min. 8 karakter"
               icon={Lock}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearFieldError('password');
+              }}
               error={fieldErrors.password}
               required
               iconRight={
@@ -271,12 +463,16 @@ export default function RegisterForm() {
             />
 
             <Input
+              id="confirmPassword"
               label="Ulangi Password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Konfirmasi password"
               icon={Lock}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                clearFieldError('confirmPassword');
+              }}
               error={fieldErrors.confirmPassword}
               required
             />

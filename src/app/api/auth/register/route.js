@@ -6,41 +6,81 @@ import { createSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
-const registerSchema = z.object({
-  name: z.string().trim().min(2, 'Nama minimal 2 karakter').max(100, 'Nama maksimal 100 karakter'),
-  email: z.string().trim().email('Format email tidak valid').max(255),
-  phone: z.string().trim().regex(/^08[0-9]{8,12}$/, 'Nomor WhatsApp/HP tidak valid (contoh: 081234567890)').optional().or(z.literal('')),
-  password: z
-    .string()
-    .min(8, 'Password minimal 8 karakter')
-    .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'Password harus memuat kombinasi huruf dan angka'),
-  confirmPassword: z.string(),
-  role: z.enum(['buyer', 'seller'], {
-    errorMap: () => ({ message: 'Pilih peran sebagai Pembeli atau Penjual' }),
-  }),
-  campus_id: z.union([z.number(), z.string()]).nullable().optional(),
-  store_name: z.string().trim().max(100).optional(),
-  location: z.string().trim().max(150).optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Konfirmasi password tidak cocok',
-  path: ['confirmPassword'],
-}).refine((data) => {
-  if (data.role === 'seller') {
-    return !!data.campus_id && Number(data.campus_id) > 0;
-  }
-  return true;
-}, {
-  message: 'Penjual wajib memilih kampus tempat berjualan',
-  path: ['campus_id'],
-}).refine((data) => {
-  if (data.role === 'seller') {
-    return !!data.store_name && data.store_name.trim().length >= 2;
-  }
-  return true;
-}, {
-  message: 'Nama toko wajib diisi (minimal 2 karakter)',
-  path: ['store_name'],
-});
+const registerSchema = z
+  .object({
+    name: z
+      .string({ required_error: 'Nama lengkap wajib diisi' })
+      .trim()
+      .min(1, 'Nama lengkap wajib diisi')
+      .min(2, 'Nama lengkap minimal 2 karakter')
+      .max(100, 'Nama lengkap maksimal 100 karakter'),
+    email: z
+      .string({ required_error: 'Alamat email wajib diisi' })
+      .trim()
+      .min(1, 'Alamat email wajib diisi')
+      .email('Format email tidak valid (contoh: nama@kampus.ac.id)')
+      .max(255, 'Alamat email maksimal 255 karakter'),
+    phone: z
+      .string()
+      .trim()
+      .optional()
+      .or(z.literal('')),
+    password: z
+      .string({ required_error: 'Password wajib diisi' })
+      .min(1, 'Password wajib diisi')
+      .min(8, 'Password minimal 8 karakter')
+      .regex(/^(?=.*[A-Za-z])(?=.*\d)/, 'Password harus memuat kombinasi huruf dan angka'),
+    confirmPassword: z
+      .string({ required_error: 'Konfirmasi password wajib diisi' })
+      .min(1, 'Konfirmasi password wajib diisi'),
+    role: z.enum(['buyer', 'seller'], {
+      errorMap: () => ({ message: 'Pilih peran sebagai Pembeli atau Penjual' }),
+    }),
+    campus_id: z.union([z.number(), z.string()]).nullable().optional(),
+    store_name: z.string().trim().max(100).optional(),
+    location: z.string().trim().max(150).optional(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Konfirmasi password tidak cocok dengan password yang dimasukkan',
+    path: ['confirmPassword'],
+  })
+  .refine(
+    (data) => {
+      if (data.role === 'seller') {
+        return !!data.campus_id && Number(data.campus_id) > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Penjual wajib memilih kampus tempat berjualan',
+      path: ['campus_id'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.role === 'seller') {
+        return !!data.store_name && data.store_name.trim().length >= 2;
+      }
+      return true;
+    },
+    {
+      message: 'Nama toko/lapak wajib diisi untuk penjual (minimal 2 karakter)',
+      path: ['store_name'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.phone && data.phone.trim().length > 0) {
+        const cleaned = data.phone.trim().replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0');
+        return /^08[0-9]{8,12}$/.test(cleaned);
+      }
+      return true;
+    },
+    {
+      message: 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit, contoh: 081234567890)',
+      path: ['phone'],
+    }
+  );
 
 export async function POST(request) {
   try {
@@ -49,18 +89,29 @@ export async function POST(request) {
 
     if (!validated.success) {
       const fieldErrors = {};
-      validated.error.errors.forEach((err) => {
+      const issues = validated.error.issues || validated.error.errors || [];
+      issues.forEach((err) => {
         const field = err.path[0];
-        if (!fieldErrors[field]) {
+        if (field && !fieldErrors[field]) {
           fieldErrors[field] = err.message;
         }
       });
-      return NextResponse.json({ errors: fieldErrors }, { status: 400 });
+      const firstErrorMessage = Object.values(fieldErrors)[0];
+      return NextResponse.json(
+        {
+          error: firstErrorMessage || 'Mohon lengkapi data formulir dengan benar',
+          errors: fieldErrors,
+        },
+        { status: 400 }
+      );
     }
 
     const { name, email, phone, password, role, campus_id, store_name, location } = validated.data;
     const normalizedEmail = email.toLowerCase();
     const parsedCampusId = campus_id ? Number(campus_id) : null;
+    const cleanPhone = phone
+      ? phone.trim().replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0')
+      : null;
 
     // Cek apakah email sudah terdaftar
     const existing = await query(
@@ -70,7 +121,12 @@ export async function POST(request) {
 
     if (existing.rows.length > 0) {
       return NextResponse.json(
-        { errors: { email: 'Email sudah terdaftar. Silakan gunakan email lain atau masuk.' } },
+        {
+          error: 'Email sudah terdaftar. Silakan gunakan email lain atau langsung masuk ke akunmu.',
+          errors: {
+            email: 'Email sudah terdaftar. Silakan gunakan email lain atau langsung masuk ke akunmu.',
+          },
+        },
         { status: 400 }
       );
     }
@@ -92,7 +148,7 @@ export async function POST(request) {
           passwordHash,
           role,
           sellerStatus,
-          phone || null,
+          cleanPhone || null,
         ]
       );
 
@@ -140,13 +196,19 @@ export async function POST(request) {
   } catch (error) {
     console.error('Registration error:', error);
     if (error.code === '23505') {
+      const emailErr = 'Email sudah terdaftar. Silakan gunakan email lain atau langsung masuk ke akunmu.';
       return NextResponse.json(
-        { errors: { email: 'Email sudah terdaftar' } },
+        {
+          error: emailErr,
+          errors: { email: emailErr },
+        },
         { status: 400 }
       );
     }
     return NextResponse.json(
-      { error: 'Terjadi kesalahan pada server saat registrasi' },
+      {
+        error: 'Terjadi gangguan pada server saat mendaftarkan akun. Silakan coba beberapa saat lagi.',
+      },
       { status: 500 }
     );
   }
