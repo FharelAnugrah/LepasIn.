@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
     const safeFolder = folder.replace(/[^a-z0-9_-]/gi, '');
     const safeFilename = path.basename(filename);
 
-    const allowedFolders = ['products', 'stores', 'avatars'];
+    const allowedFolders = ['products', 'stores', 'avatars', 'verifications'];
     if (!allowedFolders.includes(safeFolder)) {
       return new NextResponse('Folder not found', { status: 404 });
     }

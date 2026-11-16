@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Plus,
+  MessageCircle,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
@@ -42,6 +43,12 @@ export default function SellerSidebar({ user, store, newOrdersCount = 0 }) {
       isActive: pathname.startsWith('/seller/orders'),
     },
     {
+      label: 'Chat Pembeli',
+      href: '/chat',
+      icon: MessageCircle,
+      isActive: pathname.startsWith('/chat'),
+    },
+    {
       label: 'Pengaturan Toko & Lokasi',
       href: '/seller/store',
       icon: Store,
@@ -63,10 +70,8 @@ export default function SellerSidebar({ user, store, newOrdersCount = 0 }) {
     <div className="flex flex-col h-full bg-surface border-r border-line">
       {/* Brand & Store Info */}
       <div className="p-5 border-b border-line">
-        <Link href="/" className="flex items-center gap-1.5 text-ink font-extrabold text-xl tracking-tight mb-3">
-          <span className="text-primary">Lepas</span>
-          <span>In</span>
-          <span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+        <Link href="/" className="inline-flex items-center text-ink font-extrabold text-xl tracking-tight mb-3">
+          <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
         </Link>
         <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-canvas border border-line">
           <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary font-bold flex items-center justify-center shrink-0 uppercase text-xs">
@@ -138,8 +143,8 @@ export default function SellerSidebar({ user, store, newOrdersCount = 0 }) {
     <>
       {/* Mobile Top Header */}
       <header className="lg:hidden sticky top-0 z-30 bg-canvas/95 backdrop-blur-md border-b border-line h-14 px-4 flex items-center justify-between">
-        <Link href="/" className="font-extrabold text-lg text-ink">
-          <span className="text-primary">Lepas</span>In <span className="text-xs font-normal text-ink-soft">Lapak</span>
+        <Link href="/" className="inline-flex items-center text-lg text-ink font-extrabold">
+          <span className="text-primary">Lepas</span><span>In</span><span className="text-xs font-normal text-ink-soft ml-1.5">Lapak</span>
         </Link>
         <button
           type="button"

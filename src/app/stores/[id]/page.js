@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Mail,
   Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { query } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
@@ -49,12 +50,12 @@ export default async function StoreProfilePage({ params }) {
 
   // 1. Query Toko
   const storeRes = await query(
-    `SELECT s.id, s.name, s.description, s.location, s.image_url, s.created_at,
+    `SELECT s.id, s.name, s.description, s.location, s.image_url, s.created_at, s.user_id,
             u.name AS seller_name, u.email AS seller_email, u.phone AS seller_phone,
             cp.id AS campus_id, cp.name AS campus_name, cp.short_name AS campus_short_name, cp.city AS campus_city
      FROM stores s
      JOIN users u ON u.id = s.user_id AND u.seller_status = 'approved'
-     JOIN campuses cp ON cp.id = s.campus_id
+     LEFT JOIN campuses cp ON cp.id = s.campus_id
      WHERE s.id = $1`,
     [storeId]
   );
@@ -97,7 +98,7 @@ export default async function StoreProfilePage({ params }) {
     wishlistIds = wishRes.rows.map((r) => r.product_id);
 
     const cartRes = await query(
-      `SELECT COUNT(ci.id)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        WHERE ci.user_id = $1`,
@@ -159,10 +160,22 @@ export default async function StoreProfilePage({ params }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1 text-xs text-ink-soft border-t md:border-t-0 md:border-l border-line/70 pt-4 md:pt-0 md:pl-6">
+          <div className="flex flex-col gap-2 text-xs text-ink-soft border-t md:border-t-0 md:border-l border-line/70 pt-4 md:pt-0 md:pl-6 shrink-0">
             <div className="font-bold text-ink mb-1">Informasi Toko</div>
             <div>Total Barang: <strong className="text-ink">{products.length} produk</strong></div>
             {store.seller_phone && <div>Kontak: {store.seller_phone}</div>}
+
+            {user && user.id !== store.user_id && (
+              <div className="mt-2">
+                <Link
+                  href={`/chat?store_id=${store.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-50/60 text-primary hover:bg-primary hover:text-white px-3.5 py-1.5 text-xs font-semibold transition"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Chat Toko</span>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

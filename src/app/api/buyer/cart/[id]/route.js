@@ -17,10 +17,6 @@ export async function PATCH(request, { params }) {
     const body = await request.json();
     const quantity = Number(body.quantity);
 
-    if (!quantity || quantity < 1) {
-      return NextResponse.json({ error: 'Jumlah minimal 1' }, { status: 400 });
-    }
-
     // Cek kepemilikan cart item dan ketersediaan stok
     const checkRes = await query(
       `SELECT ci.id, ci.product_id, p.stock
@@ -32,6 +28,28 @@ export async function PATCH(request, { params }) {
 
     if (checkRes.rows.length === 0) {
       return NextResponse.json({ error: 'Item keranjang tidak ditemukan' }, { status: 404 });
+    }
+
+    // Jika jumlah diupdate menjadi <= 0, otomatis hapus item dari keranjang
+    if (isNaN(quantity) || quantity <= 0) {
+      await query(`DELETE FROM cart_items WHERE id = $1 AND user_id = $2`, [cartItemId, user.id]);
+
+      const cartTotalsRes = await query(
+        `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count,
+                COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+         FROM cart_items ci
+         JOIN products p ON p.id = ci.product_id
+         WHERE ci.user_id = $1`,
+        [user.id]
+      );
+
+      return NextResponse.json({
+        success: true,
+        deleted: true,
+        message: 'Item berhasil dihapus dari keranjang',
+        cartCount: cartTotalsRes.rows[0]?.count || 0,
+        cartTotal: cartTotalsRes.rows[0]?.total || 0,
+      });
     }
 
     const item = checkRes.rows[0];
@@ -47,9 +65,20 @@ export async function PATCH(request, { params }) {
       [quantity, cartItemId]
     );
 
+    const cartTotalsRes = await query(
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count,
+              COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+       FROM cart_items ci
+       JOIN products p ON p.id = ci.product_id
+       WHERE ci.user_id = $1`,
+      [user.id]
+    );
+
     return NextResponse.json({
       success: true,
       item: result.rows[0],
+      cartCount: cartTotalsRes.rows[0]?.count || 0,
+      cartTotal: cartTotalsRes.rows[0]?.total || 0,
     });
   } catch (error) {
     console.error('Update cart item error:', error);
@@ -76,9 +105,20 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Item keranjang tidak ditemukan' }, { status: 404 });
     }
 
+    const cartTotalsRes = await query(
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count,
+              COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+       FROM cart_items ci
+       JOIN products p ON p.id = ci.product_id
+       WHERE ci.user_id = $1`,
+      [user.id]
+    );
+
     return NextResponse.json({
       success: true,
       message: 'Item berhasil dihapus dari keranjang',
+      cartCount: cartTotalsRes.rows[0]?.count || 0,
+      cartTotal: cartTotalsRes.rows[0]?.total || 0,
     });
   } catch (error) {
     console.error('Delete cart item error:', error);

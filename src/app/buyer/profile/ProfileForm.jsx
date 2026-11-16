@@ -135,7 +135,7 @@ export default function ProfileForm({ user, initialCampus }) {
         </div>
 
         <div className="pt-3 border-t border-line/60">
-          <Button type="submit" variant="primary" pill loading={loading} className="w-full">
+          <Button type="submit" variant="primary" pill loading={loading} className="w-full sm:w-auto px-6">
             Simpan Perubahan Profil
           </Button>
         </div>

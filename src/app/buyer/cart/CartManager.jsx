@@ -48,8 +48,11 @@ export default function CartManager({ initialItems }) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
-  const handleUpdateQuantity = async (cartItemId, newQty) => {
-    if (newQty < 1) return;
+  const handleUpdateQuantity = async (cartItemId, newQty, productName = '') => {
+    // Jika jumlah dikurangi hingga kurang dari 1 (misal dari 1 menjadi 0), otomatis hapus dari keranjang
+    if (newQty < 1) {
+      return handleRemoveItem(cartItemId, productName);
+    }
     setLoadingItemId(cartItemId);
 
     try {
@@ -67,10 +70,27 @@ export default function CartManager({ initialItems }) {
         return;
       }
 
-      setItems((prev) =>
-        prev.map((it) => (it.id === cartItemId ? { ...it, quantity: newQty } : it))
-      );
+      if (data.deleted) {
+        setItems((prev) => prev.filter((it) => it.id !== cartItemId));
+        toast.success(productName ? `"${productName}" dihapus dari keranjang` : 'Item dihapus dari keranjang');
+      } else {
+        setItems((prev) =>
+          prev.map((it) => (it.id === cartItemId ? { ...it, quantity: newQty } : it))
+        );
+      }
       setLoadingItemId(null);
+
+      if (typeof window !== 'undefined' && data) {
+        window.dispatchEvent(
+          new CustomEvent('cart-updated', {
+            detail: {
+              cartCount: data.cartCount,
+              cartTotal: data.cartTotal,
+            },
+          })
+        );
+      }
+
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -86,8 +106,10 @@ export default function CartManager({ initialItems }) {
         method: 'DELETE',
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        toast.error('Gagal menghapus item dari keranjang');
+        toast.error(data.error || 'Gagal menghapus item dari keranjang');
         setLoadingItemId(null);
         return;
       }
@@ -95,6 +117,18 @@ export default function CartManager({ initialItems }) {
       setItems((prev) => prev.filter((it) => it.id !== cartItemId));
       toast.success(`"${productName}" dihapus dari keranjang`);
       setLoadingItemId(null);
+
+      if (typeof window !== 'undefined' && data) {
+        window.dispatchEvent(
+          new CustomEvent('cart-updated', {
+            detail: {
+              cartCount: data.cartCount,
+              cartTotal: data.cartTotal,
+            },
+          })
+        );
+      }
+
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -202,10 +236,11 @@ export default function CartManager({ initialItems }) {
                       <div className="flex items-center bg-surface rounded-full border border-line p-1">
                         <button
                           type="button"
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1 || isItemLoading}
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer"
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.product_name)}
+                          disabled={isItemLoading}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
                           aria-label="Kurangi"
+                          title="Kurangi"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -214,10 +249,11 @@ export default function CartManager({ initialItems }) {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.product_name)}
                           disabled={item.quantity >= item.stock || isItemLoading}
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer"
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
                           aria-label="Tambah"
+                          title="Tambah"
                         >
                           <Plus className="w-3 h-3" />
                         </button>

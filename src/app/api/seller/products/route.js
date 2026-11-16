@@ -5,16 +5,101 @@ import { getCurrentUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const productSchema = z.object({
-  name: z.string().trim().min(3, 'Nama barang minimal 3 karakter').max(150, 'Nama barang maksimal 150 karakter'),
-  description: z.string().trim().min(10, 'Deskripsi minimal 10 karakter'),
-  price: z.coerce.number().int().min(1000, 'Harga minimal Rp 1.000'),
-  original_price: z.coerce.number().int().min(1000, 'Harga coret minimal Rp 1.000').optional().nullable(),
-  stock: z.coerce.number().int().min(0, 'Stok minimal 0').default(1),
-  condition: z.enum(['like_new', 'good', 'fair', 'minor_defect']),
-  category_id: z.coerce.number().int().positive('Kategori wajib dipilih'),
-  image_urls: z.array(z.string().trim().min(1, 'Path foto tidak valid')).max(5, 'Maksimal 5 gambar').default([]),
-});
+const priceValidator = z
+  .union([z.string(), z.number()])
+  .refine(
+    (val) => {
+      const str = String(val).trim();
+      return str !== '';
+    },
+    { message: 'Harga lepas wajib diisi.' }
+  )
+  .refine(
+    (val) => {
+      const str = String(val).trim();
+      return !/^0\d+/.test(str);
+    },
+    {
+      message: 'Harga lepas tidak boleh diawali dengan angka 0 (contoh: 050000). Masukkan nominal yang valid tanpa awalan 0.',
+    }
+  )
+  .transform((val) => Number(val))
+  .pipe(
+    z
+      .number({ invalid_type_error: 'Harga lepas harus berupa angka.' })
+      .int('Harga lepas harus berupa angka bulat.')
+      .min(1000, 'Harga lepas minimal Rp 1.000 dan tidak boleh bernilai Rp 0.')
+      .max(100000000, 'Harga lepas maksimal Rp 100.000.000.')
+  );
+
+const originalPriceValidator = z
+  .union([z.string(), z.number()])
+  .optional()
+  .nullable()
+  .refine(
+    (val) => {
+      if (val === undefined || val === null || val === '') return true;
+      const str = String(val).trim();
+      return !/^0\d+/.test(str);
+    },
+    {
+      message: 'Harga coret tidak boleh diawali dengan angka 0 (contoh: 050000). Masukkan nominal yang valid tanpa awalan 0.',
+    }
+  )
+  .transform((val) => (val === undefined || val === null || val === '' ? null : Number(val)))
+  .pipe(
+    z
+      .number({ invalid_type_error: 'Harga coret harus berupa angka.' })
+      .int('Harga coret harus berupa angka bulat.')
+      .min(1000, 'Harga coret minimal Rp 1.000 dan tidak boleh bernilai Rp 0.')
+      .max(100000000, 'Harga coret maksimal Rp 100.000.000.')
+      .optional()
+      .nullable()
+  );
+
+const stockValidator = z
+  .union([z.string(), z.number()])
+  .refine(
+    (val) => {
+      const str = String(val).trim();
+      return !/^0\d+/.test(str);
+    },
+    {
+      message: 'Jumlah stok tidak boleh diawali dengan angka 0 (contoh: 05).',
+    }
+  )
+  .transform((val) => Number(val))
+  .pipe(
+    z
+      .number({ invalid_type_error: 'Stok harus berupa angka.' })
+      .int('Stok harus berupa bilangan bulat.')
+      .min(0, 'Stok minimal 0.')
+  )
+  .default(1);
+
+const productSchema = z
+  .object({
+    name: z.string().trim().min(3, 'Nama barang minimal 3 karakter').max(150, 'Nama barang maksimal 150 karakter'),
+    description: z.string().trim().min(10, 'Deskripsi minimal 10 karakter'),
+    price: priceValidator,
+    original_price: originalPriceValidator,
+    stock: stockValidator,
+    condition: z.enum(['like_new', 'good', 'fair', 'minor_defect']),
+    category_id: z.coerce.number().int().positive('Kategori wajib dipilih'),
+    image_urls: z.array(z.string().trim().min(1, 'Path foto tidak valid')).max(5, 'Maksimal 5 gambar').default([]),
+  })
+  .refine(
+    (data) => {
+      if (data.original_price && data.price) {
+        return data.original_price > data.price;
+      }
+      return true;
+    },
+    {
+      message: 'Harga coret harus lebih besar dari harga lepas (contoh: harga asli Rp 120.000, harga lepas Rp 50.000).',
+      path: ['original_price'],
+    }
+  );
 
 export async function GET() {
   try {
@@ -64,8 +149,10 @@ export async function POST(request) {
     const validated = productSchema.safeParse(body);
 
     if (!validated.success) {
+      const fieldErrors = validated.error.flatten().fieldErrors;
+      const firstError = Object.values(fieldErrors)[0]?.[0] || 'Validasi form gagal';
       return NextResponse.json(
-        { error: 'Validasi form gagal', details: validated.error.flatten().fieldErrors },
+        { error: firstError, details: fieldErrors },
         { status: 400 }
       );
     }

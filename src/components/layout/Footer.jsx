@@ -8,10 +8,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Brand & Tagline */}
           <div className="md:col-span-1 flex flex-col gap-3">
-            <Link href="/" className="flex items-center gap-1.5 text-ink font-extrabold text-2xl tracking-tight">
-              <span className="text-primary">Lepas</span>
-              <span>In</span>
-              <span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+            <Link href="/" className="inline-flex items-center text-ink font-extrabold text-2xl tracking-tight">
+              <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
             </Link>
             <p className="text-xs md:text-sm text-ink-soft leading-relaxed">
               Platform jual beli barang preloved khusus mahasiswa & anak kost di seluruh kampus Indonesia. Hemat budget kuliah, kurangi limbah barang kost.

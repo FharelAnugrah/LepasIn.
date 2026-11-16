@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   ShoppingBag,
@@ -16,19 +17,44 @@ import {
   Menu,
   X,
   GraduationCap,
+  Loader2,
+  ArrowRight,
+  MessageCircle,
 } from 'lucide-react';
 import CampusSelector from '@/components/ui/CampusSelector';
 import Button from '@/components/ui/Button';
+import AccessibilityControl from '@/components/ui/AccessibilityControl';
+import { formatRupiah } from '@/components/ui/Badge';
 
 export default function Navbar({
   user = null,
-  cartCount = 0,
+  cartCount: initialCartCount = 0,
   selectedCampus = null,
   showSearchBar = true,
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const [cartCount, setCartCount] = useState(initialCartCount);
+  const [prevInitialCartCount, setPrevInitialCartCount] = useState(initialCartCount);
+
+  // Sync state bila prop dari server berubah
+  if (initialCartCount !== prevInitialCartCount) {
+    setPrevInitialCartCount(initialCartCount);
+    setCartCount(initialCartCount);
+  }
+
+  // Dengarkan event pembaruan keranjang realtime dari client action
+  useEffect(() => {
+    function handleCartUpdated(e) {
+      if (e.detail && typeof e.detail.cartCount === 'number') {
+        setCartCount(e.detail.cartCount);
+      }
+    }
+    window.addEventListener('cart-updated', handleCartUpdated);
+    return () => window.removeEventListener('cart-updated', handleCartUpdated);
+  }, []);
 
   const urlQuery = searchParams.get('q') || '';
   const [searchQuery, setSearchQuery] = useState(urlQuery);
@@ -44,11 +70,47 @@ export default function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
-  // Tutup menu saat klik luar
+  // Live / Instant Search State
+  const [liveResults, setLiveResults] = useState({ products: [], stores: [] });
+  const [isLiveSearching, setIsLiveSearching] = useState(false);
+  const [isLiveDropdownOpen, setIsLiveDropdownOpen] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  // Live / Instant Search saat pengguna mengetik di Navbar (debounce 250ms)
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 2) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsLiveSearching(true);
+      try {
+        const campusParam = selectedCampus?.id ? `&campus=${selectedCampus.id}` : '';
+        const res = await fetch(`/api/search/instant?q=${encodeURIComponent(trimmed)}${campusParam}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLiveResults(data);
+          setIsLiveDropdownOpen(true);
+        }
+      } catch (err) {
+        console.error('Instant live search error:', err);
+      } finally {
+        setIsLiveSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCampus]);
+
+  // Tutup menu & dropdown saat klik luar
   useEffect(() => {
     function handleClickOutside(e) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setUserMenuOpen(false);
+      }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target)) {
+        setIsLiveDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -57,6 +119,7 @@ export default function Navbar({
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setIsLiveDropdownOpen(false);
     const params = new URLSearchParams(searchParams.toString());
     if (searchQuery.trim()) {
       params.set('q', searchQuery.trim());
@@ -103,11 +166,9 @@ export default function Navbar({
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-ink font-extrabold text-xl md:text-2xl tracking-tight"
+            className="inline-flex items-center text-ink font-extrabold text-xl md:text-2xl tracking-tight"
           >
-            <span className="text-primary">Lepas</span>
-            <span>In</span>
-            <span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+            <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
           </Link>
 
           {/* Selektor Kampus di Desktop */}
@@ -121,24 +182,157 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Tengah: Search Bar di Desktop (jika diaktifkan) */}
+        {/* Tengah: Search Bar di Desktop (Live / Instant Search) */}
         {showSearchBar && (
-          <div className="hidden lg:flex flex-1 max-w-md mx-4">
+          <div className="hidden lg:flex flex-1 max-w-md mx-4 relative" ref={searchContainerRef}>
             <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
-                placeholder="Cari kipas, kasur, buku kuliah..."
+                placeholder="Cari barang atau nama toko..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-10 pl-10 pr-4 text-xs md:text-sm bg-surface rounded-full border border-line focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  if (val.trim().length < 2) {
+                    setIsLiveDropdownOpen(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (searchQuery.trim().length >= 2) setIsLiveDropdownOpen(true);
+                }}
+                className="w-full h-10 pl-10 pr-10 text-xs md:text-sm bg-surface rounded-full border border-line focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
               />
               <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {isLiveSearching ? (
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-primary">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                </div>
+              ) : searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsLiveDropdownOpen(false);
+                  }}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink p-0.5 cursor-pointer"
+                  title="Bersihkan"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : null}
             </form>
+
+            {/* Dropdown Live Search Popover */}
+            {isLiveDropdownOpen && searchQuery.trim().length >= 2 && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-canvas border border-line rounded-card shadow-float z-50 overflow-hidden divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
+                {/* Section Toko Ditemukan */}
+                {liveResults.stores?.length > 0 && (
+                  <div className="p-2">
+                    <div className="px-3 py-1 text-[11px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1.5">
+                      <Store className="w-3.5 h-3.5 text-primary" />
+                      <span>Toko Terkait</span>
+                    </div>
+                    {liveResults.stores.map((st) => (
+                      <Link
+                        key={st.id}
+                        href={`/stores/${st.id}`}
+                        onClick={() => setIsLiveDropdownOpen(false)}
+                        className="flex items-center justify-between p-2 rounded-xl hover:bg-surface-alt transition"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-primary-50 text-primary flex items-center justify-center shrink-0">
+                            <Store className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-ink truncate">{st.name}</p>
+                            <p className="text-[10px] text-ink-soft truncate">{st.location || 'Area kampus'}</p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pine-50 text-pine shrink-0">
+                          {st.campus_short_name}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Section Produk Ditemukan */}
+                {liveResults.products?.length > 0 && (
+                  <div className="p-2">
+                    <div className="px-3 py-1 text-[11px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5 text-primary" />
+                      <span>Produk Langsung</span>
+                    </div>
+                    {liveResults.products.map((p) => (
+                      <Link
+                        key={p.id}
+                        href={`/products/${p.id}`}
+                        onClick={() => setIsLiveDropdownOpen(false)}
+                        className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-surface-alt transition"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative w-9 h-9 rounded-lg bg-surface overflow-hidden shrink-0 border border-line/60">
+                            {p.image_url ? (
+                              <Image
+                                src={p.image_url}
+                                alt={p.name}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
+                                <Package className="w-4 h-4" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-ink truncate">{p.name}</p>
+                            <p className="text-[10px] text-ink-soft truncate">
+                              Toko {p.store_name} · {p.campus_short_name}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span className="text-xs font-bold text-primary">
+                            {formatRupiah(p.price)}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Kosong */}
+                {!isLiveSearching &&
+                  (!liveResults.products || liveResults.products.length === 0) &&
+                  (!liveResults.stores || liveResults.stores.length === 0) && (
+                    <div className="p-5 text-center text-xs text-ink-soft">
+                      Tidak ada produk atau toko yang cocok dengan &ldquo;{searchQuery}&rdquo;
+                    </div>
+                  )}
+
+                {/* Tombol Lihat Semua Hasil */}
+                <div className="p-2 bg-surface">
+                  <button
+                    type="button"
+                    onClick={handleSearchSubmit}
+                    className="w-full py-2 px-3 text-center text-xs font-bold text-primary hover:bg-primary-50 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <span>Lihat semua hasil untuk &ldquo;{searchQuery}&rdquo;</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Sisi Kanan: Aksi Pengguna */}
         <div className="flex items-center gap-2 md:gap-3">
+          {/* Pengatur Aksesibilitas & Kenyamanan Baca (Multi-Generasi) */}
+          <AccessibilityControl />
+
           {/* Keranjang Belanja (Buyer atau Guest) */}
           {(!user || user.role === 'buyer') && (
             <Link
@@ -152,6 +346,18 @@ export default function Navbar({
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
+            </Link>
+          )}
+
+          {/* Chat Pesanan (Buyer atau Seller) */}
+          {user && (
+            <Link
+              href="/chat"
+              className="relative p-2.5 rounded-full text-ink hover:bg-surface-alt transition-colors"
+              aria-label="Pesan dan Chat"
+              title="Pesan & Chat Koordinasi"
+            >
+              <MessageCircle className="w-5 h-5 text-ink" />
             </Link>
           )}
 
@@ -178,7 +384,13 @@ export default function Navbar({
 
               {/* Dropdown Menu Pengguna */}
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-canvas border border-line rounded-card shadow-float z-50 py-2 divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
+                <>
+                  <div
+                    className="fixed inset-0 z-40 bg-transparent md:hidden"
+                    onClick={() => setUserMenuOpen(false)}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute right-0 mt-2 w-56 bg-canvas border border-line rounded-card shadow-float z-50 py-2 divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-4 py-2">
                     <p className="text-xs text-ink-soft">Masuk sebagai</p>
                     <p className="text-xs font-bold text-ink truncate">{user.email}</p>
@@ -213,14 +425,24 @@ export default function Navbar({
                           <span>Toko Saya</span>
                         </Link>
                         {user.seller_status === 'approved' && (
-                          <Link
-                            href="/seller/orders"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
-                          >
-                            <Package className="w-4 h-4 text-ink-soft" />
-                            <span>Pesanan Masuk</span>
-                          </Link>
+                          <>
+                            <Link
+                              href="/seller/orders"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
+                            >
+                              <Package className="w-4 h-4 text-ink-soft" />
+                              <span>Pesanan Masuk</span>
+                            </Link>
+                            <Link
+                              href="/chat"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
+                            >
+                              <MessageCircle className="w-4 h-4 text-primary" />
+                              <span>Chat Pembeli</span>
+                            </Link>
+                          </>
                         )}
                       </>
                     )}
@@ -234,6 +456,14 @@ export default function Navbar({
                         >
                           <Package className="w-4 h-4 text-ink-soft" />
                           <span>Pesanan Saya</span>
+                        </Link>
+                        <Link
+                          href="/chat"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
+                        >
+                          <MessageCircle className="w-4 h-4 text-primary" />
+                          <span>Chat Penjual</span>
                         </Link>
                         <Link
                           href="/buyer/wishlist"
@@ -266,6 +496,7 @@ export default function Navbar({
                     </button>
                   </div>
                 </div>
+                </>
               )}
             </div>
           ) : (

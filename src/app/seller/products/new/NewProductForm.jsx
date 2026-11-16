@@ -38,6 +38,52 @@ export default function NewProductForm({ categories = [] }) {
       return;
     }
 
+    const newErrors = {};
+
+    // 1. Validasi Harga Lepas
+    const priceStr = String(price).trim();
+    if (!priceStr) {
+      newErrors.price = ['Harga lepas wajib diisi.'];
+    } else if (/^0\d+/.test(priceStr)) {
+      newErrors.price = [
+        'Harga lepas tidak boleh diawali dengan angka 0 (contoh: 050000). Masukkan nominal yang valid tanpa awalan 0.',
+      ];
+    } else if (priceStr === '0' || Number(priceStr) < 1000) {
+      newErrors.price = ['Harga lepas minimal Rp 1.000 dan tidak boleh bernilai Rp 0.'];
+    } else if (Number(priceStr) > 100000000) {
+      newErrors.price = ['Harga lepas maksimal Rp 100.000.000.'];
+    }
+
+    // 2. Validasi Harga Coret (Opsional)
+    if (originalPrice) {
+      const origStr = String(originalPrice).trim();
+      if (/^0\d+/.test(origStr)) {
+        newErrors.original_price = [
+          'Harga coret tidak boleh diawali dengan angka 0 (contoh: 050000). Masukkan nominal yang valid tanpa awalan 0.',
+        ];
+      } else if (origStr === '0' || Number(origStr) < 1000) {
+        newErrors.original_price = ['Harga coret minimal Rp 1.000 dan tidak boleh bernilai Rp 0.'];
+      } else if (Number(origStr) > 100000000) {
+        newErrors.original_price = ['Harga coret maksimal Rp 100.000.000.'];
+      } else if (!newErrors.price && Number(origStr) <= Number(priceStr)) {
+        newErrors.original_price = [
+          'Harga coret harus lebih besar dari harga lepas (contoh: harga asli Rp 120.000, harga lepas Rp 50.000).',
+        ];
+      }
+    }
+
+    const stockStr = String(stock).trim();
+    if (/^0\d+/.test(stockStr)) {
+      newErrors.stock = ['Jumlah stok tidak boleh diawali dengan angka 0 (contoh: 05).'];
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      const firstMsg = Object.values(newErrors)[0][0];
+      toast.error(firstMsg);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/seller/products', {
@@ -47,9 +93,9 @@ export default function NewProductForm({ categories = [] }) {
           name: name.trim(),
           category_id: Number(categoryId),
           condition,
-          price: Number(price),
-          original_price: originalPrice ? Number(originalPrice) : null,
-          stock: Number(stock),
+          price: priceStr,
+          original_price: originalPrice ? String(originalPrice).trim() : null,
+          stock: stockStr,
           description: description.trim(),
           image_urls: images,
         }),
@@ -144,7 +190,10 @@ export default function NewProductForm({ categories = [] }) {
               type="number"
               placeholder="50000"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                if (errors.price) setErrors((prev) => ({ ...prev, price: undefined }));
+              }}
               error={errors.price?.[0]}
               min="1000"
               required
@@ -155,7 +204,10 @@ export default function NewProductForm({ categories = [] }) {
               type="number"
               placeholder="120000"
               value={originalPrice}
-              onChange={(e) => setOriginalPrice(e.target.value)}
+              onChange={(e) => {
+                setOriginalPrice(e.target.value);
+                if (errors.original_price) setErrors((prev) => ({ ...prev, original_price: undefined }));
+              }}
               error={errors.original_price?.[0]}
               helperText="Akan ditampilkan sebagai harga coret"
             />

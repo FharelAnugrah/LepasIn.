@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 
 export default function Button({
@@ -12,6 +13,7 @@ export default function Button({
   type = 'button',
   icon = null,
   iconRight = null,
+  href = null,
   ...props
 }) {
   const baseStyles =
@@ -44,11 +46,32 @@ export default function Button({
     return <IconComponent className="w-4 h-4 shrink-0" />;
   };
 
+  const combinedClasses = `${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${radius} ${className}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={combinedClasses} {...props}>
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            <span>Memproses...</span>
+          </>
+        ) : (
+          <>
+            {renderIcon(icon)}
+            {children}
+            {renderIcon(iconRight)}
+          </>
+        )}
+      </Link>
+    );
+  }
+
   return (
     <button
       type={type}
       disabled={disabled || loading}
-      className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${radius} ${className}`}
+      className={combinedClasses}
       {...props}
     >
       {loading ? (

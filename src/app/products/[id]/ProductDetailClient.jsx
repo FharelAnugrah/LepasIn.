@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Calendar,
   MessageSquare,
+  MessageCircle,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { PricePill, ConditionBadge, CampusBadge, formatRupiah } from '@/components/ui/Badge';
@@ -40,6 +41,9 @@ export default function ProductDetailClient({
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
   const isSoldOut = product.stock <= 0;
+  const isOwner = user && user.id === product.seller_user_id;
+  const isAdmin = user && user.role === 'admin';
+  const canChat = !isOwner && !isAdmin;
   const currentImages = images.length > 0 ? images : product.image_url ? [{ url: product.image_url }] : [];
   const activeImage = currentImages[selectedImageIndex]?.url;
 
@@ -92,6 +96,18 @@ export default function ProductDetailClient({
 
       toast.success(`${quantity} barang berhasil ditambahkan ke keranjang!`);
       setAddingToCart(false);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('cart-updated', {
+            detail: {
+              cartCount: data.cartCount,
+              cartTotal: data.cartTotal,
+            },
+          })
+        );
+      }
+
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -300,11 +316,25 @@ export default function ProductDetailClient({
               </div>
             </div>
 
-            <Link href={`/stores/${product.store_id}`}>
-              <Button variant="secondary" size="sm" pill>
+            <div className="flex flex-wrap items-center gap-2">
+              {canChat && (
+                <Link
+                  href={
+                    user
+                      ? `/chat?store_id=${product.store_id}&product_id=${product.id}`
+                      : `/login?next=${encodeURIComponent(`/products/${product.id}`)}`
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-50/60 text-primary hover:bg-primary hover:text-white px-4 py-2 text-xs font-semibold transition"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Chat Penjual</span>
+                </Link>
+              )}
+
+              <Button href={`/stores/${product.store_id}`} variant="secondary" size="sm" pill>
                 Kunjungi Toko
               </Button>
-            </Link>
+            </div>
           </div>
 
           {/* Deskripsi Barang */}

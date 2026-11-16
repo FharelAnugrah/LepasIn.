@@ -42,6 +42,14 @@ const Input = forwardRef(function Input(
           ref={ref}
           id={inputId}
           type={type}
+          onWheel={(e) => {
+            if (type === 'number') {
+              e.currentTarget.blur();
+            }
+            if (props.onWheel) {
+              props.onWheel(e);
+            }
+          }}
           className={`w-full h-[46px] ${Icon ? 'pl-10' : 'pl-4'} ${
             IconRight ? 'pr-10' : 'pr-4'
           } ${radius} bg-surface text-ink text-base md:text-sm placeholder:text-ink-soft/70 border ${

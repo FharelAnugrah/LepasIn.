@@ -19,6 +19,7 @@ export default async function ProductsPage({ searchParams }) {
   const q = sp?.q || null;
   const campus = sp?.campus ? Number(sp.campus) : null;
   const category = sp?.category ? Number(sp.category) : null;
+  const store = sp?.store ? Number(sp.store) : null;
   const condition = sp?.condition || null;
   const minPrice = sp?.minPrice ? Number(sp.minPrice) : null;
   const maxPrice = sp?.maxPrice ? Number(sp.maxPrice) : null;
@@ -33,7 +34,7 @@ export default async function ProductsPage({ searchParams }) {
   if (sort === 'price_desc') orderBy = 'p.price DESC';
   if (sort === 'rating_desc') orderBy = 'COALESCE(r.avg_rating, 0) DESC, p.created_at DESC';
 
-  // 1. Query Produk sesuai Q1 schema.md
+  // 1. Query Produk: mendukung pencarian berdasarkan nama produk atau nama toko
   const sql = `
     SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
            c.id AS category_id,
@@ -56,14 +57,15 @@ export default async function ProductsPage({ searchParams }) {
     JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
     LEFT JOIN (SELECT product_id, ROUND(AVG(rating), 1)::float AS avg_rating, COUNT(*)::int AS review_count
                FROM reviews GROUP BY product_id) r ON r.product_id = p.id
-    WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%')
+    WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%' OR s.name ILIKE '%' || $1 || '%')
       AND ($2::int  IS NULL OR s.campus_id = $2)
       AND ($3::int  IS NULL OR p.category_id = $3)
       AND ($4::text IS NULL OR p.condition = $4)
       AND ($5::int  IS NULL OR p.price >= $5)
       AND ($6::int  IS NULL OR p.price <= $6)
+      AND ($7::int  IS NULL OR s.id = $7)
     ORDER BY ${orderBy}
-    LIMIT $7 OFFSET $8
+    LIMIT $8 OFFSET $9
   `;
 
   const countSql = `
@@ -72,17 +74,19 @@ export default async function ProductsPage({ searchParams }) {
     JOIN stores s     ON s.id = p.store_id
     JOIN campuses cp  ON cp.id = s.campus_id
     JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
-    WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%')
+    WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%' OR s.name ILIKE '%' || $1 || '%')
       AND ($2::int  IS NULL OR s.campus_id = $2)
       AND ($3::int  IS NULL OR p.category_id = $3)
       AND ($4::text IS NULL OR p.condition = $4)
       AND ($5::int  IS NULL OR p.price >= $5)
       AND ($6::int  IS NULL OR p.price <= $6)
+      AND ($7::int  IS NULL OR s.id = $7)
   `;
 
-  const filterParams = [q, campus, category, condition, minPrice, maxPrice];
+  const filterParams = [q, campus, category, condition, minPrice, maxPrice, store];
 
-  const [productsRes, countRes, categoriesRes, campusesRes] = await Promise.all([
+  // Eksekusi query produk, kategori, kampus, dan daftar semua toko
+  const [productsRes, countRes, categoriesRes, campusesRes, allStoresRes] = await Promise.all([
     query(sql, [...filterParams, limit, offset]),
     query(countSql, filterParams),
     query(`
@@ -95,11 +99,51 @@ export default async function ProductsPage({ searchParams }) {
         id ASC
     `),
     query(`SELECT id, name, short_name, city, province FROM campuses ORDER BY name ASC`),
+    query(`
+      SELECT s.id, s.name, s.campus_id, cp.short_name AS campus_short_name
+      FROM stores s
+      JOIN users u ON u.id = s.user_id AND u.seller_status = 'approved'
+      JOIN campuses cp ON cp.id = s.campus_id
+      ORDER BY s.name ASC
+    `),
   ]);
 
   const products = productsRes.rows;
   const total = countRes.rows[0]?.total || 0;
   const totalPages = Math.ceil(total / limit);
+  const allStores = allStoresRes.rows;
+
+  // 2. Jika ada query pencarian kata kunci, cari juga toko yang cocok
+  let matchedStores = [];
+  if (q && q.trim()) {
+    const storeSearchRes = await query(
+      `SELECT s.id, s.name, s.description, s.location, s.image_url,
+              cp.short_name AS campus_short_name, cp.name AS campus_name,
+              (SELECT COUNT(*)::int FROM products p WHERE p.store_id = s.id AND p.stock > 0) AS products_count
+       FROM stores s
+       JOIN users u ON u.id = s.user_id AND u.seller_status = 'approved'
+       JOIN campuses cp ON cp.id = s.campus_id
+       WHERE s.name ILIKE '%' || $1 || '%'
+         AND ($2::int IS NULL OR s.campus_id = $2)
+       ORDER BY products_count DESC, s.name ASC
+       LIMIT 4`,
+      [q.trim(), campus]
+    );
+    matchedStores = storeSearchRes.rows;
+  }
+
+  // 3. Detail toko yang sedang difilter (jika ada)
+  let selectedStoreObj = null;
+  if (store) {
+    const sRes = await query(
+      `SELECT s.id, s.name, s.location, cp.short_name AS campus_short_name
+       FROM stores s
+       JOIN campuses cp ON cp.id = s.campus_id
+       WHERE s.id = $1`,
+      [store]
+    );
+    selectedStoreObj = sRes.rows[0] || null;
+  }
 
   // Keranjang & Wishlist jika Buyer
   let cartCount = 0;
@@ -108,7 +152,7 @@ export default async function ProductsPage({ searchParams }) {
 
   if (user && user.role === 'buyer') {
     const cartRes = await query(
-      `SELECT COUNT(ci.id)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        WHERE ci.user_id = $1`,
@@ -136,9 +180,12 @@ export default async function ProductsPage({ searchParams }) {
         <ProductCatalog
           initialProducts={products}
           pagination={{ page, limit, total, totalPages }}
-          filters={{ q, campus, category, condition, minPrice, maxPrice, sort }}
+          filters={{ q, campus, category, condition, minPrice, maxPrice, sort, store }}
           categories={categoriesRes.rows}
           campuses={campusesRes.rows}
+          stores={allStores}
+          matchedStores={matchedStores}
+          selectedStore={selectedStoreObj}
           user={user}
           wishlistIds={wishlistIds}
         />

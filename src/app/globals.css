@@ -44,12 +44,27 @@
     background: var(--color-canvas);
     color: var(--color-ink);
     scroll-behavior: smooth;
+    font-size: 16px;
+  }
+  html.text-size-lg {
+    font-size: 18px;
+  }
+  html.text-size-xl {
+    font-size: 20px;
+  }
+  html.high-contrast {
+    --color-ink: #000000;
+    --color-ink-soft: #374151;
+    --color-line: #94A3B8;
   }
   body {
     font-family: var(--font-sans);
-    font-size: 14px;
+    font-size: 0.9375rem;
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+  }
+  button, a, input, select, textarea, [role="button"] {
+    touch-action: manipulation;
   }
   h1, h2, h3 {
     font-family: var(--font-display);
@@ -62,7 +77,7 @@
   }
   @media (min-width: 768px) {
     body {
-      font-size: 15px;
+      font-size: 0.9375rem;
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -81,4 +96,14 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Cegah scroll increment dan sembunyikan spinner bawaan browser pada input number */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
 }

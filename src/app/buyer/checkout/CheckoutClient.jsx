@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   CheckCircle2,
+  CreditCard,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Input, { Textarea } from '@/components/ui/Input';
@@ -142,8 +143,16 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
         return;
       }
 
-      toast.success('Pesanan berhasil dibuat! 🎉');
-      router.push('/buyer/orders');
+      const createdOrders = data.orders || [];
+      const codOrder = createdOrders.find((o) => o.delivery_method === 'meetup');
+
+      if (codOrder) {
+        toast.success('Pesanan COD berhasil dibuat! Mengalihkan ke ruang chat untuk koordinasi titik temu...');
+        router.push(`/chat?order_id=${codOrder.id}`);
+      } else {
+        toast.success('Pembayaran berhasil! Pesananmu sedang diproses oleh penjual 🎉');
+        router.push('/buyer/orders');
+      }
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -402,12 +411,29 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-primary-50 text-primary text-xs leading-relaxed flex items-start gap-2.5 font-medium">
-            <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
-            <span>
-              Pembayaran dilakukan secara langsung (COD/Transfer) sesuai kesepakatan dengan penjual saat penyerahan barang.
-            </span>
-          </div>
+          {/* Banner Informasi Metode Pembayaran */}
+          {Object.values(storeForms).every((f) => f.delivery_method === 'delivery') ? (
+            <div className="p-3.5 rounded-xl bg-pine-50 text-pine text-xs leading-relaxed flex items-start gap-2.5 font-medium">
+              <CreditCard className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>
+                Kirim ke alamat kost: Pembayaran dilakukan langsung saat checkout dan pesanan akan langsung diproses oleh penjual.
+              </span>
+            </div>
+          ) : Object.values(storeForms).every((f) => f.delivery_method === 'meetup') ? (
+            <div className="p-3.5 rounded-xl bg-primary-50 text-primary text-xs leading-relaxed flex items-start gap-2.5 font-medium">
+              <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>
+                Metode COD Kampus: Bayar langsung saat ketemuan di kampus. Kamu akan langsung dialihkan ke ruang chat untuk koordinasi.
+              </span>
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-xl bg-primary-50 text-primary text-xs leading-relaxed flex items-start gap-2.5 font-medium">
+              <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
+              <span>
+                Terdapat pesanan COD dan Kirim ke Kost. Pesanan kost langsung dibayar saat checkout, dan pesanan COD dibayar saat ketemuan di kampus.
+              </span>
+            </div>
+          )}
 
           <Button
             type="submit"
@@ -415,9 +441,21 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
             size="lg"
             pill
             loading={loading}
-            className="w-full"
+            className="w-full font-bold"
           >
-            <span>Konfirmasi & Buat Pesanan</span>
+            {Object.values(storeForms).every((f) => f.delivery_method === 'delivery') ? (
+              <span className="flex items-center justify-center gap-2">
+                <CreditCard className="w-4 h-4 text-white" />
+                <span>Bayar Sekarang ({formatRupiah(grandTotal)})</span>
+              </span>
+            ) : Object.values(storeForms).every((f) => f.delivery_method === 'meetup') ? (
+              <span>Konfirmasi & Buat Pesanan</span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <CreditCard className="w-4 h-4 text-white" />
+                <span>Bayar Sekarang & Buat Pesanan</span>
+              </span>
+            )}
           </Button>
         </div>
       </form>

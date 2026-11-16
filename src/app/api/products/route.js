@@ -44,7 +44,7 @@ export async function GET(request) {
       JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
       LEFT JOIN (SELECT product_id, ROUND(AVG(rating), 1)::float AS avg_rating, COUNT(*)::int AS review_count
                  FROM reviews GROUP BY product_id) r ON r.product_id = p.id
-      WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%')
+      WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%' OR s.name ILIKE '%' || $1 || '%')
         AND ($2::int  IS NULL OR s.campus_id = $2)
         AND ($3::int  IS NULL OR p.category_id = $3)
         AND ($4::text IS NULL OR p.condition = $4)
@@ -60,7 +60,7 @@ export async function GET(request) {
       JOIN stores s     ON s.id = p.store_id
       JOIN campuses cp  ON cp.id = s.campus_id
       JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
-      WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%')
+      WHERE ($1::text IS NULL OR p.name ILIKE '%' || $1 || '%' OR s.name ILIKE '%' || $1 || '%')
         AND ($2::int  IS NULL OR s.campus_id = $2)
         AND ($3::int  IS NULL OR p.category_id = $3)
         AND ($4::text IS NULL OR p.condition = $4)

@@ -8,6 +8,7 @@ import BottomNav from '@/components/layout/BottomNav';
 import { OrderStatusBadge, formatRupiah } from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ReviewForm from './ReviewForm';
+import BuyerOrderActions from './BuyerOrderActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +50,7 @@ export default async function BuyerOrdersPage({ searchParams }) {
   const orders = res.rows;
 
   const cartRes = await query(
-    `SELECT COUNT(ci.id)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+    `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
      FROM cart_items ci
      JOIN products p ON p.id = ci.product_id
      WHERE ci.user_id = $1`,
@@ -160,7 +161,7 @@ export default async function BuyerOrdersPage({ searchParams }) {
                                 <span>{item.review.rating} / 5</span>
                                 {item.review.comment && (
                                   <span className="text-ink-soft font-normal ml-1">
-                                    "{item.review.comment}"
+                                    &ldquo;{item.review.comment}&rdquo;
                                   </span>
                                 )}
                               </div>
@@ -202,6 +203,45 @@ export default async function BuyerOrdersPage({ searchParams }) {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* Bar Aksi Pesanan (Chat Penjual, Konfirmasi Diterima) */}
+                <div className={`flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-line/60 -mx-5 -mb-5 p-4 rounded-b-card ${
+                  o.status === 'shipped'
+                    ? 'bg-primary-50/50'
+                    : 'bg-surface/50'
+                }`}>
+                  <div className="text-xs text-ink-soft flex-1 min-w-[200px]">
+                    {o.status === 'pending_payment' && (
+                      <span className="text-ink-soft">
+                        Metode COD aktif. Silakan koordinasi titik temu di kampus bersama penjual melalui chat.
+                      </span>
+                    )}
+                    {o.status === 'processing' && (
+                      <span className="text-ink-soft">
+                        {o.delivery_method === 'delivery'
+                          ? 'Pesanan telah dibayar saat checkout dan kini sedang disiapkan/diproses oleh penjual.'
+                          : 'Pesanan sedang disiapkan/diproses oleh penjual.'}
+                      </span>
+                    )}
+                    {o.status === 'shipped' && (
+                      <span>
+                        {o.delivery_method === 'meetup'
+                          ? 'Barang sudah siap COD di kampus. Selesaikan pesanan setelah menerima dan mengecek barang bersama penjual.'
+                          : 'Pesanan sedang dikirim ke kost. Selesaikan pesanan setelah paket tiba dan barang dicek.'}
+                      </span>
+                    )}
+                    {(o.status === 'completed' || o.status === 'cancelled') && (
+                      <span>
+                        Transaksi {o.status === 'completed' ? 'telah selesai.' : 'telah dibatalkan.'} Hubungi penjual jika ada kendala.
+                      </span>
+                    )}
+                  </div>
+                  <BuyerOrderActions
+                    orderId={o.id}
+                    status={o.status}
+                    deliveryMethod={o.delivery_method}
+                  />
                 </div>
               </div>
             ))}

@@ -23,7 +23,7 @@ export default async function SellerStorePage() {
 
   const campusesRes = await query(`SELECT id, name, short_name, city, province FROM campuses ORDER BY name ASC`);
 
-  const initialCampus = store.campus_id
+  const initialCampus = store?.campus_id
     ? {
         id: store.campus_id,
         name: store.campus_name,
@@ -34,7 +34,7 @@ export default async function SellerStorePage() {
 
   return (
     <StoreSettingsClient
-      store={store}
+      store={store || { name: '', location: '', description: '', campus_id: null }}
       initialCampus={initialCampus}
       campuses={campusesRes.rows}
     />

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Package, Heart, User, ShoppingBag } from 'lucide-react';
@@ -7,10 +8,37 @@ import { formatRupiah } from '@/components/ui/Badge';
 
 export default function BottomNav({
   user = null,
-  cartCount = 0,
-  cartTotal = 0,
+  cartCount: initialCartCount = 0,
+  cartTotal: initialCartTotal = 0,
 }) {
   const pathname = usePathname();
+
+  const [cartCount, setCartCount] = useState(initialCartCount);
+  const [cartTotal, setCartTotal] = useState(initialCartTotal);
+  const [prevInitialCartCount, setPrevInitialCartCount] = useState(initialCartCount);
+  const [prevInitialCartTotal, setPrevInitialCartTotal] = useState(initialCartTotal);
+
+  if (initialCartCount !== prevInitialCartCount || initialCartTotal !== prevInitialCartTotal) {
+    setPrevInitialCartCount(initialCartCount);
+    setPrevInitialCartTotal(initialCartTotal);
+    setCartCount(initialCartCount);
+    setCartTotal(initialCartTotal);
+  }
+
+  useEffect(() => {
+    function handleCartUpdated(e) {
+      if (e.detail) {
+        if (typeof e.detail.cartCount === 'number') {
+          setCartCount(e.detail.cartCount);
+        }
+        if (typeof e.detail.cartTotal === 'number') {
+          setCartTotal(e.detail.cartTotal);
+        }
+      }
+    }
+    window.addEventListener('cart-updated', handleCartUpdated);
+    return () => window.removeEventListener('cart-updated', handleCartUpdated);
+  }, []);
 
   // Tentukan rute tab berdasarkan role
   const getOrdersLink = () => {
@@ -72,10 +100,10 @@ export default function BottomNav({
     pathname !== '/buyer/checkout';
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40">
+    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
       {/* Floating Cart Bar (Melayang Tepat di Atas Bottom Nav) */}
       {showFloatingCart && (
-        <div className="px-4 pb-2 animate-in slide-in-from-bottom-3 duration-200">
+        <div className="px-4 pb-2 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
           <Link
             href="/buyer/cart"
             className="flex items-center justify-between bg-primary text-white rounded-full shadow-float px-5 py-3 hover:bg-primary-hover transition-colors"
@@ -95,7 +123,7 @@ export default function BottomNav({
       )}
 
       {/* 4 Tab Bottom Navigation */}
-      <nav className="bg-canvas/95 backdrop-blur-md border-t border-line px-2 py-1.5 flex items-center justify-around shadow-float">
+      <nav className="bg-canvas/95 backdrop-blur-md border-t border-line px-2 py-1.5 flex items-center justify-around shadow-float pointer-events-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (

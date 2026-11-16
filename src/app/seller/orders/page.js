@@ -17,6 +17,14 @@ export default async function SellerOrdersPage() {
   const storeRes = await query(`SELECT id FROM stores WHERE user_id = $1`, [seller.id]);
   const store = storeRes.rows[0];
 
+  if (!store) {
+    return (
+      <div className="bg-canvas border border-line rounded-card p-12 text-center text-xs text-ink-soft">
+        Toko Anda belum siap atau belum terdaftar. Silakan hubungi admin.
+      </div>
+    );
+  }
+
   const ordersRes = await query(
     `SELECT o.id, o.order_code, o.buyer_name, o.status, o.delivery_method,
             o.shipping_recipient, o.shipping_phone, o.shipping_address,

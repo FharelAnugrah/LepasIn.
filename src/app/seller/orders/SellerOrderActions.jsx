@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Truck, CheckCircle2, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Check, Truck, XCircle, Clock, MessageCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
@@ -41,12 +42,19 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
     }
   };
 
-  if (currentStatus === 'completed' || currentStatus === 'cancelled') {
-    return null;
-  }
-
   return (
     <div className="flex flex-wrap items-center gap-2 pt-2">
+      <Button
+        href={`/chat?order_id=${orderId}`}
+        size="sm"
+        variant="secondary"
+        pill
+        className="border border-line shadow-xs"
+      >
+        <MessageCircle className="w-3.5 h-3.5 mr-1 text-primary" />
+        <span>Chat Pembeli</span>
+      </Button>
+
       {currentStatus === 'pending_payment' && (
         <>
           <Button
@@ -100,16 +108,14 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
       )}
 
       {currentStatus === 'shipped' && (
-        <Button
-          size="sm"
-          variant="primary"
-          pill
-          loading={loading}
-          onClick={() => handleUpdateStatus('completed')}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-          <span>Tandai Selesai & Diterima</span>
-        </Button>
+        <div className="flex items-center gap-1.5 text-xs text-ink-soft bg-surface px-3 py-1.5 rounded-lg border border-line/60">
+          <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+          <span>
+            {deliveryMethod === 'meetup'
+              ? 'Menunggu pembeli mengonfirmasi penerimaan saat COD di kampus'
+              : 'Menunggu pembeli mengonfirmasi pesanan telah sampai dan diterima'}
+          </span>
+        </div>
       )}
 
       <ConfirmDialog

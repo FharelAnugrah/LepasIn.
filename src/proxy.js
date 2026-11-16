@@ -21,8 +21,7 @@ export async function proxy(request) {
         return NextResponse.redirect(new URL('/admin', request.url));
       }
       if (role === 'seller') {
-        const dest = sellerStatus === 'approved' ? '/seller' : '/pending-seller';
-        return NextResponse.redirect(new URL(dest, request.url));
+        return NextResponse.redirect(new URL('/seller', request.url));
       }
       const nextParam = request.nextUrl.searchParams.get('next');
       if (nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')) {
@@ -47,8 +46,7 @@ export async function proxy(request) {
     if (role !== 'buyer') {
       if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url));
       if (role === 'seller') {
-        const dest = sellerStatus === 'approved' ? '/seller' : '/pending-seller';
-        return NextResponse.redirect(new URL(dest, request.url));
+        return NextResponse.redirect(new URL('/seller', request.url));
       }
       return NextResponse.redirect(new URL('/', request.url));
     }
@@ -64,9 +62,8 @@ export async function proxy(request) {
       if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url));
       return NextResponse.redirect(new URL('/', request.url));
     }
-    if (sellerStatus !== 'approved') {
-      return NextResponse.redirect(new URL('/pending-seller', request.url));
-    }
+    // Validasi seller_status ditangani oleh Server Component (requireApprovedSeller)
+    // agar selalu sinkron dengan database dan tidak menimbulkan redirect loop jika status baru disetujui/diubah admin
     return NextResponse.next();
   }
 
@@ -79,9 +76,7 @@ export async function proxy(request) {
       if (role === 'admin') return NextResponse.redirect(new URL('/admin', request.url));
       return NextResponse.redirect(new URL('/', request.url));
     }
-    if (sellerStatus === 'approved') {
-      return NextResponse.redirect(new URL('/seller', request.url));
-    }
+    // Validasi seller_status ditangani oleh Server Component (PendingSellerPage) dari database langsung
     return NextResponse.next();
   }
 
@@ -92,8 +87,7 @@ export async function proxy(request) {
     }
     if (role !== 'admin') {
       if (role === 'seller') {
-        const dest = sellerStatus === 'approved' ? '/seller' : '/pending-seller';
-        return NextResponse.redirect(new URL(dest, request.url));
+        return NextResponse.redirect(new URL('/seller', request.url));
       }
       return NextResponse.redirect(new URL('/', request.url));
     }

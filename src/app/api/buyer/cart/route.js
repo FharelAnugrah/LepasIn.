@@ -80,10 +80,25 @@ export async function POST(request) {
       [user.id, productId, newQuantity]
     );
 
+    // Ambil total item dan total harga keranjang terbaru
+    const cartTotalsRes = await query(
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count,
+              COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+       FROM cart_items ci
+       JOIN products p ON p.id = ci.product_id
+       WHERE ci.user_id = $1`,
+      [user.id]
+    );
+
+    const updatedCartCount = cartTotalsRes.rows[0]?.count || 0;
+    const updatedCartTotal = cartTotalsRes.rows[0]?.total || 0;
+
     return NextResponse.json({
       success: true,
       message: 'Produk berhasil ditambahkan ke keranjang!',
       quantity: newQuantity,
+      cartCount: updatedCartCount,
+      cartTotal: updatedCartTotal,
     });
   } catch (error) {
     console.error('Add to cart error:', error);

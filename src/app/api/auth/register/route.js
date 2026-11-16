@@ -36,6 +36,7 @@ const registerSchema = z
     campus_id: z.union([z.number(), z.string()]).nullable().optional(),
     store_name: z.string().trim().max(100).optional(),
     location: z.string().trim().max(150).optional(),
+    id_card_url: z.string().trim().max(500).optional(),
   })
   .refine(
     (data) => {
@@ -119,6 +120,18 @@ const registerSchema = z
       message: 'Detail lokasi/area kost wajib diisi untuk penjual (minimal 2 karakter)',
       path: ['location'],
     }
+  )
+  .refine(
+    (data) => {
+      if (data.role === 'seller') {
+        return !!data.id_card_url && data.id_card_url.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Wajib mengunggah foto selfie dengan memegang KTM atau kartu tanda pengenal lainnya',
+      path: ['id_card_url'],
+    }
   );
 
 export async function POST(request) {
@@ -145,7 +158,7 @@ export async function POST(request) {
       );
     }
 
-    const { name, email, phone, password, role, campus_id, store_name, location } = validated.data;
+    const { name, email, phone, password, role, campus_id, store_name, location, id_card_url } = validated.data;
     const normalizedEmail = email.toLowerCase();
     const parsedCampusId = campus_id ? Number(campus_id) : null;
     const cleanPhone = phone
@@ -177,8 +190,8 @@ export async function POST(request) {
     const newUserData = await withTransaction(async (client) => {
       // 1. Insert ke tabel users
       const userRes = await client.query(
-        `INSERT INTO users (campus_id, name, email, password_hash, role, seller_status, phone)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO users (campus_id, name, email, password_hash, role, seller_status, phone, id_card_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id, name, email, role, seller_status, campus_id`,
         [
           parsedCampusId,
@@ -188,6 +201,7 @@ export async function POST(request) {
           role,
           sellerStatus,
           cleanPhone || null,
+          role === 'seller' ? id_card_url?.trim() || null : null,
         ]
       );
 

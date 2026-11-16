@@ -54,7 +54,7 @@ export default async function HomePage({ searchParams }) {
 
   if (user && user.role === 'buyer') {
     const cartRes = await query(
-      `SELECT COUNT(ci.id)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        WHERE ci.user_id = $1`,
@@ -319,6 +319,62 @@ export default async function HomePage({ searchParams }) {
                 user={user}
               />
             ))}
+          </div>
+        </section>
+
+        {/* Panduan Aman Jual Beli Multi-Generasi */}
+        <section className="bg-surface rounded-card p-6 md:p-8 border border-line flex flex-col gap-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-line pb-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-50 text-primary text-xs font-bold mb-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Panduan Transaksi Terpercaya</span>
+              </div>
+              <h2 className="text-xl md:text-2xl font-extrabold text-ink tracking-tight">
+                Jual Beli Preloved Aman untuk Mahasiswa & Orang Tua
+              </h2>
+              <p className="text-xs md:text-sm text-ink-soft mt-1 max-w-2xl leading-relaxed">
+                LepasIn dirancang ramah dan mudah digunakan oleh mahasiswa maupun orang tua yang ingin membantu perlengkapan kost tanpa rasa khawatir.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-canvas p-5 rounded-2xl border border-line/80 flex flex-col gap-2.5 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center font-bold text-base">
+                1
+              </div>
+              <h3 className="font-bold text-sm md:text-base text-ink">
+                Pilih Kampus Terdekat
+              </h3>
+              <p className="text-xs text-ink-soft leading-relaxed">
+                Gunakan filter kampus di bagian atas untuk menemukan barang kost yang berada di kampus yang sama. Hemat waktu dan bebas ongkir mahal.
+              </p>
+            </div>
+
+            <div className="bg-canvas p-5 rounded-2xl border border-line/80 flex flex-col gap-2.5 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-pine-50 text-pine flex items-center justify-center font-bold text-base">
+                2
+              </div>
+              <h3 className="font-bold text-sm md:text-base text-ink">
+                Cek Kondisi & Transparan
+              </h3>
+              <p className="text-xs text-ink-soft leading-relaxed">
+                Setiap barang memiliki informasi kondisi jelas (Mulus, Wajar, Minus), foto asli dari kamera ponsel penjual, serta ulasan pembeli sebelumnya.
+              </p>
+            </div>
+
+            <div className="bg-canvas p-5 rounded-2xl border border-line/80 flex flex-col gap-2.5 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-accent/20 text-ink flex items-center justify-center font-bold text-base">
+                3
+              </div>
+              <h3 className="font-bold text-sm md:text-base text-ink">
+                COD di Titik Kumpul Aman
+              </h3>
+              <p className="text-xs text-ink-soft leading-relaxed">
+                Janjian serah terima langsung di lokasi publik sekitar kampus (gerbang kampus, lobi fakultas, pos satpam) sehingga aman untuk semua pihak.
+              </p>
+            </div>
           </div>
         </section>
       </main>

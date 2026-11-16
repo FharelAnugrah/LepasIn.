@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
       data-scroll-behavior="smooth"
       className={`${plusJakartaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-canvas text-ink">
+      <body className="min-h-full flex flex-col bg-canvas text-ink pb-24 md:pb-0">
         <ToastProvider>
           {children}
         </ToastProvider>

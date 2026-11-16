@@ -127,11 +127,14 @@ export function OrderStatusBadge({ status, deliveryMethod = 'delivery', classNam
 /**
  * Badge Status Verifikasi Seller
  */
-export function SellerStatusBadge({ status, className = '' }) {
+export function SellerStatusBadge({ status, wasApproved = false, className = '' }) {
   const statusMap = {
     pending: { text: 'Menunggu Verifikasi', variant: 'warning' },
     approved: { text: 'Terverifikasi', variant: 'success' },
-    rejected: { text: 'Ditolak', variant: 'danger' },
+    rejected: {
+      text: wasApproved ? 'Ditangguhkan' : 'Ditolak',
+      variant: 'danger',
+    },
   };
 
   const current = statusMap[status] || { text: status, variant: 'secondary' };

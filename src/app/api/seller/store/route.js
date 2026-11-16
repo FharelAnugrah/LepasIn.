@@ -34,13 +34,24 @@ export async function PATCH(request) {
       [name.trim(), parsedCampusId, location?.trim() || null, description?.trim() || '', user.id]
     );
 
+    let store = result.rows[0];
+    if (!store) {
+      const insertRes = await query(
+        `INSERT INTO stores (user_id, campus_id, name, location, description)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, name, campus_id, location, description`,
+        [user.id, parsedCampusId, name.trim(), location?.trim() || null, description?.trim() || '']
+      );
+      store = insertRes.rows[0];
+    }
+
     // Update juga campus_id di user agar sinkron
     await query(`UPDATE users SET campus_id = $1 WHERE id = $2`, [parsedCampusId, user.id]);
 
     return NextResponse.json({
       success: true,
       message: 'Informasi toko berhasil diperbarui',
-      store: result.rows[0],
+      store,
     });
   } catch (error) {
     console.error('Update store error:', error);

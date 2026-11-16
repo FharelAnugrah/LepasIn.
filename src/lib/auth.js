@@ -34,9 +34,13 @@ export async function getCurrentUser() {
 
   try {
     const res = await query(
-      `SELECT u.id, u.name, u.email, u.role, u.seller_status, u.phone, u.avatar_url,
+      `SELECT u.id, u.name, u.email, u.role, u.seller_status,
+              COALESCE(u.was_approved, false) AS was_approved,
+              u.id_card_url,
+              u.phone, u.avatar_url,
               u.campus_id, c.name AS campus_name, c.short_name AS campus_short_name, c.city AS campus_city,
-              s.id AS store_id, s.name AS store_name, s.location AS store_location
+              s.id AS store_id, s.name AS store_name, s.location AS store_location,
+              (SELECT COUNT(*)::int FROM products p WHERE p.store_id = s.id) AS products_count
        FROM users u
        LEFT JOIN campuses c ON c.id = u.campus_id
        LEFT JOIN stores s ON s.user_id = u.id

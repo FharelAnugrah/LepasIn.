@@ -40,6 +40,7 @@ export default async function ProductDetailPage({ params }) {
     `SELECT p.id, p.name, p.description, p.price, p.original_price, p.stock, p.condition, p.created_at,
             c.id AS category_id, c.name AS category_name,
             s.id AS store_id, s.name AS store_name, s.location AS store_location, s.description AS store_description,
+            s.user_id AS seller_user_id,
             cp.id AS campus_id, cp.name AS campus_name, cp.short_name AS campus_short_name, cp.city AS campus_city,
             (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
             COALESCE(r.avg_rating, 0) AS avg_rating,
@@ -91,7 +92,7 @@ export default async function ProductDetailPage({ params }) {
     isWishlisted = wishRes.rows.length > 0;
 
     const cartRes = await query(
-      `SELECT COUNT(ci.id)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
+      `SELECT COALESCE(SUM(ci.quantity), 0)::int AS count, COALESCE(SUM(ci.quantity * p.price), 0)::int AS total
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        WHERE ci.user_id = $1`,

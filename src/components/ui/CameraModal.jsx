@@ -133,14 +133,18 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
   // Buka kamera saat modal dibuka
   useEffect(() => {
+    let timer = null;
     if (isOpen && !capturedBlob) {
       // Default: buka kamera depan ('user')
-      startCamera('user');
+      timer = setTimeout(() => {
+        startCamera('user');
+      }, 0);
     } else {
       stopStream();
     }
 
     return () => {
+      if (timer) clearTimeout(timer);
       stopStream();
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -223,7 +227,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
   const handleConfirmPhoto = () => {
     if (!capturedBlob) return;
-    const file = new File([capturedBlob], `kamera-${Date.now()}.jpg`, {
+    const file = new File([capturedBlob], 'kamera-capture.jpg', {
       type: 'image/jpeg',
     });
     onCapture(file);

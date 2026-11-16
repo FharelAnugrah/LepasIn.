@@ -12,9 +12,9 @@ export default function StoreSettingsClient({ store, initialCampus, campuses }) 
   const router = useRouter();
   const toast = useToast();
 
-  const [name, setName] = useState(store.name);
-  const [location, setLocation] = useState(store.location || '');
-  const [description, setDescription] = useState(store.description || '');
+  const [name, setName] = useState(store?.name || '');
+  const [location, setLocation] = useState(store?.location || '');
+  const [description, setDescription] = useState(store?.description || '');
   const [campus, setCampus] = useState(initialCampus);
   const [loading, setLoading] = useState(false);
 

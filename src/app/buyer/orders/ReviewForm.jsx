@@ -74,7 +74,7 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
     >
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold text-ink">
-          Beri Penilaian untuk "{productName}"
+          Beri Penilaian untuk &quot;{productName}&quot;
         </span>
         <button
           type="button"

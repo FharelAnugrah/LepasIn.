@@ -18,10 +18,24 @@ export default async function SellerProductsPage() {
   const storeRes = await query(`SELECT id, name FROM stores WHERE user_id = $1`, [seller.id]);
   const store = storeRes.rows[0];
 
+  if (!store) {
+    return (
+      <div className="bg-canvas border border-line rounded-card p-12 text-center text-xs text-ink-soft">
+        Toko Anda belum siap atau belum terdaftar. Silakan hubungi admin.
+      </div>
+    );
+  }
+
   const productsRes = await query(
     `SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
             c.name AS category_name,
-            (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url
+            (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
+            (SELECT COUNT(*)::int FROM order_items oi
+             JOIN orders o ON o.id = oi.order_id
+             WHERE oi.product_id = p.id AND o.status IN ('pending_payment', 'processing', 'shipped')) AS active_orders_count,
+            (SELECT COUNT(*)::int FROM order_items oi
+             JOIN orders o ON o.id = oi.order_id
+             WHERE oi.product_id = p.id AND o.status = 'completed') AS completed_orders_count
      FROM products p
      JOIN categories c ON c.id = p.category_id
      WHERE p.store_id = $1
@@ -41,12 +55,10 @@ export default async function SellerProductsPage() {
             Kelola barang preloved yang kamu tawarkan ke teman sekampus.
           </p>
         </div>
-        <Link href="/seller/products/new">
-          <Button variant="primary" pill>
-            <Plus className="w-4 h-4" />
-            <span>Tambah Barang Baru</span>
-          </Button>
-        </Link>
+        <Button href="/seller/products/new" variant="primary" pill>
+          <Plus className="w-4 h-4" />
+          <span>Tambah Barang Baru</span>
+        </Button>
       </div>
 
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
@@ -82,12 +94,24 @@ export default async function SellerProductsPage() {
                     </td>
                     <td className="py-3.5 px-5 font-bold text-ink">{formatRupiah(p.price)}</td>
                     <td className="py-3.5 px-5">
-                      <span className={`font-semibold ${p.stock <= 0 ? 'text-danger' : 'text-ink'}`}>
-                        {p.stock <= 0 ? 'Habis (0)' : `${p.stock} item`}
-                      </span>
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`font-semibold ${p.stock <= 0 ? 'text-danger' : 'text-ink'}`}>
+                          {p.stock <= 0 ? 'Habis (0)' : `${p.stock} item`}
+                        </span>
+                        {p.active_orders_count > 0 && (
+                          <span className="text-[10px] font-bold text-warning bg-warning-50 px-2 py-0.5 rounded-full border border-warning/30">
+                            {p.active_orders_count} Dipesan
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-5 text-right">
-                      <SellerProductRowActions productId={p.id} productName={p.name} />
+                      <SellerProductRowActions
+                        productId={p.id}
+                        productName={p.name}
+                        activeOrdersCount={p.active_orders_count || 0}
+                        completedOrdersCount={p.completed_orders_count || 0}
+                      />
                     </td>
                   </tr>
                 ))}

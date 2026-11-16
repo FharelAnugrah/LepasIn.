@@ -117,20 +117,25 @@ export async function POST(request) {
 
         const orderCode = generateOrderCode();
 
+        // Pesanan kirim ke kost langsung terbayar (status: processing) saat checkout (Bayar Sekarang),
+        // sedangkan pesanan COD berstatus pending_payment menunggu ketemuan di kampus.
+        const initialStatus = orderData.delivery_method === 'delivery' ? 'processing' : 'pending_payment';
+
         // Insert pesanan ke tabel orders
         const insertOrderRes = await client.query(
           `INSERT INTO orders (
             order_code, buyer_id, store_id, buyer_name, store_name,
             status, delivery_method, shipping_recipient, shipping_phone, shipping_address,
             note, total_amount
-          ) VALUES ($1, $2, $3, $4, $5, 'pending_payment', $6, $7, $8, $9, $10, $11)
-          RETURNING id, order_code`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          RETURNING id, order_code, delivery_method, status`,
           [
             orderCode,
             user.id,
             orderData.store_id,
             user.name,
             storeName,
+            initialStatus,
             orderData.delivery_method,
             orderData.delivery_method === 'delivery' ? orderData.shipping_recipient : null,
             orderData.delivery_method === 'delivery' ? orderData.shipping_phone : null,

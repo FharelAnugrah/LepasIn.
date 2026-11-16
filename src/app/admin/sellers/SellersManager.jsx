@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   CheckCircle,
   XCircle,
@@ -13,6 +14,9 @@ import {
   Mail,
   MapPin,
   Clock,
+  Eye,
+  CreditCard,
+  X,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { SellerStatusBadge } from '@/components/ui/Badge';
@@ -26,6 +30,7 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
   const [sellers, setSellers] = useState(initialSellers);
   const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [search, setSearch] = useState('');
+  const [viewingPhoto, setViewingPhoto] = useState(null);
 
   // State Dialog Konfirmasi
   const [confirmDialog, setConfirmDialog] = useState({
@@ -83,16 +88,28 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
         return;
       }
 
+      const isSuspending =
+        action === 'reject' &&
+        (seller.seller_status === 'approved' || seller.was_approved);
+
       const newStatus = action === 'approve' ? 'approved' : 'rejected';
       setSellers((prev) =>
         prev.map((item) =>
-          item.id === seller.id ? { ...item, seller_status: newStatus } : item
+          item.id === seller.id
+            ? {
+                ...item,
+                seller_status: newStatus,
+                was_approved: action === 'approve' ? true : item.was_approved,
+              }
+            : item
         )
       );
 
       toast.success(
         action === 'approve'
           ? `Toko ${seller.store_name} berhasil disetujui!`
+          : isSuspending
+          ? `Toko ${seller.store_name} berhasil ditangguhkan/dinonaktifkan.`
           : `Pendaftaran toko ${seller.store_name} ditolak.`
       );
 
@@ -183,7 +200,10 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
                       Pemilik: <span className="font-semibold">{seller.name}</span>
                     </p>
                   </div>
-                  <SellerStatusBadge status={seller.seller_status} />
+                  <SellerStatusBadge
+                    status={seller.seller_status}
+                    wasApproved={Boolean(seller.was_approved)}
+                  />
                 </div>
 
                 {/* Info Detail */}
@@ -212,6 +232,72 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
                       <Phone className="w-3.5 h-3.5 shrink-0" />
                       <span>{seller.phone}</span>
                     </div>
+                  )}
+                </div>
+
+                {/* Verifikasi Identitas (Selfie + KTM) */}
+                <div className="p-3 rounded-xl bg-surface border border-line flex items-center justify-between gap-3 text-xs my-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {seller.id_card_url ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setViewingPhoto({
+                            url: seller.id_card_url,
+                            title: `KTM / Selfie — ${seller.name} (${seller.store_name})`,
+                            seller,
+                          })
+                        }
+                        className="relative w-11 h-11 rounded-lg overflow-hidden border border-line shrink-0 cursor-pointer hover:opacity-90 transition group"
+                        title="Klik untuk memperbesar foto verifikasi"
+                      >
+                        <Image
+                          src={seller.id_card_url}
+                          alt={`KTM ${seller.name}`}
+                          fill
+                          className="object-cover"
+                          sizes="44px"
+                        />
+                        <div className="absolute inset-0 bg-ink/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                          <Eye className="w-4 h-4 text-white" />
+                        </div>
+                      </button>
+                    ) : (
+                      <div className="w-11 h-11 rounded-lg bg-line/40 flex items-center justify-center shrink-0 text-ink-soft">
+                        <CreditCard className="w-5 h-5 opacity-40" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-bold text-ink truncate flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>Selfie & KTM</span>
+                      </p>
+                      <p className="text-[11px] text-ink-soft truncate">
+                        {seller.id_card_url ? 'Foto verifikasi tersedia' : 'Belum ada foto verifikasi'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {seller.id_card_url ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      icon={Eye}
+                      onClick={() =>
+                        setViewingPhoto({
+                          url: seller.id_card_url,
+                          title: `KTM / Selfie — ${seller.name} (${seller.store_name})`,
+                          seller,
+                        })
+                      }
+                    >
+                      Lihat Foto
+                    </Button>
+                  ) : (
+                    <span className="text-[10px] text-ink-soft bg-canvas px-2 py-0.5 rounded-full border border-line font-medium">
+                      Tanpa Foto
+                    </span>
                   )}
                 </div>
               </div>
@@ -265,7 +351,7 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
                     onClick={() => handleActionClick(seller, 'reject')}
                     className="w-full"
                   >
-                    Tangguhkan / Tolak
+                    Tangguhkan / Nonaktifkan Toko
                   </Button>
                 )}
               </div>
@@ -285,17 +371,85 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
         title={
           confirmDialog.action === 'approve'
             ? 'Setujui Pendaftaran Penjual?'
+            : confirmDialog.seller?.seller_status === 'approved' ||
+              confirmDialog.seller?.was_approved
+            ? 'Tangguhkan / Nonaktifkan Toko Penjual?'
             : 'Tolak Pendaftaran Penjual?'
         }
         message={
           confirmDialog.action === 'approve'
             ? `Toko "${confirmDialog.seller?.store_name}" milik ${confirmDialog.seller?.name} akan diaktifkan dan dapat mulai menjual barang preloved di kampusnya.`
-            : `Pendaftaran toko "${confirmDialog.seller?.store_name}" akan ditolak. Penjual akan melihat status penolakan di halaman status.`
+            : confirmDialog.seller?.seller_status === 'approved' ||
+              confirmDialog.seller?.was_approved
+            ? `Toko "${confirmDialog.seller?.store_name}" milik ${confirmDialog.seller?.name} yang sebelumnya aktif akan ditangguhkan/dinonaktifkan. Penjual tidak dapat lagi mengakses dashboard dan seluruh etalase produk toko akan dibekukan.`
+            : `Pendaftaran toko "${confirmDialog.seller?.store_name}" akan ditolak. Penjual akan melihat status penolakan pendaftaran di halaman status.`
         }
-        confirmText={confirmDialog.action === 'approve' ? 'Ya, Setujui' : 'Ya, Tolak'}
+        confirmText={
+          confirmDialog.action === 'approve'
+            ? 'Ya, Setujui'
+            : confirmDialog.seller?.seller_status === 'approved' ||
+              confirmDialog.seller?.was_approved
+            ? 'Ya, Tangguhkan Toko'
+            : 'Ya, Tolak Pendaftaran'
+        }
         confirmVariant={confirmDialog.action === 'approve' ? 'success' : 'danger'}
         type={confirmDialog.action === 'approve' ? 'success' : 'danger'}
       />
+
+      {/* Modal Lightbox Foto Verifikasi (Selfie + KTM) */}
+      {viewingPhoto && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/70 backdrop-blur-xs animate-in fade-in duration-150"
+        >
+          <div className="bg-canvas border border-line rounded-card max-w-lg w-full p-5 shadow-2xl flex flex-col gap-4 max-h-[92vh] overflow-hidden">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="min-w-0">
+                <h3 className="font-bold text-ink text-sm md:text-base flex items-center gap-2 truncate">
+                  <CreditCard className="w-4 h-4 text-primary shrink-0" />
+                  <span className="truncate">{viewingPhoto.title}</span>
+                </h3>
+                <p className="text-[11px] text-ink-soft mt-0.5">
+                  Verifikasi kartu identitas kampus & foto selfie penjual
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingPhoto(null)}
+                className="p-1.5 text-ink-soft hover:text-ink hover:bg-surface rounded-lg transition cursor-pointer"
+                aria-label="Tutup foto"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative w-full h-80 sm:h-96 rounded-xl overflow-hidden bg-surface border border-line">
+              <Image
+                src={viewingPhoto.url}
+                alt={viewingPhoto.title}
+                fill
+                className="object-contain"
+                sizes="(max-width: 640px) 90vw, 500px"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1 text-xs">
+              <p className="text-ink-soft text-[11px]">
+                Pastikan nama, foto KTM, dan wajah penjual sesuai sebelum menyetujui.
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                pill
+                onClick={() => setViewingPhoto(null)}
+              >
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

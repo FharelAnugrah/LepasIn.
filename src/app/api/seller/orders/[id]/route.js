@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 const updateStatusSchema = z.object({
-  status: z.enum(['processing', 'shipped', 'completed', 'cancelled']),
+  status: z.enum(['processing', 'shipped', 'cancelled']),
 });
 
 export async function PATCH(request, { params }) {
@@ -51,12 +51,13 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Anda bukan pemilik toko untuk pesanan ini' }, { status: 403 });
     }
 
-    // Validasi alur transisi status
+    // Validasi alur transisi status penjual
+    // Catatan: Status 'completed' (selesai & diterima) hanya boleh dikonfirmasi oleh pembeli untuk mencegah penipuan
     const currentStatus = order.status;
     const validTransitions = {
       pending_payment: ['processing', 'cancelled'],
       processing: ['shipped', 'cancelled'],
-      shipped: ['completed'],
+      shipped: [], // Menunggu konfirmasi penerimaan dari pembeli
       completed: [],
       cancelled: [],
     };

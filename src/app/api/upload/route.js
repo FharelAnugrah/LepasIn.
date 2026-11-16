@@ -41,18 +41,19 @@ function isValidMagicBytes(buffer, mimeType) {
 
 export async function POST(request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Silakan login terlebih dahulu' }, { status: 401 });
-    }
-
     const formData = await request.formData();
     const file = formData.get('file');
     const folder = (formData.get('folder') || 'products').toString().replace(/[^a-z0-9_-]/gi, '');
 
-    // Validasi folder yang diizinkan
-    const allowedFolders = ['products', 'stores', 'avatars'];
+    // Validasi folder yang diizinkan (verifications untuk foto selfie KTM saat registrasi seller)
+    const allowedFolders = ['products', 'stores', 'avatars', 'verifications'];
     const targetFolder = allowedFolders.includes(folder) ? folder : 'products';
+
+    // Verifikasi identitas (KTM / selfie) diizinkan saat pendaftaran sebelum memiliki sesi aktif
+    const user = await getCurrentUser();
+    if (!user && targetFolder !== 'verifications') {
+      return NextResponse.json({ error: 'Silakan login terlebih dahulu' }, { status: 401 });
+    }
 
     if (!file || typeof file === 'string') {
       return NextResponse.json({ error: 'File foto tidak ditemukan' }, { status: 400 });

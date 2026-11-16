@@ -29,6 +29,17 @@ export function ToastProvider({ children }) {
     info: (msg, duration) => addToast(msg, 'info', duration),
   };
 
+  // Cegah nilai input bertambah/berkurang sendiri saat user men-scroll mouse
+  useEffect(() => {
+    const handleWheel = () => {
+      if (document.activeElement && document.activeElement.type === 'number') {
+        document.activeElement.blur();
+      }
+    };
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, []);
+
   return (
     <ToastContext.Provider value={toast}>
       {children}

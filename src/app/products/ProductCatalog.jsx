@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Search,
@@ -11,6 +12,8 @@ import {
   ChevronDown,
   Filter,
   Check,
+  Store,
+  Loader2,
 } from 'lucide-react';
 import CampusSelector from '@/components/ui/CampusSelector';
 import Button from '@/components/ui/Button';
@@ -24,6 +27,9 @@ export default function ProductCatalog({
   filters,
   categories,
   campuses,
+  stores = [],
+  matchedStores = [],
+  selectedStore = null,
   user,
   wishlistIds = [],
 }) {
@@ -34,14 +40,28 @@ export default function ProductCatalog({
 
   // Local state for filters
   const [q, setQ] = useState(filters.q || '');
+  const [prevFilterQ, setPrevFilterQ] = useState(filters.q || '');
+  if ((filters.q || '') !== prevFilterQ) {
+    setPrevFilterQ(filters.q || '');
+    setQ(filters.q || '');
+  }
+
   const [campus, setCampus] = useState(
     campuses.find((c) => c.id === Number(filters.campus)) || null
   );
   const [category, setCategory] = useState(filters.category ? Number(filters.category) : null);
+  const [store, setStore] = useState(filters.store ? Number(filters.store) : null);
   const [condition, setCondition] = useState(filters.condition || null);
   const [minPrice, setMinPrice] = useState(filters.minPrice || '');
   const [maxPrice, setMaxPrice] = useState(filters.maxPrice || '');
   const [sort, setSort] = useState(filters.sort || 'latest');
+
+  // Toko yang relevan sesuai kampus terpilih
+  const relevantStores = campus
+    ? stores.filter((s) => s.campus_id === campus.id)
+    : stores;
+
+  const currentStoreObj = selectedStore || stores.find((s) => s.id === store);
 
   // Pastikan kategori "Lainnya" selalu berada di urutan paling akhir
   const sortedCategories = [...(categories || [])].sort((a, b) => {
@@ -67,13 +87,14 @@ export default function ProductCatalog({
   ];
 
   // Fungsi navigasi memperbarui URL params
-  const applyFilters = (newParams = {}) => {
+  const applyFilters = (newParams = {}, isPush = true) => {
     const params = new URLSearchParams();
 
     const currentFilters = {
       q: newParams.q !== undefined ? newParams.q : q,
       campus: newParams.campus !== undefined ? newParams.campus?.id : campus?.id,
       category: newParams.category !== undefined ? newParams.category : category,
+      store: newParams.store !== undefined ? newParams.store : store,
       condition: newParams.condition !== undefined ? newParams.condition : condition,
       minPrice: newParams.minPrice !== undefined ? newParams.minPrice : minPrice,
       maxPrice: newParams.maxPrice !== undefined ? newParams.maxPrice : maxPrice,
@@ -89,6 +110,9 @@ export default function ProductCatalog({
     }
     if (currentFilters.category) {
       params.set('category', currentFilters.category);
+    }
+    if (currentFilters.store) {
+      params.set('store', currentFilters.store);
     }
     if (currentFilters.condition) {
       params.set('condition', currentFilters.condition);
@@ -106,14 +130,38 @@ export default function ProductCatalog({
       params.set('page', currentFilters.page);
     }
 
-    router.push(`${pathname}?${params.toString()}`);
+    const targetUrl = `${pathname}?${params.toString()}`;
+    if (isPush) {
+      router.push(targetUrl);
+    } else {
+      router.replace(targetUrl);
+    }
     setMobileFilterOpen(false);
   };
+
+  // Konsep Live Search / Instant Search: memfilter otomatis saat pengguna mengetik (debounce 300ms)
+  useEffect(() => {
+    if (q === (filters.q || '')) return;
+
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (q.trim()) {
+        params.set('q', q.trim());
+      } else {
+        params.delete('q');
+      }
+      params.set('page', '1');
+      router.replace(`${pathname}?${params.toString()}`);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [q, filters.q, pathname, router]);
 
   const handleResetFilters = () => {
     setQ('');
     setCampus(null);
     setCategory(null);
+    setStore(null);
     setCondition(null);
     setMinPrice('');
     setMaxPrice('');
@@ -124,13 +172,14 @@ export default function ProductCatalog({
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    applyFilters({ q, page: 1 });
+    applyFilters({ q, page: 1 }, true);
   };
 
   const activeFiltersCount = [
     q,
     campus,
     category,
+    store,
     condition,
     minPrice,
     maxPrice,
@@ -138,29 +187,35 @@ export default function ProductCatalog({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Bar Atas: Pencarian, Selektor Sort, dan Tombol Filter Mobile */}
+      {/* Bar Atas: Pencarian (Live / Instant Search), Selektor Sort, dan Tombol Filter Mobile */}
       <div className="bg-canvas border border-line rounded-card p-4 shadow-card flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Form Pencarian */}
+        {/* Form Pencarian Instant Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1">
           <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Cari kasur, laptop, buku kuliah..."
+            placeholder="Cari nama barang atau nama toko..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="w-full h-11 pl-10 pr-10 text-xs md:text-sm bg-surface rounded-full border border-line/80 focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
+            className="w-full h-11 pl-10 pr-14 text-xs md:text-sm bg-surface rounded-full border border-line/80 focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
           />
           {q && (
-            <button
-              type="button"
-              onClick={() => {
-                setQ('');
-                applyFilters({ q: '', page: 1 });
-              }}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink p-0.5"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {q !== (filters.q || '') && (
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setQ('');
+                  applyFilters({ q: '', page: 1 }, true);
+                }}
+                className="text-ink-soft hover:text-ink p-1 cursor-pointer"
+                title="Hapus pencarian"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </form>
 
@@ -286,7 +341,45 @@ export default function ProductCatalog({
             </div>
           </div>
 
-          {/* Filter 3: Kondisi Barang */}
+          {/* Filter 3: Toko Penjual */}
+          <div className="flex flex-col gap-2 border-t border-line/60 pt-4">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-primary" />
+                <span>Toko Penjual</span>
+              </label>
+              {store && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStore(null);
+                    applyFilters({ store: null, page: 1 });
+                  }}
+                  className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                >
+                  Semua
+                </button>
+              )}
+            </div>
+            <select
+              value={store || ''}
+              onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : null;
+                setStore(val);
+                applyFilters({ store: val, page: 1 });
+              }}
+              className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs font-medium text-ink outline-none focus:border-primary transition cursor-pointer"
+            >
+              <option value="">Semua Toko ({relevantStores.length})</option>
+              {relevantStores.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name} ({st.campus_short_name})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter 4: Kondisi Barang */}
           <div className="flex flex-col gap-2 border-t border-line/60 pt-4">
             <label className="text-xs font-bold text-ink uppercase tracking-wider">
               Kondisi Barang
@@ -342,6 +435,7 @@ export default function ProductCatalog({
                 placeholder="Min"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full h-9 px-3 rounded-lg bg-surface border border-line text-xs outline-none focus:border-primary"
               />
               <span className="text-ink-soft text-xs">-</span>
@@ -350,6 +444,7 @@ export default function ProductCatalog({
                 placeholder="Maks"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full h-9 px-3 rounded-lg bg-surface border border-line text-xs outline-none focus:border-primary"
               />
             </div>
@@ -369,16 +464,31 @@ export default function ProductCatalog({
         <div className="flex-1 flex flex-col gap-5 min-w-0">
           {/* Header Jumlah Hasil & Filter Aktif Ringkas */}
           <div className="flex items-center justify-between text-xs text-ink-soft">
-            <div>
-              Menampilkan{' '}
-              <span className="font-bold text-ink">
-                {initialProducts.length}
-              </span>{' '}
-              dari <span className="font-bold text-ink">{pagination.total}</span> produk
+            <div className="flex items-center flex-wrap gap-1.5">
+              <span>
+                Menampilkan <strong className="font-bold text-ink">{initialProducts.length}</strong> dari{' '}
+                <strong className="font-bold text-ink">{pagination.total}</strong> produk
+              </span>
               {campus && (
                 <span>
-                  {' '}
-                  di <span className="font-bold text-pine">{campus.short_name}</span>
+                  {' '}di <span className="font-bold text-pine">{campus.short_name}</span>
+                </span>
+              )}
+              {currentStoreObj && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 text-primary text-[11px] font-semibold">
+                  <Store className="w-3 h-3" />
+                  <span>{currentStoreObj.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStore(null);
+                      applyFilters({ store: null, page: 1 });
+                    }}
+                    className="hover:text-danger ml-0.5 cursor-pointer font-bold"
+                    title="Hapus filter toko"
+                  >
+                    ×
+                  </button>
                 </span>
               )}
             </div>
@@ -392,6 +502,67 @@ export default function ProductCatalog({
               </button>
             )}
           </div>
+
+          {/* Toko Terkait Sesuai Pencarian */}
+          {matchedStores && matchedStores.length > 0 && (
+            <div className="bg-canvas border border-line rounded-card p-4 shadow-card">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-ink uppercase tracking-wider">
+                  <Store className="w-4 h-4 text-primary" />
+                  <span>Toko Ditemukan ({matchedStores.length})</span>
+                </div>
+                {q && (
+                  <span className="text-xs text-ink-soft">
+                    Hasil toko untuk &ldquo;{q}&rdquo;
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {matchedStores.map((st) => (
+                  <div
+                    key={st.id}
+                    className="p-3 rounded-2xl bg-surface border border-line flex flex-col justify-between gap-2.5 hover:border-primary/50 transition shadow-xs"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <h4 className="font-bold text-sm text-ink truncate" title={st.name}>
+                          {st.name}
+                        </h4>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pine-50 text-pine shrink-0">
+                          {st.campus_short_name}
+                        </span>
+                      </div>
+                      <p className="text-xs text-ink-soft line-clamp-1">
+                        {st.location || 'Area sekitar kampus'}
+                      </p>
+                      <p className="text-[11px] text-ink-soft mt-1">
+                        <strong className="text-ink font-semibold">{st.products_count}</strong> produk aktif
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-line/60">
+                      <Link
+                        href={`/stores/${st.id}`}
+                        className="flex-1 text-center py-1.5 px-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition"
+                      >
+                        Kunjungi Toko
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStore(st.id);
+                          applyFilters({ store: st.id, page: 1 });
+                        }}
+                        className="py-1.5 px-2 rounded-xl bg-canvas border border-line text-ink text-xs font-semibold hover:bg-surface-alt transition cursor-pointer"
+                        title="Filter barang hanya dari toko ini"
+                      >
+                        Lihat Barang
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Grid Produk */}
           {initialProducts.length === 0 ? (
@@ -532,6 +703,37 @@ export default function ProductCatalog({
             </div>
           </div>
 
+          {/* Toko */}
+          <div className="flex flex-col gap-2 border-t border-line pt-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-ink flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-primary" />
+                <span>Pilih Toko</span>
+              </label>
+              {store && (
+                <button
+                  type="button"
+                  onClick={() => setStore(null)}
+                  className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                >
+                  Semua Toko
+                </button>
+              )}
+            </div>
+            <select
+              value={store || ''}
+              onChange={(e) => setStore(e.target.value ? Number(e.target.value) : null)}
+              className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs font-medium text-ink outline-none"
+            >
+              <option value="">Semua Toko ({relevantStores.length})</option>
+              {relevantStores.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name} ({st.campus_short_name})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Kondisi */}
           <div className="flex flex-col gap-2 border-t border-line pt-3">
             <label className="text-xs font-bold text-ink">Kondisi Barang</label>
@@ -573,6 +775,7 @@ export default function ProductCatalog({
                 placeholder="Min"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs outline-none"
               />
               <span className="text-ink-soft">-</span>
@@ -581,6 +784,7 @@ export default function ProductCatalog({
                 placeholder="Maks"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
                 className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs outline-none"
               />
             </div>

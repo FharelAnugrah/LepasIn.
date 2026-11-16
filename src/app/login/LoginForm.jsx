@@ -65,11 +65,9 @@ export default function LoginForm() {
         <div className="text-center mb-6">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-ink font-extrabold text-2xl tracking-tight mb-2"
+            className="inline-flex items-center text-ink font-extrabold text-2xl tracking-tight mb-2"
           >
-            <span className="text-primary">Lepas</span>
-            <span>In</span>
-            <span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+            <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
           </Link>
           <h1 className="text-xl md:text-2xl font-bold text-ink tracking-tight">
             Masuk ke Akun

@@ -63,12 +63,16 @@ export default function ProductCard({
   };
 
   return (
-    <Link
-      href={`/products/${product.id}`}
-      className="group block bg-canvas border border-line/80 rounded-card p-2.5 md:p-3 shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5"
-    >
+    <div className="group relative block bg-canvas border border-line/80 rounded-card p-2.5 md:p-3 shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5">
+      {/* Tautan Peregang ke Detail Produk (Valid HTML & Ramah Layar Sentuh Mobile) */}
+      <Link
+        href={`/products/${product.id}`}
+        className="absolute inset-0 z-0 rounded-card"
+        aria-label={`Lihat detail produk ${product.name}`}
+      />
+
       {/* Container Foto Produk 1:1 */}
-      <div className="relative aspect-square w-full rounded-2xl bg-surface overflow-hidden mb-2.5">
+      <div className="relative aspect-square w-full rounded-2xl bg-surface overflow-hidden mb-2.5 pointer-events-none">
         {product.image_url ? (
           <Image
             src={product.image_url}
@@ -79,55 +83,56 @@ export default function ProductCard({
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center text-ink-soft/40 gap-1.5 p-4 text-center">
+          <div className="w-full h-full flex flex-col items-center justify-center text-ink-soft/60 gap-1.5 p-4 text-center">
             <Package className="w-8 h-8 stroke-[1.5]" />
-            <span className="text-[10px]">Belum ada foto</span>
+            <span className="text-xs">Foto belum tersedia</span>
           </div>
         )}
-
-        {/* Tombol Hati Wishlist (Melayang di Kanan Atas) */}
-        <button
-          type="button"
-          onClick={handleWishlistClick}
-          disabled={wishlistLoading}
-          aria-label={wishlisted ? 'Hapus dari favorit' : 'Tambah ke favorit'}
-          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer z-10"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${
-              wishlisted
-                ? 'text-danger fill-danger'
-                : 'text-ink-soft/70 hover:text-danger'
-            }`}
-          />
-        </button>
 
         {/* Overlay Terjual Bila Stok 0 */}
         {isSoldOut && (
           <div className="absolute inset-0 bg-ink/60 backdrop-blur-xs flex items-center justify-center">
-            <span className="bg-ink/90 text-white text-[11px] font-bold px-3 py-1 rounded-full tracking-wider shadow-sm">
+            <span className="bg-ink/90 text-white text-xs font-bold px-3.5 py-1.5 rounded-full tracking-wider shadow-sm">
               TERJUAL
             </span>
           </div>
         )}
       </div>
 
+      {/* Tombol Hati Wishlist (Melayang di Kanan Atas, z-10 agar berdiri sendiri tanpa konflik sentuhan link) */}
+      <button
+        type="button"
+        onClick={handleWishlistClick}
+        disabled={wishlistLoading}
+        aria-label={wishlisted ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+        title={wishlisted ? 'Hapus dari favorit' : 'Tambah ke favorit'}
+        className="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 rounded-full bg-white/95 shadow-sm hover:shadow-md border border-line/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer z-10 pointer-events-auto"
+      >
+        <Heart
+          className={`w-4 h-4 transition-colors ${
+            wishlisted
+              ? 'text-danger fill-danger'
+              : 'text-ink-soft hover:text-danger'
+          }`}
+        />
+      </button>
+
       {/* Price Pill Biru Kobalt Khas LepasIn */}
-      <div className="mb-1.5">
+      <div className="relative z-0 pointer-events-none mb-1.5">
         <PricePill amount={product.price} size="sm" />
       </div>
 
       {/* Info Stok */}
-      <div className="text-[11px] text-ink-soft font-medium mb-1">
+      <div className="relative z-0 pointer-events-none text-xs text-ink-soft font-medium mb-1">
         {isSoldOut ? (
           <span className="text-danger font-semibold">Stok Habis</span>
         ) : (
-          <span>Tersisa {product.stock} Stok</span>
+          <span>Tersedia: {product.stock} stok</span>
         )}
       </div>
 
       {/* Rating & Kode Kampus */}
-      <div className="flex items-center gap-1.5 text-[11px] text-ink-soft mb-1 font-medium">
+      <div className="relative z-0 pointer-events-none flex items-center gap-1.5 text-xs text-ink-soft mb-1 font-medium">
         <div className="flex items-center gap-0.5 text-accent font-bold">
           <Star className="w-3.5 h-3.5 fill-accent text-accent" />
           <span className="text-ink">
@@ -142,8 +147,8 @@ export default function ProductCard({
           )}
         </div>
         <span>·</span>
-        <div className="flex items-center gap-1 text-pine font-semibold truncate">
-          <GraduationCap className="w-3 h-3 shrink-0" />
+        <div className="flex items-center gap-1 text-pine font-semibold truncate" title={`Kampus: ${product.campus_short_name || 'Kampus'}`}>
+          <GraduationCap className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">
             {product.campus_short_name || 'Kampus'}
           </span>
@@ -151,9 +156,9 @@ export default function ProductCard({
       </div>
 
       {/* Nama Produk (Maks 2 Baris) */}
-      <h3 className="text-xs md:text-sm font-semibold text-ink line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+      <h3 className="relative z-0 pointer-events-none text-xs md:text-sm font-semibold text-ink line-clamp-2 leading-snug group-hover:text-primary transition-colors">
         {product.name}
       </h3>
-    </Link>
+    </div>
   );
 }

@@ -28,15 +28,20 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    let queryText;
+    if (action === 'approve') {
+      queryText = `UPDATE users
+                   SET seller_status = 'approved', was_approved = TRUE, updated_at = NOW()
+                   WHERE id = $1 AND role = 'seller'
+                   RETURNING id, name, email, seller_status, was_approved`;
+    } else {
+      queryText = `UPDATE users
+                   SET seller_status = 'rejected', updated_at = NOW()
+                   WHERE id = $1 AND role = 'seller'
+                   RETURNING id, name, email, seller_status, was_approved`;
+    }
 
-    const result = await query(
-      `UPDATE users
-       SET seller_status = $1
-       WHERE id = $2 AND role = 'seller'
-       RETURNING id, name, email, seller_status`,
-      [newStatus, sellerId]
-    );
+    const result = await query(queryText, [sellerId]);
 
     if (result.rows.length === 0) {
       return NextResponse.json(

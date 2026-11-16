@@ -125,7 +125,7 @@ Platform e-commerce berbasis **komunitas kampus se-Indonesia**. Setiap toko terh
 | `/buyer/profile` | Buyer | Kelola profil, kampus utama, & ganti password |
 | `/buyer/cart` | Buyer | Keranjang belanja (dikelompokkan per toko) |
 | `/buyer/checkout` | Buyer | Pilih metode (COD/Ketemuan di kampus atau kirim), alamat, catatan, konfirmasi |
-| `/buyer/orders`, `/buyer/orders/[id]` | Buyer | Riwayat & tracking pesanan, tombol Pesanan Diterima, form review |
+| `/buyer/orders` | Buyer | Riwayat & tracking pesanan, tombol Pesanan Diterima (anti-penipuan), form review |
 | `/buyer/wishlist` | Buyer | Daftar produk favorit |
 | `/buyer/addresses` | Buyer | CRUD alamat pengiriman/kost |
 | `/seller` | Seller approved | Ringkasan: jumlah produk, pesanan baru, pendapatan selesai |
@@ -161,7 +161,7 @@ Platform e-commerce berbasis **komunitas kampus se-Indonesia**. Setiap toko terh
 | ID | Prioritas | Requirement |
 |---|:-:|---|
 | AUTH-1 | M | Halaman `/login` untuk Admin, Seller, Buyer dengan pesan error generik "Email atau password salah" |
-| AUTH-2 | M | Halaman `/register` untuk Buyer dan Seller. Field: nama, email, no. HP, password, konfirmasi password, dan **Kampus** (wajib untuk Seller, opsional untuk Buyer). Jika memilih Seller, muncul field **Nama Toko** (wajib) dan **Area/Detail Kost** (opsional, mis. "Tamalanrea, Pintu 1") |
+| AUTH-2 | M | Halaman `/register` untuk Buyer dan Seller. Field: nama, email, no. HP, password, konfirmasi password, dan **Kampus** (wajib untuk Seller, opsional untuk Buyer). Jika memilih Seller, muncul field **Nama Toko** (wajib), **Detail Lokasi / Area Kost** (wajib), dan foto verifikasi **Selfie dengan memegang KTM / Kartu Identitas** (wajib untuk Seller, diunggah via kamera atau galeri) |
 | AUTH-3 | M | Seller baru berstatus `pending` → `/pending-seller`. Buyer baru langsung login → `/` |
 | AUTH-4 | M | Sesi JWT di cookie `lepasin_session` (`httpOnly`, `sameSite=lax`, 7 hari) |
 | AUTH-5 | M | Logout menghapus cookie |
@@ -203,7 +203,7 @@ Platform e-commerce berbasis **komunitas kampus se-Indonesia**. Setiap toko terh
 | ORD-3 | M | Daftar pesanan masuk Seller (khusus tokonya) |
 | ORD-4 | M | Seller mengubah status sesuai transisi valid di `schema.md` |
 | ORD-5 | M | Pembatalan mengembalikan stok produk |
-| ORD-6 | S | Buyer menekan **Pesanan Diterima** saat `shipped` → `completed` |
+| ORD-6 | S | Anti-penipuan: Buyer menekan **Pesanan Diterima** saat barang telah diterima & dicek (`shipped` → `completed`) |
 | ORD-7 | M | Untuk metode `meetup`, status `shipped` ditampilkan sebagai **Siap Ketemuan di Kampus** |
 | REV-1 | M | Buyer memberi rating 1–5 dan komentar per item setelah pesanan `completed` |
 | REV-2 | M | Rata-rata rating dan daftar ulasan tampil di halaman detail produk |

@@ -76,10 +76,8 @@ export default function AdminSidebar({ user, pendingCount = 0 }) {
     <div className="flex flex-col h-full bg-surface border-r border-line">
       {/* Brand & Admin Badge */}
       <div className="p-5 border-b border-line">
-        <Link href="/" className="flex items-center gap-1.5 text-ink font-extrabold text-xl tracking-tight mb-2">
-          <span className="text-primary">Lepas</span>
-          <span>In</span>
-          <span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+        <Link href="/" className="inline-flex items-center text-ink font-extrabold text-xl tracking-tight mb-2">
+          <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
         </Link>
         <div className="flex items-center gap-2 p-2 rounded-xl bg-canvas border border-line">
           <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
@@ -155,8 +153,8 @@ export default function AdminSidebar({ user, pendingCount = 0 }) {
     <>
       {/* Tombol Header Mobile */}
       <header className="lg:hidden sticky top-0 z-30 bg-canvas/95 backdrop-blur-md border-b border-line h-14 px-4 flex items-center justify-between">
-        <Link href="/" className="font-extrabold text-lg text-ink">
-          <span className="text-primary">Lepas</span>In <span className="text-xs font-normal text-ink-soft">Admin</span>
+        <Link href="/" className="inline-flex items-center text-lg text-ink font-extrabold">
+          <span className="text-primary">Lepas</span><span>In</span><span className="text-xs font-normal text-ink-soft ml-1.5">Admin</span>
         </Link>
         <button
           type="button"

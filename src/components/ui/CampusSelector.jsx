@@ -147,7 +147,14 @@ export default function CampusSelector({
 
       {/* Dropdown Menu / Panel Pencarian Kampus */}
       {isOpen && (
-        <div className="fixed inset-x-4 top-20 md:absolute md:top-full md:left-0 md:inset-x-auto mt-2 w-auto md:w-80 max-h-[80vh] md:max-h-96 bg-canvas border border-line rounded-card shadow-float z-50 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <>
+          {/* Backdrop transparan/gelap di mobile agar mudah ditutup saat menyentuh area luar */}
+          <div
+            className="fixed inset-0 z-50 bg-ink/30 backdrop-blur-xs md:hidden"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="fixed inset-x-4 top-20 md:absolute md:top-full md:left-0 md:inset-x-auto mt-2 w-auto md:w-80 max-h-[80vh] md:max-h-96 bg-canvas border border-line rounded-card shadow-float z-[60] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Header Panel & Search Bar */}
           <div className="p-3 border-b border-line bg-surface/50">
             <div className="relative flex items-center">
@@ -230,6 +237,7 @@ export default function CampusSelector({
             )}
           </div>
         </div>
+        </>
       )}
     </div>
   );
