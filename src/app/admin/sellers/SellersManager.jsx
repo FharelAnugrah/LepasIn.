@@ -160,14 +160,14 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
         </div>
 
         {/* Search Bar */}
-        <div className="relative min-w-[240px]">
+        <div className="relative w-full md:w-64 lg:w-72">
           <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Cari penjual, toko, kampus..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 text-xs md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
+            className="w-full h-10 pl-9 pr-4 text-base md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
           />
         </div>
       </div>
@@ -236,7 +236,7 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
                 </div>
 
                 {/* Verifikasi Identitas (Selfie + KTM) */}
-                <div className="p-3 rounded-xl bg-surface border border-line flex items-center justify-between gap-3 text-xs my-2">
+                <div className="p-3 rounded-xl bg-surface border border-line flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 text-xs my-2">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {seller.id_card_url ? (
                       <button
@@ -434,7 +434,7 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
               />
             </div>
 
-            <div className="flex items-center justify-between pt-1 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
               <p className="text-ink-soft text-[11px]">
                 Pastikan nama, foto KTM, dan wajah penjual sesuai sebelum menyetujui.
               </p>
@@ -443,6 +443,7 @@ export default function SellersManager({ initialSellers, initialStatus = 'all' }
                 size="sm"
                 pill
                 onClick={() => setViewingPhoto(null)}
+                className="w-full sm:w-auto shrink-0"
               >
                 Tutup
               </Button>

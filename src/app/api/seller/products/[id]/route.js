@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { query, withTransaction } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { extractAndProcessImages } from '@/lib/image-util';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +85,7 @@ const updateProductSchema = z
     stock: updateStockValidator,
     condition: z.enum(['like_new', 'good', 'fair', 'minor_defect']).optional(),
     category_id: z.coerce.number().int().positive('Kategori wajib dipilih').optional(),
-    image_urls: z.array(z.string().trim().min(1, 'Path foto tidak valid')).max(5, 'Maksimal 5 gambar').optional(),
+    image_urls: z.array(z.string().trim().min(1, 'Path/Data foto tidak valid')).min(1, 'Mohon sediakan minimal 1 foto barang').max(5, 'Maksimal 5 gambar').optional(),
   })
   .refine(
     (data) => {
@@ -164,8 +165,41 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Produk tidak ditemukan atau bukan milik Anda' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const validated = updateProductSchema.safeParse(body);
+    let dataPayload = {};
+    let hasImages = false;
+    let imageUrls = [];
+
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      dataPayload = {};
+      if (formData.has('name')) dataPayload.name = formData.get('name');
+      if (formData.has('description')) dataPayload.description = formData.get('description');
+      if (formData.has('price')) dataPayload.price = formData.get('price');
+      if (formData.has('original_price')) dataPayload.original_price = formData.get('original_price');
+      if (formData.has('stock')) dataPayload.stock = formData.get('stock');
+      if (formData.has('condition')) dataPayload.condition = formData.get('condition');
+      if (formData.has('category_id')) dataPayload.category_id = formData.get('category_id');
+
+      const extracted = await extractAndProcessImages(formData);
+      if (extracted.length > 0 || formData.has('images') || formData.has('image_urls')) {
+        hasImages = true;
+        imageUrls = extracted;
+      }
+    } else {
+      dataPayload = await request.json();
+      if (dataPayload.image_urls !== undefined) {
+        hasImages = true;
+        imageUrls = await extractAndProcessImages(dataPayload);
+      }
+    }
+
+    if (hasImages) {
+      dataPayload.image_urls = imageUrls;
+    }
+
+    const validated = updateProductSchema.safeParse(dataPayload);
 
     if (!validated.success) {
       const fieldErrors = validated.error.flatten().fieldErrors;
@@ -341,3 +375,5 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: 'Gagal menghapus produk' }, { status: 500 });
   }
 }
+
+export { PATCH as PUT };

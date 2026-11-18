@@ -52,7 +52,9 @@ const Input = forwardRef(function Input(
           }}
           className={`w-full h-[46px] ${Icon ? 'pl-10' : 'pl-4'} ${
             IconRight ? 'pr-10' : 'pr-4'
-          } ${radius} bg-surface text-ink text-base md:text-sm placeholder:text-ink-soft/70 border ${
+          } ${radius} bg-surface font-sans text-ink text-base md:text-sm placeholder:text-ink-soft/70 ${
+            type === 'number' || type === 'tel' ? 'tabular-nums' : ''
+          } border ${
             error
               ? 'border-danger focus:border-danger focus:ring-4 focus:ring-danger-50'
               : 'border-line/70 focus:border-primary focus:bg-canvas focus:ring-4 focus:ring-primary-50'

@@ -55,10 +55,10 @@ Aturan pemakaian: `primary` dipakai untuk aksi utama, *price pill*, dan state ak
 
 | Peran | Font | Bobot | Catatan |
 |---|---|---|---|
-| Judul, harga, angka besar | **Plus Jakarta Sans** | 700–800 | `font-display`, letter-spacing −0.02em |
-| Isi, form, tabel, tombol | **Plus Jakarta Sans** | 400, 500, 600, 700 | `font-sans` (default body) |
+| Judul, wordmark, PricePill, tombol CTA, angka metrik | **Poppins** | 400, 500, 600, 700, 800 | `font-display`, letter-spacing −0.02em (`h1, h2`) / −0.01em (`h3`, tombol) |
+| Isi, judul kartu produk ringkas, form, tabel, chat, badge | **Inter** | Variable (400–700) | `font-sans` (default body), `tabular-nums` untuk angka/kode pesanan |
 
-Muat lewat `next/font/google` dengan `variable: '--font-jakarta'`, `subsets: ['latin']`, `display: 'swap'`.
+Muat lewat `next/font/google` (`Poppins` dengan `variable: '--font-poppins'`, dan `Inter` dengan `variable: '--font-inter'`), `subsets: ['latin']`, `display: 'swap'`.
 
 Skala (mobile → desktop):
 
@@ -118,14 +118,15 @@ Input teks minimal **16 px** di ponsel agar iOS tidak melakukan zoom otomatis sa
 }
 
 @theme inline {
-  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
   html { background: var(--color-canvas); color: var(--color-ink); scroll-behavior: smooth; }
   body { font-family: var(--font-sans); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
-  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  h1, h2 { font-family: var(--font-display); letter-spacing: -0.02em; }
+  h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
   :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; box-shadow: 0 0 0 4px var(--color-primary-50); }
   @media (min-width: 768px) { body { font-size: 15px; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }

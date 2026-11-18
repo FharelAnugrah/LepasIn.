@@ -24,6 +24,19 @@ async function ensureMigration() {
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS was_approved BOOLEAN DEFAULT FALSE');
     await pool.query("UPDATE users SET was_approved = TRUE WHERE seller_status = 'approved' AND was_approved IS NOT TRUE");
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS id_card_url TEXT');
+
+    // Pastikan kolom gambar produk bertipe TEXT agar string Base64 Data URL tidak terpotong
+    try {
+      await pool.query('ALTER TABLE product_images ALTER COLUMN url TYPE TEXT');
+    } catch (colErr) {
+      console.warn('Migration product_images.url notice:', colErr.message);
+    }
+
+    try {
+      await pool.query('ALTER TABLE order_items ALTER COLUMN product_image_url TYPE TEXT');
+    } catch {
+      // Abaikan jika order_items belum ada
+    }
     
     // Tabel chats untuk fitur percakapan langsung antara Buyer dan Seller (baik pesanan COD maupun pra-order/tanya produk)
     await pool.query(`

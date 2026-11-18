@@ -127,7 +127,7 @@ export default async function StoreProfilePage({ params }) {
         {/* Banner Toko Profil */}
         <div className="bg-canvas border border-line rounded-card p-6 md:p-8 shadow-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary-50 text-primary font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm uppercase">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary-50 text-primary font-display font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm uppercase">
               {store.name.charAt(0)}
             </div>
             <div>
@@ -160,7 +160,7 @@ export default async function StoreProfilePage({ params }) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 text-xs text-ink-soft border-t md:border-t-0 md:border-l border-line/70 pt-4 md:pt-0 md:pl-6 shrink-0">
+          <div className="flex flex-col gap-2 text-xs text-ink-soft border-t md:border-t-0 md:border-l border-line/70 pt-4 md:pt-0 md:pl-6 w-full md:w-auto md:shrink-0">
             <div className="font-bold text-ink mb-1">Informasi Toko</div>
             <div>Total Barang: <strong className="text-ink">{products.length} produk</strong></div>
             {store.seller_phone && <div>Kontak: {store.seller_phone}</div>}
@@ -169,7 +169,7 @@ export default async function StoreProfilePage({ params }) {
               <div className="mt-2">
                 <Link
                   href={`/chat?store_id=${store.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-50/60 text-primary hover:bg-primary hover:text-white px-3.5 py-1.5 text-xs font-semibold transition"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-50/60 text-primary hover:bg-primary hover:text-white px-3.5 py-1.5 font-display text-xs font-semibold transition"
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span>Chat Toko</span>
@@ -189,7 +189,7 @@ export default async function StoreProfilePage({ params }) {
 
         {/* Daftar Barang dari Toko Ini */}
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between border-b border-line pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
             <h2 className="text-lg font-bold text-ink flex items-center gap-2">
               <Package className="w-5 h-5 text-primary" />
               <span>Semua Barang dari {store.name}</span>

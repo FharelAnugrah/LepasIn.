@@ -19,7 +19,7 @@ export default function NotFound() {
         </div>
 
         {/* Display Angka 404 */}
-        <div className="inline-block bg-primary/10 text-primary font-black text-sm px-3.5 py-1 rounded-full mb-3 tracking-wider">
+        <div className="inline-block bg-primary/10 text-primary font-display font-bold text-sm px-3.5 py-1 rounded-full mb-3 tracking-wider">
           ERROR 404
         </div>
 

@@ -259,18 +259,18 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-black sm:rounded-card shadow-float overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-black sm:rounded-card shadow-float overflow-hidden flex flex-col h-dvh sm:h-auto sm:max-h-[90dvh]">
         {/* Header Modal */}
-        <div className="flex items-center justify-between p-4 bg-black/70 text-white z-10 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Camera className="w-5 h-5 text-primary" />
-            <span className="font-bold text-sm">Ambil Foto Barang</span>
+        <div className="flex items-center justify-between p-4 bg-black/70 text-white z-10 border-b border-white/10 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Camera className="w-5 h-5 text-primary shrink-0" />
+            <span className="font-bold text-sm truncate">Ambil Foto Barang</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Status Indikator Kamera */}
             {!cameraError && !previewUrl && (
-              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/15 text-white/90">
+              <span className="hidden xs:inline-block sm:inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/15 text-white/90">
                 {!hasMultipleCameras
                   ? 'Kamera Laptop (1 Kamera)'
                   : facingMode === 'user'
@@ -282,7 +282,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
             <button
               type="button"
               onClick={handleClose}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
               aria-label="Tutup kamera"
             >
               <X className="w-5 h-5" />
@@ -291,7 +291,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         </div>
 
         {/* Viewport Kamera / Pratinjau Foto */}
-        <div className="relative flex-1 bg-black flex items-center justify-center min-h-[360px] sm:min-h-[420px] overflow-hidden">
+        <div className="relative flex-1 bg-black flex items-center justify-center min-h-[200px] sm:min-h-[380px] overflow-hidden">
           {/* Banner Pemberitahuan Switch Kamera */}
           {switchNotice && (
             <div className="absolute top-4 z-20 px-4 py-2 rounded-full bg-black/85 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-float flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -350,7 +350,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         </div>
 
         {/* Footer Tombol Aksi */}
-        <div className="p-5 bg-black/80 border-t border-white/10 flex items-center justify-around text-white">
+        <div className="px-4 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] bg-black/80 border-t border-white/10 flex items-center justify-around text-white shrink-0">
           {previewUrl ? (
             <div className="w-full flex items-center justify-center gap-4">
               <Button

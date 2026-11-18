@@ -57,6 +57,7 @@ export default function ChatClient({
   const [sending, setSending] = useState(false);
   const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(true);
   const [searchFilter, setSearchFilter] = useState('');
+  const [productImgError, setProductImgError] = useState(false);
 
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -475,7 +476,7 @@ export default function ChatClient({
   };
 
   return (
-    <div className="w-full h-[calc(100dvh-80px)] md:h-[calc(100vh-88px)] min-h-[560px] bg-canvas border border-line rounded-2xl shadow-card flex flex-col md:flex-row overflow-hidden">
+    <div className="w-full h-full min-h-0 bg-canvas sm:border border-line sm:rounded-2xl shadow-card flex flex-col md:flex-row overflow-hidden">
       {/* Kolom Kiri: Daftar Percakapan (Pesanan + Tanya Produk) */}
       <div
         className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-line bg-surface/40 h-full overflow-hidden ${
@@ -498,7 +499,7 @@ export default function ChatClient({
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="Cari toko, barang, atau pembeli..."
-            className="w-full text-xs px-3 py-2 bg-surface rounded-xl border border-line focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full text-base md:text-sm px-3 py-2 bg-surface rounded-xl border border-line focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -550,7 +551,7 @@ export default function ChatClient({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-bold text-ink truncate">{partnerName}</span>
-                      <span className="text-[10px] text-ink-soft shrink-0">
+                      <span className="text-[10px] text-ink-soft tabular-nums shrink-0">
                         {c.last_message_time
                           ? new Date(c.last_message_time).toLocaleTimeString('id-ID', {
                               hour: '2-digit',
@@ -563,7 +564,7 @@ export default function ChatClient({
                     <div className="flex items-center gap-1.5 mt-0.5">
                       {isOrder ? (
                         <>
-                          <span className="text-[10px] font-mono font-medium text-ink-soft">
+                          <span className="text-[10px] font-sans tabular-nums font-semibold tracking-wide text-ink-soft">
                             #{c.order_code}
                           </span>
                           {c.campus_short_name && (
@@ -655,7 +656,7 @@ export default function ChatClient({
                     setActiveTarget(null);
                     router.replace('/chat', { scroll: false });
                   }}
-                  className="md:hidden p-1.5 rounded-lg hover:bg-surface text-ink-soft hover:text-ink cursor-pointer"
+                  className="md:hidden w-10 h-10 -ml-1.5 rounded-lg hover:bg-surface text-ink-soft hover:text-ink cursor-pointer flex items-center justify-center shrink-0"
                   aria-label="Kembali ke daftar pesan"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -682,7 +683,7 @@ export default function ChatClient({
                   <div className="flex items-center gap-2 text-[11px] text-ink-soft mt-0.5">
                     {activeChat.type === 'order' ? (
                       <>
-                        <span className="font-mono font-medium">#{activeChat.order?.order_code}</span>
+                        <span className="font-sans tabular-nums font-semibold tracking-wide">#{activeChat.order?.order_code}</span>
                         {activeChat.order?.campus_short_name && (
                           <>
                             <span className="text-line">·</span>
@@ -752,15 +753,16 @@ export default function ChatClient({
 
             {/* Banner Kartu Konteks Produk (Pra-Order / Tanya Produk) */}
             {activeChat.type === 'inquiry' && activeChat.product && (
-              <div className="bg-surface/80 border-b border-line px-4 py-3 flex items-center justify-between gap-3 shrink-0 animate-in slide-in-from-top-2 duration-150">
+              <div className="bg-surface/80 border-b border-line px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0 animate-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative w-12 h-12 rounded-xl bg-surface-alt border border-line overflow-hidden shrink-0">
-                    {activeChat.product.image_url ? (
+                    {!productImgError && activeChat.product.image_url ? (
                       <Image
                         src={activeChat.product.image_url}
                         alt={activeChat.product.name}
                         fill
                         unoptimized
+                        onError={() => setProductImgError(true)}
                         className="object-cover"
                       />
                     ) : (
@@ -769,8 +771,8 @@ export default function ChatClient({
                       </div>
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded-full">
                         Produk yang Ditanyakan
                       </span>
@@ -778,7 +780,7 @@ export default function ChatClient({
                         <ConditionBadge condition={activeChat.product.condition} />
                       )}
                     </div>
-                    <h4 className="text-xs md:text-sm font-bold text-ink truncate mt-0.5">
+                    <h4 className="font-sans text-xs md:text-sm font-semibold text-ink truncate mt-0.5">
                       {activeChat.product.name}
                     </h4>
                     <div className="flex items-center gap-2 mt-1">
@@ -792,7 +794,7 @@ export default function ChatClient({
 
                 <Link
                   href={`/products/${activeChat.product.id}`}
-                  className="text-xs font-semibold text-primary hover:text-white px-3 py-1.5 rounded-full border border-primary/30 bg-primary-50/60 hover:bg-primary transition shrink-0 inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-primary hover:text-white px-3 py-1.5 rounded-full border border-primary/30 bg-primary-50/60 hover:bg-primary transition shrink-0 inline-flex items-center justify-center gap-1 self-start sm:self-auto"
                 >
                   <span>Lihat Produk</span>
                   <ExternalLink className="w-3 h-3" />
@@ -832,8 +834,8 @@ export default function ChatClient({
                   </div>
                 )}
 
-                <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-line/40 text-[11px]">
-                  <div className="flex items-center gap-2 overflow-x-auto max-w-[70%]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-line/40 text-[11px]">
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
                     <span className="text-ink-soft">Barang:</span>
                     {activeChat.items?.map((it, idx) => (
                       <span key={idx} className="font-semibold text-ink whitespace-nowrap">
@@ -843,7 +845,7 @@ export default function ChatClient({
                     ))}
                   </div>
                   <div className="font-bold text-ink">
-                    Total: <span className="text-primary">{formatRupiah(activeChat.order?.total_amount)}</span>
+                    Total: <span className="font-display text-primary font-bold tabular-nums">{formatRupiah(activeChat.order?.total_amount)}</span>
                   </div>
                 </div>
               </div>
@@ -907,7 +909,7 @@ export default function ChatClient({
                       >
                         {msg.message}
                       </div>
-                      <span className="text-[9px] text-ink-soft/80 mt-1 px-1">
+                      <span className="text-[9px] text-ink-soft/80 tabular-nums mt-1 px-1">
                         {timeFormatted}
                       </span>
                     </div>
@@ -919,8 +921,8 @@ export default function ChatClient({
 
             {/* Rekomendasi Pesan Cepat - Chip Bulat Natural Sebaris */}
             {getObjectiveQuickReplies().length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 border-t border-line bg-canvas shrink-0">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft mr-1">
+              <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 px-3 sm:px-4 py-2 border-t border-line bg-canvas shrink-0 overflow-x-auto no-scrollbar">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft mr-1 shrink-0">
                   Pesan Cepat:
                 </span>
                 {getObjectiveQuickReplies().map((chip, idx) => (
@@ -928,7 +930,7 @@ export default function ChatClient({
                     key={idx}
                     type="button"
                     onClick={() => handleSendQuickReply(chip)}
-                    className="w-auto px-3.5 py-1.5 text-xs font-medium rounded-full bg-surface text-ink border border-line hover:bg-primary-50 hover:text-primary hover:border-primary/30 transition cursor-pointer"
+                    className="w-auto px-3.5 py-1.5 text-xs font-medium rounded-full bg-surface text-ink border border-line hover:bg-primary-50 hover:text-primary hover:border-primary/30 transition cursor-pointer shrink-0 whitespace-nowrap"
                   >
                     {chip}
                   </button>
@@ -939,7 +941,7 @@ export default function ChatClient({
             {/* Input Form Kirim Pesan - Konsisten Tinggi h-11 */}
             <form
               onSubmit={handleSendMessage}
-              className="flex items-center gap-2 p-3 bg-canvas border-t border-line shrink-0"
+              className="flex items-center gap-2 p-2.5 sm:p-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:pb-3 bg-canvas border-t border-line shrink-0"
             >
               <input
                 type="text"
@@ -950,10 +952,10 @@ export default function ChatClient({
                   !activeChat.currentUser?.isBuyer && !activeChat.partner?.id
                     ? 'Belum ada pembeli untuk dibalas...'
                     : activeChat.type === 'inquiry'
-                    ? 'Ketik pertanyaan tentang produk ini... (Enter untuk kirim)'
-                    : 'Ketik pesan untuk koordinasi... (Enter untuk kirim)'
+                    ? 'Ketik pertanyaan tentang produk ini...'
+                    : 'Ketik pesan untuk koordinasi...'
                 }
-                className="flex-1 h-11 px-3.5 bg-surface border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs md:text-sm text-ink transition-colors disabled:opacity-50 disabled:bg-surface-alt"
+                className="flex-1 min-w-0 h-11 px-3.5 bg-surface border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base md:text-sm text-ink transition-colors disabled:opacity-50 disabled:bg-surface-alt"
               />
               <button
                 type="submit"
@@ -962,7 +964,7 @@ export default function ChatClient({
                   sending ||
                   Boolean(!activeChat.currentUser?.isBuyer && !activeChat.partner?.id)
                 }
-                className="h-11 px-4 md:px-5 rounded-xl bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-white text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 shadow-sm transition shrink-0 cursor-pointer"
+                className="h-11 px-4 md:px-5 rounded-xl bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-white font-display text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition shrink-0 cursor-pointer"
               >
                 <Send className="w-4 h-4 text-white" />
                 <span>Kirim</span>

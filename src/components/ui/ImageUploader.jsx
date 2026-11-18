@@ -29,17 +29,17 @@ export default function ImageUploader({
   const [isDragOver, setIsDragOver] = useState(false);
 
   const validateFile = (file) => {
-    const validMimes = ['image/jpeg', 'image/png'];
-    const validExtensions = ['.jpg', '.jpeg', '.png'];
+    const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
+    const validExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
     const ext = file.name ? file.name.slice(file.name.lastIndexOf('.')).toLowerCase() : '';
 
-    if (!validMimes.includes(file.type.toLowerCase()) && !validExtensions.includes(ext)) {
-      toast.error(`"${file.name}" ditolak. Hanya format JPG/JPEG dan PNG yang diperbolehkan.`);
+    if (!validMimes.includes((file.type || '').toLowerCase()) && !validExtensions.includes(ext)) {
+      toast.error(`"${file.name}" ditolak. Hanya format JPG/JPEG, PNG, dan WebP yang diperbolehkan.`);
       return false;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error(`"${file.name}" melebihi batas maksimal 10 MB.`);
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(`"${file.name}" melebihi batas maksimal 2 MB.`);
       return false;
     }
 
@@ -169,7 +169,7 @@ export default function ImageUploader({
         <p className="text-xs text-ink-soft max-w-sm mt-1 mb-4 leading-relaxed">
           Ambil foto langsung melalui kamera atau upload file gambar dari perangkatmu.
           <br />
-          <span className="font-semibold text-primary">Hanya format JPG/JPEG dan PNG</span> (maks. 10 MB per foto).
+          <span className="font-semibold text-primary">Hanya format JPG/JPEG, PNG, dan WebP</span> (maks. 2 MB per foto).
         </p>
 
         {/* 2 Fitur Saja: Kamera atau Upload File */}
@@ -203,7 +203,7 @@ export default function ImageUploader({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png,image/jpg"
+            accept="image/jpeg,image/png,image/webp,image/jpg"
             multiple
             className="hidden"
             onChange={(e) => {
@@ -249,7 +249,7 @@ export default function ImageUploader({
                 {/* Badge Foto Utama */}
                 {idx === 0 && (
                   <div className="absolute top-2 left-2 z-10">
-                    <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs tracking-wider">
+                    <span className="bg-primary text-white font-sans text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs tracking-wide">
                       FOTO UTAMA
                     </span>
                   </div>

@@ -67,15 +67,15 @@ export default function AccessibilityControl() {
           ? 'Mode Nyaman Aktif (Klik untuk ukuran normal)'
           : 'Perbesar Teks & Pertajam Tampilan'
       }
-      className={`h-9 px-3 rounded-full border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+      className={`h-9 sm:h-10 w-9 sm:w-auto sm:px-3 justify-center rounded-full border text-xs font-bold transition flex items-center gap-0.5 sm:gap-1.5 cursor-pointer shrink-0 ${
         isComfortMode
           ? 'bg-primary text-white border-primary shadow-xs'
           : 'bg-surface text-ink border-line hover:bg-surface-alt'
       }`}
     >
-      <span className="font-extrabold text-sm leading-none">A</span>
-      <span className="text-xs leading-none">A</span>
-      <span className="hidden sm:inline font-semibold text-xs">
+      <span className="font-display font-bold text-sm leading-none">A</span>
+      <span className="font-sans text-xs leading-none">A</span>
+      <span className="hidden lg:inline font-sans font-semibold text-xs">
         {isComfortMode ? 'Teks Besar' : 'Perbesar'}
       </span>
     </button>

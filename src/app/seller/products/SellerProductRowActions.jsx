@@ -50,14 +50,14 @@ export default function SellerProductRowActions({
 
   return (
     <div className="flex items-center justify-end gap-1.5">
-      <Link href={`/products/${productId}`} title="Lihat di Etalase Publik">
-        <Button variant="ghost" size="sm" pill className="p-2">
+      <Link href={`/products/${productId}`} title="Lihat di Etalase Publik" aria-label="Lihat di Etalase Publik">
+        <Button variant="ghost" size="sm" pill className="w-11 h-11 md:w-9 md:h-9 !p-0">
           <Eye className="w-4 h-4 text-ink-soft hover:text-ink" />
         </Button>
       </Link>
 
-      <Link href={`/seller/products/${productId}/edit`} title="Edit Barang">
-        <Button variant="secondary" size="sm" pill className="p-2">
+      <Link href={`/seller/products/${productId}/edit`} title="Edit Barang" aria-label="Edit Barang">
+        <Button variant="secondary" size="sm" pill className="w-11 h-11 md:w-9 md:h-9 !p-0">
           <Edit2 className="w-4 h-4 text-ink" />
         </Button>
       </Link>
@@ -67,8 +67,9 @@ export default function SellerProductRowActions({
         size="sm"
         pill
         onClick={() => setDeleteModalOpen(true)}
-        className="p-2 text-danger hover:bg-danger-50"
+        className="w-11 h-11 md:w-9 md:h-9 !p-0 text-danger hover:bg-danger-50"
         title="Hapus Barang"
+        aria-label="Hapus Barang"
       >
         <Trash2 className="w-4 h-4" />
       </Button>

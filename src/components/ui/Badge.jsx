@@ -27,7 +27,7 @@ export default function Badge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-medium whitespace-nowrap select-none ${
+      className={`inline-flex items-center gap-1.5 font-sans font-medium whitespace-nowrap select-none ${
         variants[variant] || variants.primary
       } ${sizes[size] || sizes.sm} ${className}`}
     >
@@ -59,7 +59,7 @@ export function PricePill({ amount, className = '', size = 'md' }) {
 
   return (
     <div
-      className={`bg-primary text-white font-extrabold rounded-full inline-flex items-center tracking-tight shadow-sm select-none ${
+      className={`bg-primary text-white font-display font-bold tabular-nums rounded-full inline-flex items-center tracking-tight shadow-sm select-none ${
         sizeClasses[size] || sizeClasses.md
       } ${className}`}
     >

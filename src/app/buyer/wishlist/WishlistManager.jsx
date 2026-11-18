@@ -22,7 +22,7 @@ export default function WishlistManager({ initialProducts = [], user }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between border-b border-line pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-ink tracking-tight flex items-center gap-2">
             <Heart className="w-6 h-6 text-danger fill-danger" />

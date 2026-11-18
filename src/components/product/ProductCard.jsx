@@ -18,6 +18,7 @@ export default function ProductCard({
   const toast = useToast();
   const [wishlisted, setWishlisted] = useState(isWishlisted);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const isSoldOut = product.stock <= 0;
 
@@ -63,7 +64,7 @@ export default function ProductCard({
   };
 
   return (
-    <div className="group relative block bg-canvas border border-line/80 rounded-card p-2.5 md:p-3 shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5">
+    <div className="group relative block min-w-0 bg-canvas border border-line/80 rounded-card p-2 sm:p-2.5 md:p-3 shadow-card hover:shadow-card-hover transition-all duration-200 hover:-translate-y-0.5">
       {/* Tautan Peregang ke Detail Produk (Valid HTML & Ramah Layar Sentuh Mobile) */}
       <Link
         href={`/products/${product.id}`}
@@ -73,12 +74,13 @@ export default function ProductCard({
 
       {/* Container Foto Produk 1:1 */}
       <div className="relative aspect-square w-full rounded-2xl bg-surface overflow-hidden mb-2.5 pointer-events-none">
-        {product.image_url ? (
+        {!imgError && product.image_url ? (
           <Image
             src={product.image_url}
             alt={product.name}
             fill
             unoptimized
+            onError={() => setImgError(true)}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -106,7 +108,7 @@ export default function ProductCard({
         disabled={wishlistLoading}
         aria-label={wishlisted ? 'Hapus dari favorit' : 'Tambah ke favorit'}
         title={wishlisted ? 'Hapus dari favorit' : 'Tambah ke favorit'}
-        className="absolute top-4 right-4 md:top-5 md:right-5 w-9 h-9 rounded-full bg-white/95 shadow-sm hover:shadow-md border border-line/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer z-10 pointer-events-auto"
+        className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-5 md:right-5 w-10 h-10 rounded-full bg-white/95 shadow-sm hover:shadow-md border border-line/40 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer z-10 pointer-events-auto"
       >
         <Heart
           className={`w-4 h-4 transition-colors ${
@@ -123,17 +125,17 @@ export default function ProductCard({
       </div>
 
       {/* Info Stok */}
-      <div className="relative z-0 pointer-events-none text-xs text-ink-soft font-medium mb-1">
+      <div className="relative z-0 pointer-events-none font-sans text-xs text-ink-soft font-medium mb-1">
         {isSoldOut ? (
           <span className="text-danger font-semibold">Stok Habis</span>
         ) : (
-          <span>Tersedia: {product.stock} stok</span>
+          <span className="tabular-nums">Tersedia: {product.stock} stok</span>
         )}
       </div>
 
       {/* Rating & Kode Kampus */}
-      <div className="relative z-0 pointer-events-none flex items-center gap-1.5 text-xs text-ink-soft mb-1 font-medium">
-        <div className="flex items-center gap-0.5 text-accent font-bold">
+      <div className="relative z-0 pointer-events-none font-sans flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] sm:text-xs text-ink-soft mb-1 font-medium">
+        <div className="flex items-center gap-0.5 text-accent font-bold tabular-nums">
           <Star className="w-3.5 h-3.5 fill-accent text-accent" />
           <span className="text-ink">
             {product.avg_rating && Number(product.avg_rating) > 0
@@ -156,7 +158,7 @@ export default function ProductCard({
       </div>
 
       {/* Nama Produk (Maks 2 Baris) */}
-      <h3 className="relative z-0 pointer-events-none text-xs md:text-sm font-semibold text-ink line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+      <h3 className="relative z-0 pointer-events-none font-sans text-[13px] md:text-sm font-semibold text-ink line-clamp-2 leading-snug group-hover:text-primary transition-colors">
         {product.name}
       </h3>
     </div>

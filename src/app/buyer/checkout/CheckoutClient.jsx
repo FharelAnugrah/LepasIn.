@@ -22,6 +22,28 @@ import Input, { Textarea } from '@/components/ui/Input';
 import { ConditionBadge, formatRupiah } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 
+function CheckoutItemImage({ src, alt }) {
+  const [error, setError] = useState(false);
+  if (!error && src) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        unoptimized
+        onError={() => setError(true)}
+        className="object-cover"
+        sizes="56px"
+      />
+    );
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center text-ink-soft">
+      <Package className="w-6 h-6 opacity-40" />
+    </div>
+  );
+}
+
 export default function CheckoutClient({ items, defaultAddress, user }) {
   const router = useRouter();
   const toast = useToast();
@@ -231,37 +253,25 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
                 {/* List Barang dari Toko Ini */}
                 <div className="divide-y divide-line/60">
                   {group.items.map((it) => (
-                    <div key={it.cart_item_id} className="py-3 flex items-center gap-4">
+                    <div key={it.cart_item_id} className="py-3 flex items-center gap-3 sm:gap-4">
                       <div className="relative w-14 h-14 rounded-xl bg-surface border border-line/60 overflow-hidden shrink-0">
-                        {it.image_url ? (
-                          <Image
-                            src={it.image_url}
-                            alt={it.name}
-                            fill
-                            className="object-cover"
-                            sizes="56px"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-ink-soft">
-                            <Package className="w-6 h-6 opacity-40" />
-                          </div>
-                        )}
+                        <CheckoutItemImage src={it.image_url} alt={it.name} />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-xs md:text-sm font-bold text-ink truncate">
+                        <h3 className="font-sans text-xs md:text-sm font-semibold text-ink truncate">
                           {it.name}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                           <ConditionBadge condition={it.condition} />
-                          <span className="text-xs text-ink-soft">
+                          <span className="text-xs text-ink-soft tabular-nums">
                             {formatRupiah(it.price)} x {it.quantity}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-xs md:text-sm font-extrabold text-ink">
+                      <div className="text-right shrink-0">
+                        <span className="text-xs md:text-sm font-bold tabular-nums text-ink">
                           {formatRupiah(it.price * it.quantity)}
                         </span>
                       </div>
@@ -379,7 +389,7 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
                 {/* Subtotal Toko */}
                 <div className="flex items-center justify-between pt-3 border-t border-line/60 text-xs text-ink-soft">
                   <span>Subtotal Toko:</span>
-                  <span className="font-extrabold text-ink text-sm">
+                  <span className="font-bold tabular-nums text-ink text-sm">
                     {formatRupiah(storeSubtotal)}
                   </span>
                 </div>
@@ -397,15 +407,15 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
           <div className="flex flex-col gap-2.5 text-xs md:text-sm">
             <div className="flex items-center justify-between text-ink-soft">
               <span>Total Barang</span>
-              <span className="font-bold text-ink">{items.length} macam barang</span>
+              <span className="font-bold text-ink tabular-nums">{items.length} macam barang</span>
             </div>
             <div className="flex items-center justify-between text-ink-soft">
               <span>Jumlah Toko</span>
-              <span className="font-bold text-ink">{storeGroups.length} toko</span>
+              <span className="font-bold text-ink tabular-nums">{storeGroups.length} toko</span>
             </div>
-            <div className="flex items-center justify-between text-base font-extrabold text-ink pt-3 border-t border-line">
-              <span>Total Tagihan</span>
-              <span className="text-primary text-xl font-black">
+            <div className="flex items-center justify-between text-base font-bold text-ink pt-3 border-t border-line">
+              <span className="font-display">Total Tagihan</span>
+              <span className="font-display text-primary text-xl font-bold tabular-nums tracking-tight">
                 {formatRupiah(grandTotal)}
               </span>
             </div>

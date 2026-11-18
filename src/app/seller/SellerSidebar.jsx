@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -21,6 +21,15 @@ export default function SellerSidebar({ user, store, newOrdersCount = 0 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setMobileOpen(false);
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileOpen]);
 
   const navItems = [
     {
@@ -70,7 +79,7 @@ export default function SellerSidebar({ user, store, newOrdersCount = 0 }) {
     <div className="flex flex-col h-full bg-surface border-r border-line">
       {/* Brand & Store Info */}
       <div className="p-5 border-b border-line">
-        <Link href="/" className="inline-flex items-center text-ink font-extrabold text-xl tracking-tight mb-3">
+        <Link href="/" className="inline-flex items-center font-display text-ink font-extrabold text-xl tracking-tight mb-3">
           <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
         </Link>
         <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-canvas border border-line">
@@ -143,14 +152,15 @@ export default function SellerSidebar({ user, store, newOrdersCount = 0 }) {
     <>
       {/* Mobile Top Header */}
       <header className="lg:hidden sticky top-0 z-30 bg-canvas/95 backdrop-blur-md border-b border-line h-14 px-4 flex items-center justify-between">
-        <Link href="/" className="inline-flex items-center text-lg text-ink font-extrabold">
-          <span className="text-primary">Lepas</span><span>In</span><span className="text-xs font-normal text-ink-soft ml-1.5">Lapak</span>
+        <Link href="/" className="inline-flex items-center font-display text-lg text-ink font-extrabold tracking-tight">
+          <span className="text-primary">Lepas</span><span>In</span><span className="font-sans text-xs font-medium text-ink-soft ml-1.5">Lapak</span>
         </Link>
         <button
           type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-xl text-ink hover:bg-surface-alt"
+          className="w-11 h-11 -mr-1.5 rounded-xl text-ink hover:bg-surface-alt flex items-center justify-center cursor-pointer"
           aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

@@ -244,7 +244,7 @@ export default function AddressManager({ initialAddresses = [], user }) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-xs font-semibold text-ink mt-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink mt-1">
                   <User className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span>{addr.recipient_name}</span>
                   <span className="text-line">·</span>
@@ -377,17 +377,18 @@ export default function AddressManager({ initialAddresses = [], user }) {
             </span>
           </label>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-line mt-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-4 border-t border-line mt-2">
             <Button
               type="button"
               variant="secondary"
               pill
               disabled={formLoading}
               onClick={() => setModalOpen(false)}
+              className="w-full sm:w-auto"
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" pill loading={formLoading}>
+            <Button type="submit" variant="primary" pill loading={formLoading} className="w-full sm:w-auto">
               <span>{editingAddress ? 'Simpan Perubahan' : 'Tambahkan Alamat'}</span>
             </Button>
           </div>

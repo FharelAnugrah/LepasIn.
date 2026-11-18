@@ -17,7 +17,7 @@ export default function Button({
   ...props
 }) {
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold transition-all duration-150 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 select-none';
+    'inline-flex items-center justify-center font-display font-semibold tracking-[-0.01em] transition-all duration-150 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 select-none';
 
   const variants = {
     primary: 'bg-primary text-white hover:bg-primary-hover shadow-sm',

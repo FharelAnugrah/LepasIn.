@@ -65,7 +65,7 @@ export default function LoginForm() {
         <div className="text-center mb-6">
           <Link
             href="/"
-            className="inline-flex items-center text-ink font-extrabold text-2xl tracking-tight mb-2"
+            className="inline-flex items-center font-display text-ink font-extrabold text-2xl tracking-tight mb-2"
           >
             <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
           </Link>
@@ -154,7 +154,7 @@ export default function LoginForm() {
         <p className="text-ink-soft mb-3 leading-relaxed">
           Klik tombol di bawah ini untuk mengisi kredensial demo secara instan:
         </p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setDemoAccount('admin@lepasin.id')}

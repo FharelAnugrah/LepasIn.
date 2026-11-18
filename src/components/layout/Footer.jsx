@@ -3,12 +3,12 @@ import { GraduationCap, Heart, ShieldCheck, ShoppingBag, Sparkles } from 'lucide
 
 export default function Footer() {
   return (
-    <footer className="bg-surface border-t border-line mt-auto pt-12 pb-24 md:pb-12 text-ink">
+    <footer className="bg-surface border-t border-line mt-auto pt-10 md:pt-12 pb-10 md:pb-12 text-ink">
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10 md:mb-12">
           {/* Brand & Tagline */}
           <div className="md:col-span-1 flex flex-col gap-3">
-            <Link href="/" className="inline-flex items-center text-ink font-extrabold text-2xl tracking-tight">
+            <Link href="/" className="inline-flex items-center font-display text-ink font-extrabold text-2xl tracking-tight">
               <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
             </Link>
             <p className="text-xs md:text-sm text-ink-soft leading-relaxed">
@@ -22,7 +22,7 @@ export default function Footer() {
 
           {/* Kategori Populer */}
           <div>
-            <h4 className="text-xs md:text-sm font-bold text-ink uppercase tracking-wider mb-3">
+            <h4 className="font-sans text-xs md:text-sm font-bold text-ink uppercase tracking-wider mb-3">
               Kategori Belanja
             </h4>
             <ul className="flex flex-col gap-2 text-xs md:text-sm text-ink-soft">
@@ -56,7 +56,7 @@ export default function Footer() {
 
           {/* Kampus Terhubung */}
           <div>
-            <h4 className="text-xs md:text-sm font-bold text-ink uppercase tracking-wider mb-3">
+            <h4 className="font-sans text-xs md:text-sm font-bold text-ink uppercase tracking-wider mb-3">
               Kampus Populer
             </h4>
             <ul className="flex flex-col gap-2 text-xs md:text-sm text-ink-soft">
@@ -95,7 +95,7 @@ export default function Footer() {
 
           {/* Akun & Navigasi */}
           <div>
-            <h4 className="text-xs md:text-sm font-bold text-ink uppercase tracking-wider mb-3">
+            <h4 className="font-sans text-xs md:text-sm font-bold text-ink uppercase tracking-wider mb-3">
               Mulai Jual Beli
             </h4>
             <ul className="flex flex-col gap-2 text-xs md:text-sm text-ink-soft">

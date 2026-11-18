@@ -80,13 +80,17 @@ export default function CampusSelector({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Cari kampus aktif berdasarkan ID atau object
-  const selectedCampus = campuses.find((c) => {
-    if (typeof value === 'object' && value !== null) {
-      return c.id === value.id;
-    }
-    return c.id === Number(value);
-  });
+  // Cari kampus aktif berdasarkan ID atau object (fallback ke object prop saat daftar kampus masih dimuat)
+  const selectedCampus =
+    campuses.find((c) => {
+      if (typeof value === 'object' && value !== null) {
+        return c.id === value.id;
+      }
+      return c.id === Number(value);
+    }) ||
+    (typeof value === 'object' && value !== null && value.id && value.short_name
+      ? value
+      : null);
 
   const filteredCampuses = campuses.filter((c) => {
     if (!search.trim()) return true;
@@ -108,7 +112,7 @@ export default function CampusSelector({
   };
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={`relative min-w-0 ${className}`} ref={containerRef}>
       {label && (
         <label className="block text-xs md:text-sm font-semibold text-ink mb-1.5">
           {label}
@@ -119,14 +123,14 @@ export default function CampusSelector({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`inline-flex items-center justify-between gap-2 h-10 md:h-11 px-3.5 md:px-4 rounded-full border transition-all duration-150 cursor-pointer select-none text-left w-full md:w-auto ${
+        className={`inline-flex items-center justify-between gap-2 h-11 px-3.5 md:px-4 rounded-full border transition-all duration-150 cursor-pointer select-none text-left w-full md:w-auto max-w-full min-w-0 ${
           selectedCampus
             ? 'bg-primary-50 border-primary/20 text-primary hover:bg-primary-50/80 font-semibold'
             : 'bg-surface border-line/80 text-ink hover:bg-surface-alt font-medium'
         } ${error ? 'border-danger ring-2 ring-danger-50' : ''}`}
         aria-expanded={isOpen}
       >
-        <span className="flex items-center gap-2 truncate">
+        <span className="flex items-center gap-2 min-w-0 truncate">
           <GraduationCap className="w-4 h-4 shrink-0 text-primary" />
           <span className="text-xs md:text-sm truncate">
             {selectedCampus
@@ -154,7 +158,7 @@ export default function CampusSelector({
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
-          <div className="fixed inset-x-4 top-20 md:absolute md:top-full md:left-0 md:inset-x-auto mt-2 w-auto md:w-80 max-h-[80vh] md:max-h-96 bg-canvas border border-line rounded-card shadow-float z-[60] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="fixed inset-x-3 sm:inset-x-4 top-16 sm:top-20 md:absolute md:top-full md:left-0 md:inset-x-auto md:mt-2 w-auto md:w-80 max-h-[min(72dvh,24rem)] bg-canvas border border-line rounded-card shadow-float z-[60] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Header Panel & Search Bar */}
           <div className="p-3 border-b border-line bg-surface/50">
             <div className="relative flex items-center">
@@ -165,7 +169,7 @@ export default function CampusSelector({
                 placeholder="Cari kampus atau kota..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-9 pr-8 text-xs md:text-sm bg-canvas border border-line rounded-full outline-none focus:border-primary focus:ring-2 focus:ring-primary-50 transition"
+                className="w-full h-10 md:h-9 pl-9 pr-8 text-base md:text-sm bg-canvas border border-line rounded-full outline-none focus:border-primary focus:ring-2 focus:ring-primary-50 transition"
               />
               {search && (
                 <button
@@ -181,7 +185,7 @@ export default function CampusSelector({
 
           {/* Daftar Kampus */}
           <div className="overflow-y-auto flex-1 divide-y divide-line/40 max-h-72">
-            {allowAll && !search && (
+            {allowAll && (!search.trim() || allLabel.toLowerCase().includes(search.trim().toLowerCase())) && (
               <button
                 type="button"
                 onClick={() => handleSelect(null)}
@@ -221,7 +225,7 @@ export default function CampusSelector({
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-ink">{campus.short_name}</span>
+                        <span className="font-display font-bold text-ink">{campus.short_name}</span>
                         <span className="text-[11px] px-1.5 py-0.5 rounded bg-surface border border-line text-ink-soft">
                           {campus.city}
                         </span>

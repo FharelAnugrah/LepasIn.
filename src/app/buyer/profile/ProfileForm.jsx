@@ -54,7 +54,7 @@ export default function ProfileForm({ user, initialCampus }) {
   return (
     <div className="bg-canvas border border-line rounded-card p-6 md:p-8 shadow-card max-w-xl mx-auto">
       <div className="flex items-center gap-4 mb-6 pb-5 border-b border-line">
-        <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary font-bold text-2xl flex items-center justify-center uppercase shadow-xs">
+        <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary font-display font-bold text-2xl flex items-center justify-center uppercase shadow-xs">
           {user.name.charAt(0)}
         </div>
         <div>

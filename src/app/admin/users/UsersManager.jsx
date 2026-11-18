@@ -149,29 +149,98 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
         </div>
 
         {/* Search */}
-        <div className="relative min-w-[240px]">
+        <div className="relative w-full md:w-64 lg:w-72">
           <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Cari nama, email, kampus..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 text-xs md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
+            className="w-full h-11 md:h-10 pl-9 pr-4 text-base md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
           />
         </div>
       </div>
 
-      {/* Tabel Pengguna */}
+      {/* Daftar & Tabel Pengguna */}
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Tampilan Kartu Mobile (< md) */}
+        <div className="md:hidden divide-y divide-line/60">
+          {filteredUsers.length === 0 ? (
+            <div className="py-8 px-4 text-center text-sm text-ink-soft">
+              Tidak ada pengguna yang cocok.
+            </div>
+          ) : (
+            filteredUsers.map((u) => {
+              const isCurrentAdmin = u.id === currentAdminId;
+              return (
+                <div key={u.id} className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-full bg-primary-50 text-primary font-bold text-xs flex items-center justify-center shrink-0 uppercase">
+                      {u.name ? u.name.charAt(0) : 'U'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-bold text-sm text-ink flex items-center gap-1.5 min-w-0">
+                          <span className="truncate">{u.name}</span>
+                          {isCurrentAdmin && (
+                            <span className="text-[10px] bg-primary text-white font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                              Anda
+                            </span>
+                          )}
+                        </div>
+                        <div className="shrink-0">{getRoleBadge(u.role)}</div>
+                      </div>
+                      <p className="text-xs text-ink-soft break-all mt-0.5">{u.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-soft pl-12">
+                    {u.campus_short_name && (
+                      <span className="font-semibold text-pine inline-flex items-center gap-1">
+                        <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                        <span>{u.campus_short_name}</span>
+                      </span>
+                    )}
+                    {u.phone && <span className="text-ink tabular-nums">{u.phone}</span>}
+                    {u.role === 'seller' && u.seller_status && (
+                      <span className="capitalize">Status: {u.seller_status}</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <Link href={`/admin/users/${u.id}/edit`}>
+                      <Button variant="secondary" size="sm" pill icon={Edit2}>
+                        Edit
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      pill
+                      icon={Trash2}
+                      onClick={() => handleOpenDelete(u)}
+                      disabled={isCurrentAdmin}
+                      title={isCurrentAdmin ? 'Tidak dapat menghapus akun sendiri' : 'Hapus pengguna'}
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tampilan Tabel Desktop / Tablet (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs md:text-sm">
             <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
               <tr>
-                <th className="py-3 px-5">Pengguna</th>
-                <th className="py-3 px-5">Peran</th>
-                <th className="py-3 px-5">Kampus</th>
-                <th className="py-3 px-5">Kontak</th>
-                <th className="py-3 px-5 text-right">Aksi</th>
+                <th className="py-3 px-3 xl:px-4">Pengguna</th>
+                <th className="py-3 px-3 xl:px-4">Peran</th>
+                <th className="py-3 px-3 xl:px-4">Kampus</th>
+                <th className="hidden xl:table-cell py-3 px-4">Kontak</th>
+                <th className="py-3 px-3 xl:px-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
@@ -186,25 +255,30 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                   const isCurrentAdmin = u.id === currentAdminId;
                   return (
                     <tr key={u.id} className="hover:bg-surface/50 transition-colors">
-                      <td className="py-3.5 px-5">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3.5 px-3 xl:px-4">
+                        <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-full bg-primary-50 text-primary font-bold text-xs flex items-center justify-center shrink-0 uppercase">
                             {u.name ? u.name.charAt(0) : 'U'}
                           </div>
-                          <div>
-                            <div className="font-bold text-ink flex items-center gap-1.5">
+                          <div className="min-w-0">
+                            <div className="font-bold text-ink flex items-center gap-1.5 flex-wrap">
                               <span>{u.name}</span>
                               {isCurrentAdmin && (
-                                <span className="text-[10px] bg-primary text-white font-bold px-1.5 py-0.2 rounded-full">
+                                <span className="text-[10px] bg-primary text-white font-bold px-1.5 py-0.5 rounded-full">
                                   Anda
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-ink-soft">{u.email}</div>
+                            <div className="text-[11px] text-ink-soft break-all">{u.email}</div>
+                            {u.phone && (
+                              <div className="xl:hidden text-[11px] text-ink tabular-nums mt-0.5">
+                                {u.phone}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3.5 px-5">
+                      <td className="py-3.5 px-3 xl:px-4">
                         {getRoleBadge(u.role)}
                         {u.role === 'seller' && u.seller_status && (
                           <div className="text-[10px] text-ink-soft capitalize mt-0.5">
@@ -212,11 +286,11 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                           </div>
                         )}
                       </td>
-                      <td className="py-3.5 px-5">
+                      <td className="py-3.5 px-3 xl:px-4">
                         {u.campus_short_name ? (
                           <div>
                             <span className="font-semibold text-pine flex items-center gap-1">
-                              <GraduationCap className="w-3.5 h-3.5" />
+                              <GraduationCap className="w-3.5 h-3.5 shrink-0" />
                               <span>{u.campus_short_name}</span>
                             </span>
                             <span className="text-[11px] text-ink-soft">{u.campus_city}</span>
@@ -225,11 +299,11 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                           <span className="text-ink-soft">-</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-5">
-                        <span className="text-ink">{u.phone || '-'}</span>
+                      <td className="hidden xl:table-cell py-3.5 px-4">
+                        <span className="text-ink tabular-nums">{u.phone || '-'}</span>
                       </td>
-                      <td className="py-3.5 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-3.5 px-3 xl:px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           <Link href={`/admin/users/${u.id}/edit`}>
                             <Button variant="secondary" size="sm" pill icon={Edit2}>
                               Edit

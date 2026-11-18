@@ -120,7 +120,7 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
         rows={2}
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        className="w-full p-2.5 rounded-xl bg-canvas text-xs md:text-sm border border-line outline-none focus:border-primary"
+        className="w-full p-2.5 rounded-xl bg-canvas text-base md:text-sm border border-line outline-none focus:border-primary"
       />
 
       <div className="flex items-center justify-end gap-2">

@@ -35,8 +35,8 @@
 }
 
 @theme inline {
-  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -45,6 +45,7 @@
     color: var(--color-ink);
     scroll-behavior: smooth;
     font-size: 16px;
+    overflow-x: clip;
   }
   html.text-size-lg {
     font-size: 18px;
@@ -61,14 +62,33 @@
     font-family: var(--font-sans);
     font-size: 0.9375rem;
     line-height: 1.55;
+    overflow-x: clip;
     -webkit-font-smoothing: antialiased;
   }
   button, a, input, select, textarea, [role="button"] {
     touch-action: manipulation;
   }
-  h1, h2, h3 {
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for],
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+  h1, h2 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+  }
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
   }
   :focus-visible {
     outline: 2px solid var(--color-primary);

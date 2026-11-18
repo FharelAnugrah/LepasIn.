@@ -127,7 +127,7 @@ export default async function BuyerOrdersPage({ searchParams }) {
                 {/* Header Kartu Pesanan */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-3">
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-mono font-bold text-ink">#{o.order_code}</span>
+                    <span className="font-sans tabular-nums font-bold tracking-wide text-ink">#{o.order_code}</span>
                     <span className="text-line">·</span>
                     <span className="text-ink-soft flex items-center gap-1">
                       <Store className="w-3.5 h-3.5 text-primary" />
@@ -141,12 +141,12 @@ export default async function BuyerOrdersPage({ searchParams }) {
                 <div className="flex flex-col gap-3 py-1">
                   {o.items?.map((item, idx) => (
                     <div key={idx} className="flex flex-col gap-1.5 pb-2 border-b border-line/40 last:border-b-0 last:pb-0">
-                      <div className="flex items-center justify-between text-xs md:text-sm">
-                        <div className="flex items-center gap-2 truncate flex-1">
+                      <div className="flex items-center justify-between gap-2 text-xs md:text-sm">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className="font-medium text-ink truncate">{item.name}</span>
-                          <span className="text-ink-soft font-semibold">x{item.quantity}</span>
+                          <span className="text-ink-soft font-semibold shrink-0 tabular-nums">x{item.quantity}</span>
                         </div>
-                        <span className="font-bold text-ink ml-2">
+                        <span className="font-bold tabular-nums text-ink shrink-0">
                           {formatRupiah(item.subtotal || item.price * item.quantity)}
                         </span>
                       </div>
@@ -155,17 +155,17 @@ export default async function BuyerOrdersPage({ searchParams }) {
                       {o.status === 'completed' && (
                         <div className="pt-1">
                           {item.review ? (
-                            <div className="text-[11px] text-ink-soft bg-surface/70 px-3 py-1.5 rounded-lg border border-line/60 flex items-center justify-between">
-                              <div className="flex items-center gap-1 text-accent font-bold">
-                                <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                            <div className="text-[11px] text-ink-soft bg-surface/70 px-3 py-1.5 rounded-lg border border-line/60 flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-1 text-accent font-bold min-w-0">
+                                <Star className="w-3.5 h-3.5 fill-accent text-accent shrink-0" />
                                 <span>{item.review.rating} / 5</span>
                                 {item.review.comment && (
-                                  <span className="text-ink-soft font-normal ml-1">
+                                  <span className="text-ink-soft font-normal ml-1 break-words">
                                     &ldquo;{item.review.comment}&rdquo;
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] text-pine font-semibold">Sudah Diulas</span>
+                              <span className="text-[10px] text-pine font-semibold shrink-0">Sudah Diulas</span>
                             </div>
                           ) : (
                             <ReviewForm
@@ -198,7 +198,7 @@ export default async function BuyerOrdersPage({ searchParams }) {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <span className="text-[11px] text-ink-soft block">Total Pesanan</span>
-                      <span className="text-base font-extrabold text-primary">
+                      <span className="font-display text-base font-bold text-primary tabular-nums">
                         {formatRupiah(o.total_amount)}
                       </span>
                     </div>
@@ -211,7 +211,7 @@ export default async function BuyerOrdersPage({ searchParams }) {
                     ? 'bg-primary-50/50'
                     : 'bg-surface/50'
                 }`}>
-                  <div className="text-xs text-ink-soft flex-1 min-w-[200px]">
+                  <div className="text-xs text-ink-soft min-w-0 w-full sm:w-auto sm:flex-1">
                     {o.status === 'pending_payment' && (
                       <span className="text-ink-soft">
                         Metode COD aktif. Silakan koordinasi titik temu di kampus bersama penjual melalui chat.

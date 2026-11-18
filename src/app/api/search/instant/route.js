@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { parsePositiveInt } from '@/lib/params';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +8,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q')?.trim() || '';
-    const campusId = searchParams.get('campus') ? Number(searchParams.get('campus')) : null;
+    const campusId = parsePositiveInt(searchParams.get('campus'));
 
     if (!q || q.length < 2) {
       return NextResponse.json({ products: [], stores: [] });

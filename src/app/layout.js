@@ -1,12 +1,18 @@
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Poppins, Inter } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: '--font-jakarta',
+const poppins = Poppins({
+  variable: '--font-poppins',
   subsets: ['latin'],
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
+});
+
+const inter = Inter({
+  variable: '--font-inter',
+  subsets: ['latin'],
+  display: 'swap',
 });
 
 export const metadata = {
@@ -19,9 +25,9 @@ export default function RootLayout({ children }) {
     <html
       lang="id"
       data-scroll-behavior="smooth"
-      className={`${plusJakartaSans.variable} h-full antialiased`}
+      className={`${poppins.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-canvas text-ink pb-24 md:pb-0">
+      <body className="min-h-full flex flex-col bg-canvas text-ink font-sans">
         <ToastProvider>
           {children}
         </ToastProvider>

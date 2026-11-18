@@ -68,7 +68,7 @@ export default async function SellerOrdersPage() {
             >
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-3">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className="font-mono font-bold text-ink">#{o.order_code}</span>
+                  <span className="font-sans tabular-nums font-bold tracking-wide text-ink">#{o.order_code}</span>
                   <span className="text-line">·</span>
                   <span className="text-ink font-semibold">Pembeli: {o.buyer_name}</span>
                 </div>
@@ -80,9 +80,9 @@ export default async function SellerOrdersPage() {
                   <div key={idx} className="flex items-center justify-between text-xs md:text-sm">
                     <div className="flex items-center gap-2 truncate flex-1">
                       <span className="font-medium text-ink truncate">{item.name}</span>
-                      <span className="text-ink-soft font-semibold">x{item.quantity}</span>
+                      <span className="text-ink-soft font-semibold tabular-nums">x{item.quantity}</span>
                     </div>
-                    <span className="font-bold text-ink ml-2">
+                    <span className="font-bold tabular-nums text-ink ml-2">
                       {formatRupiah(item.subtotal || item.price * item.quantity)}
                     </span>
                   </div>
@@ -102,7 +102,7 @@ export default async function SellerOrdersPage() {
                     {o.delivery_method === 'meetup' ? 'COD Ketemuan Sekampus' : 'Kirim ke Alamat'}
                   </strong>
                 </div>
-                <div className="text-base font-extrabold text-primary">
+                <div className="font-display text-base font-bold text-primary tabular-nums">
                   {formatRupiah(o.total_amount)}
                 </div>
               </div>

@@ -48,19 +48,19 @@ export default function Modal({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${maxWidth} bg-canvas rounded-t-[28px] md:rounded-card shadow-float border border-line/60 z-10 max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 md:zoom-in-95 duration-200`}
+        className={`relative w-full ${maxWidth} bg-canvas rounded-t-[28px] md:rounded-card shadow-float border border-line/60 z-10 max-h-[90dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 md:zoom-in-95 duration-200 pb-[env(safe-area-inset-bottom)]`}
       >
         {/* Header Modal */}
         {(title || showClose) && (
-          <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-line/40">
+          <div className="flex items-center justify-between gap-2 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-line/40 shrink-0">
             {title ? (
-              <h3 className="text-base md:text-lg font-bold text-ink">{title}</h3>
+              <h3 className="text-base md:text-lg font-bold text-ink truncate">{title}</h3>
             ) : <div />}
             {showClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-ink-soft hover:text-ink hover:bg-surface-alt transition-colors"
+                className="w-10 h-10 -mr-1.5 rounded-full flex items-center justify-center text-ink-soft hover:text-ink hover:bg-surface-alt transition-colors shrink-0"
                 aria-label="Tutup"
               >
                 <X className="w-5 h-5" />
@@ -70,7 +70,7 @@ export default function Modal({
         )}
 
         {/* Body Modal */}
-        <div className="px-6 py-5 overflow-y-auto">{children}</div>
+        <div className="px-5 sm:px-6 py-4 sm:py-5 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

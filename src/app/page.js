@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { query } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { parsePositiveInt } from '@/lib/params';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BottomNav from '@/components/layout/BottomNav';
@@ -19,12 +20,39 @@ import Button from '@/components/ui/Button';
 
 export const dynamic = 'force-dynamic';
 
+const PRODUCT_BASE_QUERY = `
+  SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
+         c.name AS category_name,
+         s.name AS store_name,
+         s.location AS store_location,
+         cp.id AS campus_id,
+         cp.short_name AS campus_short_name,
+         cp.name AS campus_name,
+         cp.city AS campus_city,
+         (SELECT pi.url FROM product_images pi
+           WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
+         COALESCE(r.avg_rating, 0)   AS avg_rating,
+         COALESCE(r.review_count, 0) AS review_count
+  FROM products p
+  JOIN categories c ON c.id = p.category_id
+  JOIN stores s     ON s.id = p.store_id
+  JOIN campuses cp  ON cp.id = s.campus_id
+  JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
+  LEFT JOIN (SELECT product_id, ROUND(AVG(rating), 1)::float AS avg_rating, COUNT(*)::int AS review_count
+             FROM reviews GROUP BY product_id) r ON r.product_id = p.id
+`;
+
 export default async function HomePage({ searchParams }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
 
-  const selectedCampusId = sp?.campus ? Number(sp.campus) : (user?.campus_id || null);
-  const selectedCategoryId = sp?.category ? Number(sp.category) : null;
+  const rawCampus = (Array.isArray(sp?.campus) ? sp.campus[0] : sp?.campus || '').trim();
+  const isAllCampuses = rawCampus.toLowerCase() === 'all';
+  const validCampusParam = isAllCampuses ? null : parsePositiveInt(rawCampus);
+
+  // Jika pengguna memilih "Semua Kampus" (?campus=all), jangan fallback ke kampus default profil
+  const selectedCampusId = isAllCampuses ? null : (validCampusParam || user?.campus_id || null);
+  const selectedCategoryId = parsePositiveInt(sp?.category);
 
   // 1. Ambil Kategori (posisi 'Lainnya' selalu berada di paling akhir)
   const categoriesRes = await query(`
@@ -71,28 +99,7 @@ export default async function HomePage({ searchParams }) {
   let recommendations = [];
   try {
     const recParams = [];
-    let recSql = `
-      SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
-             c.name AS category_name,
-             s.name AS store_name,
-             s.location AS store_location,
-             cp.id AS campus_id,
-             cp.short_name AS campus_short_name,
-             cp.name AS campus_name,
-             cp.city AS campus_city,
-             (SELECT pi.url FROM product_images pi
-               WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
-             COALESCE(r.avg_rating, 0)   AS avg_rating,
-             COALESCE(r.review_count, 0) AS review_count
-      FROM products p
-      JOIN categories c ON c.id = p.category_id
-      JOIN stores s     ON s.id = p.store_id
-      JOIN campuses cp  ON cp.id = s.campus_id
-      JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
-      LEFT JOIN (SELECT product_id, ROUND(AVG(rating), 1)::float AS avg_rating, COUNT(*)::int AS review_count
-                 FROM reviews GROUP BY product_id) r ON r.product_id = p.id
-      WHERE p.stock > 0
-    `;
+    let recSql = `${PRODUCT_BASE_QUERY} WHERE p.stock > 0`;
 
     if (selectedCampusId) {
       recParams.push(selectedCampusId);
@@ -109,33 +116,31 @@ export default async function HomePage({ searchParams }) {
     const recRes = await query(recSql, recParams);
     recommendations = recRes.rows;
 
-    // Jika rekomendasi kampus kurang dari 4 dan filter bukan manual, tambahkan produk dari kampus lain
-    if (recommendations.length < 4 && !sp?.campus) {
-      const fallbackRes = await query(`
-        SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
-               c.name AS category_name,
-               s.name AS store_name,
-               s.location AS store_location,
-               cp.id AS campus_id,
-               cp.short_name AS campus_short_name,
-               cp.name AS campus_name,
-               cp.city AS campus_city,
-               (SELECT pi.url FROM product_images pi
-                 WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
-               COALESCE(r.avg_rating, 0)   AS avg_rating,
-               COALESCE(r.review_count, 0) AS review_count
-        FROM products p
-        JOIN categories c ON c.id = p.category_id
-        JOIN stores s     ON s.id = p.store_id
-        JOIN campuses cp  ON cp.id = s.campus_id
-        JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
-        LEFT JOIN (SELECT product_id, ROUND(AVG(rating), 1)::float AS avg_rating, COUNT(*)::int AS review_count
-                   FROM reviews GROUP BY product_id) r ON r.product_id = p.id
-        WHERE p.stock > 0
-        ORDER BY RANDOM()
-        LIMIT 8
-      `);
-      recommendations = fallbackRes.rows;
+    // Jika rekomendasi kampus default kurang dari 4, pertahankan produk kampus tersebut lalu tambahkan dari kampus lain
+    if (selectedCampusId && recommendations.length < 4 && !isAllCampuses && !validCampusParam) {
+      const existingIds = recommendations.map((item) => item.id);
+      const needed = 8 - recommendations.length;
+      const fallbackParams = [needed];
+      let excludeClause = '';
+
+      if (existingIds.length > 0) {
+        fallbackParams.push(existingIds);
+        excludeClause += ` AND NOT (p.id = ANY($${fallbackParams.length}::int[]))`;
+      }
+      if (selectedCategoryId) {
+        fallbackParams.push(selectedCategoryId);
+        excludeClause += ` AND p.category_id = $${fallbackParams.length}`;
+      }
+
+      const fallbackRes = await query(
+        `${PRODUCT_BASE_QUERY}
+         WHERE p.stock > 0
+           ${excludeClause}
+         ORDER BY RANDOM()
+         LIMIT $1`,
+        fallbackParams
+      );
+      recommendations = [...recommendations, ...fallbackRes.rows];
     }
   } catch (err) {
     console.error('Error fetching recommendations:', err);
@@ -144,29 +149,7 @@ export default async function HomePage({ searchParams }) {
   // 5. Query "Baru Dilepas" (Semua produk terbaru)
   let latestProducts = [];
   try {
-    const latestRes = await query(`
-      SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
-             c.name AS category_name,
-             s.name AS store_name,
-             s.location AS store_location,
-             cp.id AS campus_id,
-             cp.short_name AS campus_short_name,
-             cp.name AS campus_name,
-             cp.city AS campus_city,
-             (SELECT pi.url FROM product_images pi
-               WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
-             COALESCE(r.avg_rating, 0)   AS avg_rating,
-             COALESCE(r.review_count, 0) AS review_count
-      FROM products p
-      JOIN categories c ON c.id = p.category_id
-      JOIN stores s     ON s.id = p.store_id
-      JOIN campuses cp  ON cp.id = s.campus_id
-      JOIN users u      ON u.id = s.user_id AND u.seller_status = 'approved'
-      LEFT JOIN (SELECT product_id, ROUND(AVG(rating), 1)::float AS avg_rating, COUNT(*)::int AS review_count
-                 FROM reviews GROUP BY product_id) r ON r.product_id = p.id
-      ORDER BY p.created_at DESC
-      LIMIT 8
-    `);
+    const latestRes = await query(`${PRODUCT_BASE_QUERY} ORDER BY p.created_at DESC LIMIT 8`);
     latestProducts = latestRes.rows;
   } catch (err) {
     console.error('Error fetching latest products:', err);
@@ -186,7 +169,7 @@ export default async function HomePage({ searchParams }) {
         {/* Chip Kategori Horizontal */}
         <section className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
           <Link
-            href="/"
+            href={isAllCampuses ? '/?campus=all' : validCampusParam ? `/?campus=${validCampusParam}` : '/'}
             className={`px-4 py-2 rounded-full text-xs md:text-sm font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
               !selectedCategoryId
                 ? 'bg-primary text-white shadow-sm'
@@ -211,19 +194,15 @@ export default async function HomePage({ searchParams }) {
         </section>
 
         {/* Hero Promo Banner Biru Khas LepasIn (#1E5EFF) */}
-        <section className="relative overflow-hidden bg-primary rounded-card p-6 md:p-10 text-white shadow-card">
+        <section className="relative overflow-hidden bg-primary rounded-card p-5 sm:p-6 md:p-10 text-white shadow-card">
           <div className="relative z-10 max-w-xl flex flex-col gap-3">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold text-white w-fit">
-              <Sparkles className="w-3.5 h-3.5 text-accent" />
-              <span>Marketplace Mahasiswa & Anak Kost</span>
-            </div>
-            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight leading-tight">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold md:font-extrabold tracking-tight leading-[1.2]">
               Lepas Barang Kostmu, Hemat Budget Kuliah!
             </h1>
-            <p className="text-xs md:text-sm text-white/90 leading-relaxed">
+            <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
               Jual beli barang preloved aman sesama mahasiswa di seluruh kampus Indonesia. Cari kasur, kipas, buku kuliah, dan peralatan dapur tanpa ongkos kirim mahal lewat COD sekampus.
             </p>
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
               <Link href="/products">
                 <Button variant="accent" size="md" pill>
                   <span>Jelajah Produk</span>
@@ -245,24 +224,31 @@ export default async function HomePage({ searchParams }) {
 
         {/* Section 1: Produk Rekomendasi Kampus / Pilihan */}
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg md:text-xl font-bold text-ink flex items-center gap-2">
+              <h2 className="text-lg md:text-xl font-bold text-ink flex flex-wrap items-center gap-2">
                 <span>Rekomendasi Kampus</span>
-                {selectedCampusObj && (
+                {selectedCampusObj ? (
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-pine-50 text-pine flex items-center gap-1">
                     <GraduationCap className="w-3.5 h-3.5" />
                     <span>{selectedCampusObj.short_name}</span>
                   </span>
+                ) : (
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary-50 text-primary flex items-center gap-1">
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>Semua Kampus</span>
+                  </span>
                 )}
               </h2>
               <p className="text-xs text-ink-soft mt-0.5">
-                Barang preloved terdekat siap COD atau dikirim ke area kostmu.
+                {selectedCampusObj
+                  ? 'Barang preloved terdekat siap COD atau dikirim ke area kostmu.'
+                  : 'Pilihan barang preloved terbaik dari seluruh kampus Indonesia.'}
               </p>
             </div>
             <Link
               href={`/products${selectedCampusId ? `?campus=${selectedCampusId}` : ''}`}
-              className="text-xs md:text-sm font-bold text-primary hover:underline flex items-center gap-1"
+              className="text-xs md:text-sm font-bold text-primary hover:underline inline-flex items-center gap-1 shrink-0 self-start sm:self-auto py-1"
             >
               <span>Lihat semua</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -271,13 +257,15 @@ export default async function HomePage({ searchParams }) {
 
           {recommendations.length === 0 ? (
             <div className="p-8 text-center bg-surface rounded-card border border-line text-xs text-ink-soft">
-              Belum ada produk untuk kampus ini.{' '}
+              {selectedCampusObj
+                ? 'Belum ada produk untuk kampus ini.'
+                : 'Belum ada produk yang tersedia saat ini.'}{' '}
               <Link href="/products" className="text-primary font-bold hover:underline">
                 Jelajahi produk dari seluruh kampus se-Indonesia
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-5">
               {recommendations.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -292,7 +280,7 @@ export default async function HomePage({ searchParams }) {
 
         {/* Section 2: Baru Dilepas */}
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-lg md:text-xl font-bold text-ink">
                 Baru Dilepas
@@ -303,14 +291,14 @@ export default async function HomePage({ searchParams }) {
             </div>
             <Link
               href="/products"
-              className="text-xs md:text-sm font-bold text-primary hover:underline flex items-center gap-1"
+              className="text-xs md:text-sm font-bold text-primary hover:underline inline-flex items-center gap-1 shrink-0 self-start sm:self-auto py-1"
             >
               <span>Katalog Lengkap</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-5">
             {latestProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -341,7 +329,7 @@ export default async function HomePage({ searchParams }) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-canvas p-5 rounded-2xl border border-line/80 flex flex-col gap-2.5 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center font-bold text-base">
+              <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center font-display font-bold text-base">
                 1
               </div>
               <h3 className="font-bold text-sm md:text-base text-ink">
@@ -353,7 +341,7 @@ export default async function HomePage({ searchParams }) {
             </div>
 
             <div className="bg-canvas p-5 rounded-2xl border border-line/80 flex flex-col gap-2.5 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-pine-50 text-pine flex items-center justify-center font-bold text-base">
+              <div className="w-10 h-10 rounded-xl bg-pine-50 text-pine flex items-center justify-center font-display font-bold text-base">
                 2
               </div>
               <h3 className="font-bold text-sm md:text-base text-ink">
@@ -365,7 +353,7 @@ export default async function HomePage({ searchParams }) {
             </div>
 
             <div className="bg-canvas p-5 rounded-2xl border border-line/80 flex flex-col gap-2.5 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-accent/20 text-ink flex items-center justify-center font-bold text-base">
+              <div className="w-10 h-10 rounded-xl bg-accent/20 text-ink flex items-center justify-center font-display font-bold text-base">
                 3
               </div>
               <h3 className="font-bold text-sm md:text-base text-ink">

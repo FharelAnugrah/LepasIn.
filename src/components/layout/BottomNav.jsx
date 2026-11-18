@@ -100,52 +100,64 @@ export default function BottomNav({
     pathname !== '/buyer/checkout';
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-      {/* Floating Cart Bar (Melayang Tepat di Atas Bottom Nav) */}
-      {showFloatingCart && (
-        <div className="px-4 pb-2 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
-          <Link
-            href="/buyer/cart"
-            className="flex items-center justify-between bg-primary text-white rounded-full shadow-float px-5 py-3 hover:bg-primary-hover transition-colors"
-          >
-            <div className="flex items-center gap-2.5">
-              <ShoppingBag className="w-5 h-5" />
-              <span className="text-sm font-bold">Lihat Keranjang</span>
-              <span className="bg-white text-primary text-xs font-black px-2 py-0.5 rounded-full">
-                {cartCount}x
-              </span>
-            </div>
-            <div className="text-sm font-extrabold tracking-tight">
-              {formatRupiah(cartTotal)}
-            </div>
-          </Link>
-        </div>
-      )}
+    <>
+      {/* Ruang cadangan di alur dokumen agar konten bawah tidak tertutup BottomNav / Floating Cart di ponsel */}
+      <div
+        className={`md:hidden shrink-0 ${
+          showFloatingCart
+            ? 'h-[calc(8rem+env(safe-area-inset-bottom))]'
+            : 'h-[calc(4.5rem+env(safe-area-inset-bottom))]'
+        }`}
+        aria-hidden="true"
+      />
 
-      {/* 4 Tab Bottom Navigation */}
-      <nav className="bg-canvas/95 backdrop-blur-md border-t border-line px-2 py-1.5 flex items-center justify-around shadow-float pointer-events-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+        {/* Floating Cart Bar (Melayang Tepat di Atas Bottom Nav) */}
+        {showFloatingCart && (
+          <div className="px-3 sm:px-4 pb-2 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
             <Link
-              key={tab.label}
-              href={tab.href}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 min-w-[64px] ${
-                tab.isActive
-                  ? 'text-primary font-bold'
-                  : 'text-ink-soft hover:text-ink font-medium'
-              }`}
+              href="/buyer/cart"
+              className="flex items-center justify-between gap-2 bg-primary text-white rounded-full shadow-float px-4 sm:px-5 py-2.5 sm:py-3 hover:bg-primary-hover transition-colors"
             >
-              <Icon
-                className={`w-5 h-5 mb-0.5 transition-transform ${
-                  tab.isActive ? 'stroke-[2.5px] scale-105' : 'stroke-[1.8px]'
-                }`}
-              />
-              <span className="text-[11px] leading-tight tracking-tight">{tab.label}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                <span className="font-display text-xs sm:text-sm font-bold truncate">Lihat Keranjang</span>
+                <span className="bg-white text-primary font-display text-[11px] sm:text-xs font-bold tabular-nums px-2 py-0.5 rounded-full shrink-0">
+                  {cartCount}x
+                </span>
+              </div>
+              <div className="font-display text-xs sm:text-sm font-bold tabular-nums tracking-tight shrink-0">
+                {formatRupiah(cartTotal)}
+              </div>
             </Link>
-          );
-        })}
-      </nav>
-    </div>
+          </div>
+        )}
+
+        {/* 4 Tab Bottom Navigation */}
+        <nav className="bg-canvas/95 backdrop-blur-md border-t border-line px-1.5 sm:px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-float pointer-events-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.label}
+                href={tab.href}
+                className={`flex-1 min-w-0 min-h-[44px] flex flex-col items-center justify-center py-1 px-1.5 sm:px-3 rounded-xl transition-all duration-150 ${
+                  tab.isActive
+                    ? 'text-primary font-bold'
+                    : 'text-ink-soft hover:text-ink font-medium'
+                }`}
+              >
+                <Icon
+                  className={`w-5 h-5 mb-0.5 transition-transform ${
+                    tab.isActive ? 'stroke-[2.5px] scale-105' : 'stroke-[1.8px]'
+                  }`}
+                />
+                <span className="text-[11px] leading-tight tracking-tight truncate max-w-full">{tab.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </>
   );
 }

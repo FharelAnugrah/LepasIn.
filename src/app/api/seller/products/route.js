@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { query, withTransaction } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { extractAndProcessImages } from '@/lib/image-util';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,7 +87,7 @@ const productSchema = z
     stock: stockValidator,
     condition: z.enum(['like_new', 'good', 'fair', 'minor_defect']),
     category_id: z.coerce.number().int().positive('Kategori wajib dipilih'),
-    image_urls: z.array(z.string().trim().min(1, 'Path foto tidak valid')).max(5, 'Maksimal 5 gambar').default([]),
+    image_urls: z.array(z.string().trim().min(1, 'Path/Data foto tidak valid')).min(1, 'Mohon unggah minimal 1 foto barang.').max(5, 'Maksimal 5 gambar'),
   })
   .refine(
     (data) => {
@@ -145,8 +146,31 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Toko belum terdaftar' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const validated = productSchema.safeParse(body);
+    let payload = {};
+    let imageUrls = [];
+
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      payload = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        price: formData.get('price'),
+        original_price: formData.get('original_price'),
+        stock: formData.get('stock'),
+        condition: formData.get('condition'),
+        category_id: formData.get('category_id'),
+      };
+      imageUrls = await extractAndProcessImages(formData);
+    } else {
+      payload = await request.json();
+      imageUrls = await extractAndProcessImages(payload);
+    }
+
+    payload.image_urls = imageUrls;
+
+    const validated = productSchema.safeParse(payload);
 
     if (!validated.success) {
       const fieldErrors = validated.error.flatten().fieldErrors;
@@ -205,6 +229,9 @@ export async function POST(request) {
     }, { status: 201 });
   } catch (err) {
     console.error('Create product error:', err);
-    return NextResponse.json({ error: 'Gagal menambahkan produk' }, { status: 500 });
+    return NextResponse.json(
+      { error: err.message || 'Gagal menambahkan produk' },
+      { status: err.message?.includes('Ukuran foto') || err.message?.includes('Format file') ? 400 : 500 }
+    );
   }
 }

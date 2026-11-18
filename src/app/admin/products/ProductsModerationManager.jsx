@@ -83,28 +83,88 @@ export default function ProductsModerationManager({ initialProducts }) {
       </div>
 
       {/* Pencarian */}
-      <div className="relative max-w-sm">
+      <div className="relative w-full sm:max-w-sm">
         <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder="Cari nama produk, toko, kampus..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-10 pl-9 pr-4 text-xs md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
+          className="w-full h-11 md:h-10 pl-9 pr-4 text-base md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
         />
       </div>
 
-      {/* Tabel Moderasi */}
+      {/* Daftar & Tabel Moderasi */}
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Tampilan Kartu Mobile (< md) */}
+        <div className="md:hidden divide-y divide-line/60">
+          {filteredProducts.length === 0 ? (
+            <div className="py-8 px-4 text-center text-sm text-ink-soft">
+              Tidak ada produk yang cocok dengan pencarian.
+            </div>
+          ) : (
+            filteredProducts.map((p) => (
+              <div key={p.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-ink flex items-start gap-2">
+                      <Package className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="line-clamp-2">{p.name}</span>
+                    </div>
+                    <div className="text-[11px] text-ink-soft tabular-nums pl-6 mt-0.5">
+                      ID Produk: #{p.id} · {p.category_name}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <ConditionBadge condition={p.condition} />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs pl-6">
+                  <div className="space-y-0.5">
+                    <div className="font-semibold text-ink inline-flex items-center gap-1.5">
+                      <Store className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>{p.store_name}</span>
+                    </div>
+                    <div className="text-[11px] text-pine font-medium flex items-center gap-1">
+                      <GraduationCap className="w-3 h-3 shrink-0" />
+                      <span>{p.campus_short_name} ({p.campus_city})</span>
+                    </div>
+                  </div>
+                  <div className="text-right tabular-nums">
+                    <div className="font-bold text-ink">{formatRupiah(p.price)}</div>
+                    <div className="text-[11px] text-ink-soft">
+                      Stok: <span className="font-semibold text-ink">{p.stock}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    pill
+                    icon={Trash2}
+                    onClick={() => handleOpenDelete(p)}
+                  >
+                    Hapus Pelanggaran
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Tampilan Tabel Desktop / Tablet (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs md:text-sm">
             <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
               <tr>
-                <th className="py-3 px-5">Produk</th>
-                <th className="py-3 px-5">Toko & Kampus</th>
-                <th className="py-3 px-5">Kategori & Kondisi</th>
-                <th className="py-3 px-5">Harga & Stok</th>
-                <th className="py-3 px-5 text-right">Moderasi</th>
+                <th className="py-3 px-3 xl:px-4">Produk</th>
+                <th className="py-3 px-3 xl:px-4">Toko &amp; Kampus</th>
+                <th className="hidden xl:table-cell py-3 px-4">Kategori &amp; Kondisi</th>
+                <th className="py-3 px-3 xl:px-4">Harga &amp; Stok</th>
+                <th className="py-3 px-3 xl:px-4 text-right">Moderasi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
@@ -117,38 +177,42 @@ export default function ProductsModerationManager({ initialProducts }) {
               ) : (
                 filteredProducts.map((p) => (
                   <tr key={p.id} className="hover:bg-surface/50 transition-colors">
-                    <td className="py-3.5 px-5">
-                      <div className="font-bold text-ink flex items-center gap-2">
-                        <Package className="w-4 h-4 text-primary shrink-0" />
-                        <span className="line-clamp-2 max-w-xs">{p.name}</span>
+                    <td className="py-3.5 px-3 xl:px-4">
+                      <div className="font-bold text-ink flex items-start gap-2">
+                        <Package className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <span className="line-clamp-2 max-w-[165px] xl:max-w-xs break-words">{p.name}</span>
                       </div>
-                      <div className="text-[11px] text-ink-soft mt-0.5">
-                        ID Produk: #{p.id}
+                      <div className="text-[11px] text-ink-soft tabular-nums mt-0.5 pl-6">
+                        ID #{p.id}
+                      </div>
+                      <div className="xl:hidden flex flex-wrap items-center gap-1.5 mt-1 pl-6">
+                        <span className="text-[11px] text-ink-soft">{p.category_name}</span>
+                        <ConditionBadge condition={p.condition} />
                       </div>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-3.5 px-3 xl:px-4">
                       <div className="font-semibold text-ink flex items-center gap-1.5">
-                        <Store className="w-3.5 h-3.5 text-primary" />
+                        <Store className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span>{p.store_name}</span>
                       </div>
                       <div className="text-[11px] text-pine font-medium flex items-center gap-1 mt-0.5">
-                        <GraduationCap className="w-3 h-3" />
+                        <GraduationCap className="w-3 h-3 shrink-0" />
                         <span>{p.campus_short_name} ({p.campus_city})</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="hidden xl:table-cell py-3.5 px-4">
                       <div className="font-medium text-ink">{p.category_name}</div>
                       <div className="mt-1">
                         <ConditionBadge condition={p.condition} />
                       </div>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <div className="font-bold text-ink">{formatRupiah(p.price)}</div>
+                    <td className="py-3.5 px-3 xl:px-4 tabular-nums">
+                      <div className="font-bold text-ink whitespace-nowrap">{formatRupiah(p.price)}</div>
                       <div className="text-[11px] text-ink-soft">
                         Stok: <span className="font-semibold text-ink">{p.stock}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5 text-right">
+                    <td className="py-3.5 px-3 xl:px-4 text-right">
                       <Button
                         variant="danger"
                         size="sm"
@@ -156,7 +220,8 @@ export default function ProductsModerationManager({ initialProducts }) {
                         icon={Trash2}
                         onClick={() => handleOpenDelete(p)}
                       >
-                        Hapus Pelanggaran
+                        <span className="xl:hidden">Hapus</span>
+                        <span className="hidden xl:inline">Hapus Pelanggaran</span>
                       </Button>
                     </td>
                   </tr>

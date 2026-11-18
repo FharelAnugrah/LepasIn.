@@ -41,6 +41,15 @@ export default function EditProductForm({ product, images = [], categories = [] 
       return;
     }
 
+    // Validasi ukuran gambar maksimal 2 MB
+    for (let i = 0; i < uploadedImages.length; i++) {
+      const img = uploadedImages[i];
+      if (img instanceof File && img.size > 2 * 1024 * 1024) {
+        toast.error(`Ukuran foto ke-${i + 1} melebihi batas maksimal 2 MB.`);
+        return;
+      }
+    }
+
     const newErrors = {};
 
     // 1. Validasi Harga Lepas
@@ -89,19 +98,25 @@ export default function EditProductForm({ product, images = [], categories = [] 
 
     setLoading(true);
     try {
+      const formData = new FormData();
+      formData.append('name', name.trim());
+      formData.append('category_id', String(categoryId));
+      formData.append('condition', condition);
+      formData.append('price', priceStr);
+      if (originalPrice) {
+        formData.append('original_price', String(originalPrice).trim());
+      }
+      formData.append('stock', stockStr);
+      formData.append('description', description.trim());
+
+      // Kirim gambar melalui FormData
+      uploadedImages.forEach((img) => {
+        formData.append('images', img);
+      });
+
       const res = await fetch(`/api/seller/products/${product.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          category_id: Number(categoryId),
-          condition,
-          price: priceStr,
-          original_price: originalPrice ? String(originalPrice).trim() : null,
-          stock: stockStr,
-          description: description.trim(),
-          image_urls: uploadedImages,
-        }),
+        body: formData,
       });
 
       const data = await res.json();

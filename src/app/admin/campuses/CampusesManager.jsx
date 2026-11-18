@@ -214,28 +214,97 @@ export default function CampusesManager({ initialCampuses }) {
       </div>
 
       {/* Pencarian */}
-      <div className="relative max-w-sm">
+      <div className="relative w-full sm:max-w-sm">
         <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder="Cari kampus, singkatan, kota, provinsi..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-10 pl-9 pr-4 text-xs md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
+          className="w-full h-11 md:h-10 pl-9 pr-4 text-base md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
         />
       </div>
 
-      {/* Tabel Kampus */}
+      {/* Daftar & Tabel Kampus */}
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Tampilan Kartu Mobile (< md) */}
+        <div className="md:hidden divide-y divide-line/60">
+          {filteredCampuses.length === 0 ? (
+            <div className="py-8 px-4 text-center text-sm text-ink-soft">
+              Kampus tidak ditemukan.
+            </div>
+          ) : (
+            filteredCampuses.map((c) => (
+              <div key={c.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-ink flex items-start gap-2">
+                      <GraduationCap className="w-4 h-4 text-pine shrink-0 mt-0.5" />
+                      <span>{c.name}</span>
+                    </div>
+                    <p className="text-xs text-ink-soft pl-6 mt-0.5">
+                      {c.city}, {c.province}
+                    </p>
+                  </div>
+                  <span className="font-display font-bold tracking-wide text-primary bg-primary-50 px-2.5 py-0.5 rounded-md text-xs shrink-0">
+                    {c.short_name}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-3 text-xs tabular-nums text-ink-soft">
+                    <span className="inline-flex items-center gap-1" title="Pengguna">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                      <span>{c.user_count || 0}</span>
+                    </span>
+                    <span className="text-line">|</span>
+                    <span className="inline-flex items-center gap-1" title="Toko">
+                      <Store className="w-3.5 h-3.5 text-pine" />
+                      <span>{c.store_count || 0}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      pill
+                      icon={Edit2}
+                      onClick={() => handleOpenEdit(c)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      pill
+                      icon={Trash2}
+                      onClick={() => handleOpenDelete(c)}
+                      disabled={c.user_count > 0 || c.store_count > 0}
+                      title={
+                        c.user_count > 0 || c.store_count > 0
+                          ? 'Tidak bisa dihapus karena masih ada pengguna/toko di kampus ini'
+                          : 'Hapus kampus'
+                      }
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Tampilan Tabel Desktop / Tablet (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs md:text-sm">
             <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
               <tr>
-                <th className="py-3 px-5">Nama Perguruan Tinggi</th>
-                <th className="py-3 px-5">Singkatan</th>
-                <th className="py-3 px-5">Kota / Provinsi</th>
-                <th className="py-3 px-5">Komunitas</th>
-                <th className="py-3 px-5 text-right">Aksi</th>
+                <th className="py-3 px-3 xl:px-4">Nama Perguruan Tinggi</th>
+                <th className="py-3 px-3 xl:px-4">Singkatan</th>
+                <th className="hidden xl:table-cell py-3 px-4">Kota / Provinsi</th>
+                <th className="py-3 px-3 xl:px-4">Komunitas</th>
+                <th className="py-3 px-3 xl:px-4 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
@@ -248,23 +317,26 @@ export default function CampusesManager({ initialCampuses }) {
               ) : (
                 filteredCampuses.map((c) => (
                   <tr key={c.id} className="hover:bg-surface/50 transition-colors">
-                    <td className="py-3.5 px-5">
+                    <td className="py-3.5 px-3 xl:px-4">
                       <div className="font-bold text-ink flex items-center gap-2">
                         <GraduationCap className="w-4 h-4 text-pine shrink-0" />
                         <span>{c.name}</span>
                       </div>
+                      <div className="xl:hidden text-[11px] text-ink-soft pl-6 mt-0.5">
+                        {c.city}, {c.province}
+                      </div>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <span className="font-mono font-bold text-primary bg-primary-50 px-2 py-0.5 rounded-md text-xs">
+                    <td className="py-3.5 px-3 xl:px-4">
+                      <span className="font-display font-bold tracking-wide text-primary bg-primary-50 px-2.5 py-0.5 rounded-md text-xs">
                         {c.short_name}
                       </span>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="hidden xl:table-cell py-3.5 px-4">
                       <div className="text-ink font-medium">{c.city}</div>
                       <div className="text-[11px] text-ink-soft">{c.province}</div>
                     </td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-2 text-xs">
+                    <td className="py-3.5 px-3 xl:px-4">
+                      <div className="flex items-center gap-2 text-xs tabular-nums">
                         <span className="flex items-center gap-1 text-ink-soft" title="Pengguna">
                           <Users className="w-3.5 h-3.5 text-primary" />
                           <span>{c.user_count || 0}</span>
@@ -276,8 +348,8 @@ export default function CampusesManager({ initialCampuses }) {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="py-3.5 px-3 xl:px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -347,7 +419,7 @@ export default function CampusesManager({ initialCampuses }) {
             autoFocus
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               label="Singkatan (Kode)"
               placeholder="Contoh: UNHAS"

@@ -39,6 +39,7 @@ export default function ProductDetailClient({
   const [addingToCart, setAddingToCart] = useState(false);
   const [wishlisted, setWishlisted] = useState(isWishlisted);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [failedImages, setFailedImages] = useState({});
 
   const isSoldOut = product.stock <= 0;
   const isOwner = user && user.id === product.seller_user_id;
@@ -165,7 +166,7 @@ export default function ProductDetailClient({
         {/* Kolom Kiri: Galeri Foto (5 kolom) */}
         <div className="lg:col-span-5 flex flex-col gap-3">
           <div className="relative aspect-square w-full rounded-card bg-surface overflow-hidden border border-line shadow-card">
-            {activeImage ? (
+            {!failedImages[activeImage] && activeImage ? (
               <Image
                 src={activeImage}
                 alt={product.name}
@@ -174,6 +175,7 @@ export default function ProductDetailClient({
                 sizes="(max-width: 1024px) 100vw, 40vw"
                 className="object-cover"
                 priority
+                onError={() => setFailedImages((prev) => ({ ...prev, [activeImage]: true }))}
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-ink-soft/40 gap-2">
@@ -220,13 +222,20 @@ export default function ProductDetailClient({
                       : 'border-line hover:border-primary/50'
                   }`}
                 >
-                  <Image
-                    src={img.url}
-                    alt={`${product.name} thumb ${idx}`}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
+                  {!failedImages[img.url] ? (
+                    <Image
+                      src={img.url}
+                      alt={`${product.name} thumb ${idx}`}
+                      fill
+                      unoptimized
+                      onError={() => setFailedImages((prev) => ({ ...prev, [img.url]: true }))}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-surface text-ink-soft/40">
+                      <Package className="w-5 h-5" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -245,12 +254,12 @@ export default function ProductDetailClient({
           </div>
 
           {/* Judul Produk */}
-          <h1 className="text-xl md:text-3xl font-extrabold text-ink tracking-tight leading-snug">
+          <h1 className="font-display text-xl md:text-3xl font-bold text-ink tracking-tight leading-snug">
             {product.name}
           </h1>
 
           {/* Rating & Sisa Stok */}
-          <div className="flex items-center gap-3 text-xs md:text-sm text-ink-soft pb-4 border-b border-line">
+          <div className="flex items-center gap-3 text-xs md:text-sm text-ink-soft pb-4 border-b border-line tabular-nums">
             <div className="flex items-center gap-1 font-bold text-ink">
               <Star className="w-4 h-4 fill-accent text-accent" />
               <span>
@@ -280,10 +289,10 @@ export default function ProductDetailClient({
 
             {discountPercent > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-xs md:text-sm text-ink-soft line-through">
+                <span className="text-xs md:text-sm text-ink-soft line-through tabular-nums">
                   {formatRupiah(product.original_price)}
                 </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-danger-50 text-danger">
+                <span className="text-xs font-bold tabular-nums px-2 py-0.5 rounded-full bg-danger-50 text-danger">
                   Hemat {discountPercent}%
                 </span>
               </div>
@@ -293,11 +302,11 @@ export default function ProductDetailClient({
           {/* Kartu Informasi Lapak / Toko */}
           <div className="p-4 rounded-card bg-surface border border-line flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary font-bold text-base flex items-center justify-center shrink-0 uppercase">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary font-display font-bold text-base flex items-center justify-center shrink-0 uppercase">
                 {product.store_name ? product.store_name.charAt(0) : 'T'}
               </div>
               <div>
-                <div className="flex items-center gap-1.5 font-bold text-ink text-sm md:text-base">
+                <div className="flex items-center gap-1.5 font-display font-bold text-ink text-sm md:text-base">
                   <span>{product.store_name}</span>
                   <ShieldCheck className="w-4 h-4 text-pine shrink-0" title="Penjual Terverifikasi" />
                 </div>
@@ -316,7 +325,7 @@ export default function ProductDetailClient({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               {canChat && (
                 <Link
                   href={
@@ -324,14 +333,14 @@ export default function ProductDetailClient({
                       ? `/chat?store_id=${product.store_id}&product_id=${product.id}`
                       : `/login?next=${encodeURIComponent(`/products/${product.id}`)}`
                   }
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-50/60 text-primary hover:bg-primary hover:text-white px-4 py-2 text-xs font-semibold transition"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full border border-primary/30 bg-primary-50/60 text-primary hover:bg-primary hover:text-white px-4 py-2 min-h-[38px] font-display text-xs font-semibold transition flex-1 sm:flex-none"
                 >
                   <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>Chat Penjual</span>
                 </Link>
               )}
 
-              <Button href={`/stores/${product.store_id}`} variant="secondary" size="sm" pill>
+              <Button href={`/stores/${product.store_id}`} variant="secondary" size="sm" pill className="flex-1 sm:flex-none">
                 Kunjungi Toko
               </Button>
             </div>
@@ -339,7 +348,7 @@ export default function ProductDetailClient({
 
           {/* Deskripsi Barang */}
           <div className="flex flex-col gap-2">
-            <h3 className="text-sm font-bold text-ink uppercase tracking-wider">
+            <h3 className="font-sans text-xs md:text-sm font-bold text-ink uppercase tracking-wider">
               Deskripsi Barang
             </h3>
             <div className="text-xs md:text-sm text-ink-soft leading-relaxed whitespace-pre-line bg-canvas p-4 rounded-card border border-line/70">
@@ -357,22 +366,22 @@ export default function ProductDetailClient({
                   type="button"
                   onClick={() => handleQuantityChange(-1)}
                   disabled={quantity <= 1 || isSoldOut}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-ink hover:bg-surface disabled:opacity-40"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-ink hover:bg-surface disabled:opacity-40"
                   aria-label="Kurangi"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-4 h-4" />
                 </button>
-                <span className="w-10 text-center font-bold text-xs md:text-sm text-ink">
+                <span className="w-10 text-center font-bold tabular-nums text-xs md:text-sm text-ink">
                   {quantity}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleQuantityChange(1)}
                   disabled={quantity >= product.stock || isSoldOut}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-ink hover:bg-surface disabled:opacity-40"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-ink hover:bg-surface disabled:opacity-40"
                   aria-label="Tambah"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -405,14 +414,14 @@ export default function ProductDetailClient({
               Pengalaman sesama mahasiswa saat membeli barang ini.
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-accent font-extrabold text-lg">
+          <div className="flex items-center gap-1.5 text-accent font-display font-bold text-lg tabular-nums">
             <Star className="w-5 h-5 fill-accent text-accent" />
             <span className="text-ink">
               {product.avg_rating && Number(product.avg_rating) > 0
                 ? Number(product.avg_rating).toFixed(1)
                 : '0.0'}
             </span>
-            <span className="text-xs text-ink-soft font-normal">/ 5.0</span>
+            <span className="font-sans text-xs text-ink-soft font-normal">/ 5.0</span>
           </div>
         </div>
 
@@ -428,7 +437,7 @@ export default function ProductDetailClient({
           <div className="divide-y divide-line/60">
             {reviews.map((rv) => (
               <div key={rv.id} className="py-4 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-primary-50 text-primary font-bold text-xs flex items-center justify-center uppercase">
                       {rv.buyer_name ? rv.buyer_name.charAt(0) : 'M'}

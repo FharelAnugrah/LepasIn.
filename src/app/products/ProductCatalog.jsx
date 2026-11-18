@@ -49,6 +49,11 @@ export default function ProductCatalog({
   const [campus, setCampus] = useState(
     campuses.find((c) => c.id === Number(filters.campus)) || null
   );
+  const [prevFilterCampus, setPrevFilterCampus] = useState(filters.campus || null);
+  if ((filters.campus || null) !== prevFilterCampus) {
+    setPrevFilterCampus(filters.campus || null);
+    setCampus(campuses.find((c) => c.id === Number(filters.campus)) || null);
+  }
   const [category, setCategory] = useState(filters.category ? Number(filters.category) : null);
   const [store, setStore] = useState(filters.store ? Number(filters.store) : null);
   const [condition, setCondition] = useState(filters.condition || null);
@@ -197,7 +202,7 @@ export default function ProductCatalog({
             placeholder="Cari nama barang atau nama toko..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="w-full h-11 pl-10 pr-14 text-xs md:text-sm bg-surface rounded-full border border-line/80 focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
+            className="w-full h-11 pl-10 pr-14 text-base md:text-sm bg-surface rounded-full border border-line/80 focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
           />
           {q && (
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -229,7 +234,7 @@ export default function ProductCatalog({
             <SlidersHorizontal className="w-4 h-4 text-primary" />
             <span>Filter</span>
             {activeFiltersCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center">
+              <span className="w-5 h-5 rounded-full bg-primary text-white font-sans text-[10px] font-bold tabular-nums flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
@@ -517,7 +522,7 @@ export default function ProductCatalog({
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {matchedStores.map((st) => (
                   <div
                     key={st.id}
@@ -525,7 +530,7 @@ export default function ProductCatalog({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <h4 className="font-bold text-sm text-ink truncate" title={st.name}>
+                        <h4 className="font-display font-bold text-sm text-ink truncate" title={st.name}>
                           {st.name}
                         </h4>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pine-50 text-pine shrink-0">
@@ -536,13 +541,13 @@ export default function ProductCatalog({
                         {st.location || 'Area sekitar kampus'}
                       </p>
                       <p className="text-[11px] text-ink-soft mt-1">
-                        <strong className="text-ink font-semibold">{st.products_count}</strong> produk aktif
+                        <strong className="text-ink font-semibold tabular-nums">{st.products_count}</strong> produk aktif
                       </p>
                     </div>
                     <div className="flex items-center gap-2 pt-2 border-t border-line/60">
                       <Link
                         href={`/stores/${st.id}`}
-                        className="flex-1 text-center py-1.5 px-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition"
+                        className="flex-1 text-center py-1.5 px-2 rounded-xl bg-primary text-white font-display text-xs font-semibold hover:bg-primary-hover transition"
                       >
                         Kunjungi Toko
                       </Link>
@@ -581,7 +586,7 @@ export default function ProductCatalog({
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4.5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4.5">
               {initialProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -595,7 +600,7 @@ export default function ProductCatalog({
 
           {/* Pagination */}
           {pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-6">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-6">
               <Button
                 variant="secondary"
                 size="sm"
@@ -606,7 +611,7 @@ export default function ProductCatalog({
                 Sebelumnya
               </Button>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
                 {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
                   .filter((p) => {
                     return (
@@ -624,7 +629,7 @@ export default function ProductCatalog({
                         <button
                           type="button"
                           onClick={() => applyFilters({ page: p })}
-                          className={`w-9 h-9 rounded-full text-xs font-bold transition cursor-pointer ${
+                          className={`w-10 h-10 rounded-full text-xs font-bold tabular-nums transition cursor-pointer ${
                             pagination.page === p
                               ? 'bg-primary text-white shadow-sm'
                               : 'bg-surface text-ink hover:bg-surface-alt'
@@ -776,7 +781,7 @@ export default function ProductCatalog({
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
                 onWheel={(e) => e.currentTarget.blur()}
-                className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs outline-none"
+                className="w-full h-11 px-3 rounded-xl bg-surface border border-line text-base md:text-sm outline-none"
               />
               <span className="text-ink-soft">-</span>
               <input
@@ -785,7 +790,7 @@ export default function ProductCatalog({
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
                 onWheel={(e) => e.currentTarget.blur()}
-                className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs outline-none"
+                className="w-full h-11 px-3 rounded-xl bg-surface border border-line text-base md:text-sm outline-none"
               />
             </div>
           </div>

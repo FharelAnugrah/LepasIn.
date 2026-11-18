@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { parsePositiveInt, parseNonNegativeInt } from '@/lib/params';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,14 +8,14 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || null;
-    const campus = searchParams.get('campus') ? Number(searchParams.get('campus')) : null;
-    const category = searchParams.get('category') ? Number(searchParams.get('category')) : null;
+    const campus = parsePositiveInt(searchParams.get('campus'));
+    const category = parsePositiveInt(searchParams.get('category'));
     const condition = searchParams.get('condition') || null;
-    const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : null;
-    const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : null;
+    const minPrice = parseNonNegativeInt(searchParams.get('minPrice'));
+    const maxPrice = parseNonNegativeInt(searchParams.get('maxPrice'));
     const sort = searchParams.get('sort') || 'latest';
-    const page = Math.max(1, Number(searchParams.get('page')) || 1);
-    const limit = Math.max(1, Math.min(50, Number(searchParams.get('limit')) || 12));
+    const page = Math.max(1, parsePositiveInt(searchParams.get('page')) || 1);
+    const limit = Math.max(1, Math.min(50, parsePositiveInt(searchParams.get('limit')) || 12));
     const offset = (page - 1) * limit;
 
     let orderBy = 'p.created_at DESC';

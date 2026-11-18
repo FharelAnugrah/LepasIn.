@@ -26,6 +26,27 @@ import Button from '@/components/ui/Button';
 import AccessibilityControl from '@/components/ui/AccessibilityControl';
 import { formatRupiah } from '@/components/ui/Badge';
 
+function NavbarItemImage({ src, alt }) {
+  const [error, setError] = useState(false);
+  if (!error && src) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        unoptimized
+        onError={() => setError(true)}
+        className="object-cover"
+      />
+    );
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
+      <Package className="w-4 h-4" />
+    </div>
+  );
+}
+
 export default function Navbar({
   user = null,
   cartCount: initialCartCount = 0,
@@ -126,24 +147,36 @@ export default function Navbar({
     } else {
       params.delete('q');
     }
+    if (params.get('campus') === 'all') {
+      params.delete('campus');
+    }
     params.set('page', '1');
     router.push(`/products?${params.toString()}`);
   };
 
   const handleCampusChange = (campus) => {
     const params = new URLSearchParams(searchParams.toString());
+
+    if (pathname === '/') {
+      // Di beranda, tandai "Semua Kampus" secara eksplisit agar tidak fallback ke kampus default user
+      if (campus && campus.id) {
+        params.set('campus', String(campus.id));
+      } else {
+        params.set('campus', 'all');
+      }
+      params.delete('page');
+      const queryString = params.toString();
+      router.push(queryString ? `/?${queryString}` : '/');
+      return;
+    }
+
     if (campus && campus.id) {
-      params.set('campus', campus.id);
+      params.set('campus', String(campus.id));
     } else {
       params.delete('campus');
     }
     params.set('page', '1');
-
-    if (pathname === '/' || pathname === '/products') {
-      router.push(`${pathname}?${params.toString()}`);
-    } else {
-      router.push(`/products?${params.toString()}`);
-    }
+    router.push(`/products?${params.toString()}`);
   };
 
   const handleLogout = async () => {
@@ -161,18 +194,18 @@ export default function Navbar({
   return (
     <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-md border-b border-line">
       {/* Baris Atas Navbar */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
-        {/* Sisi Kiri: Logo LepasIn atau Sapaan User */}
-        <div className="flex items-center gap-3">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-1 sm:gap-3">
+        {/* Sisi Kiri: Logo LepasIn & Selektor Kampus */}
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 min-w-0 shrink-0">
           <Link
             href="/"
-            className="inline-flex items-center text-ink font-extrabold text-xl md:text-2xl tracking-tight"
+            className="inline-flex items-center font-display text-ink font-extrabold text-base sm:text-xl md:text-2xl tracking-tight shrink-0"
           >
-            <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+            <span className="text-primary">Lepas</span><span>In</span><span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent inline-block ml-0.5"></span>
           </Link>
 
-          {/* Selektor Kampus di Desktop */}
-          <div className="hidden md:block ml-4">
+          {/* Selektor Kampus di Tablet & Desktop */}
+          <div className="hidden md:block md:ml-1 lg:ml-3 max-w-[175px] lg:max-w-[230px]">
             <CampusSelector
               value={selectedCampus}
               onChange={handleCampusChange}
@@ -182,13 +215,13 @@ export default function Navbar({
           </div>
         </div>
 
-        {/* Tengah: Search Bar di Desktop (Live / Instant Search) */}
+        {/* Tengah: Search Bar di Tablet & Desktop (Live / Instant Search) */}
         {showSearchBar && (
-          <div className="hidden lg:flex flex-1 max-w-md mx-4 relative" ref={searchContainerRef}>
+          <div className="hidden md:flex flex-1 min-w-0 max-w-xs lg:max-w-md mx-2 lg:mx-4 relative" ref={searchContainerRef}>
             <form onSubmit={handleSearchSubmit} className="relative w-full">
               <input
                 type="text"
-                placeholder="Cari barang atau nama toko..."
+                placeholder="Cari barang atau toko..."
                 value={searchQuery}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -200,7 +233,7 @@ export default function Navbar({
                 onFocus={() => {
                   if (searchQuery.trim().length >= 2) setIsLiveDropdownOpen(true);
                 }}
-                className="w-full h-10 pl-10 pr-10 text-xs md:text-sm bg-surface rounded-full border border-line focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
+                className="w-full h-10 pl-9 lg:pl-10 pr-9 lg:pr-10 text-base md:text-sm bg-surface rounded-full border border-line focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
               />
               <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               {isLiveSearching ? (
@@ -272,19 +305,7 @@ export default function Navbar({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="relative w-9 h-9 rounded-lg bg-surface overflow-hidden shrink-0 border border-line/60">
-                            {p.image_url ? (
-                              <Image
-                                src={p.image_url}
-                                alt={p.name}
-                                fill
-                                unoptimized
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
-                                <Package className="w-4 h-4" />
-                              </div>
-                            )}
+                            <NavbarItemImage src={p.image_url} alt={p.name} />
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-ink truncate">{p.name}</p>
@@ -294,7 +315,7 @@ export default function Navbar({
                           </div>
                         </div>
                         <div className="shrink-0 text-right">
-                          <span className="text-xs font-bold text-primary">
+                          <span className="font-sans text-xs font-bold text-primary tabular-nums">
                             {formatRupiah(p.price)}
                           </span>
                         </div>
@@ -329,7 +350,7 @@ export default function Navbar({
         )}
 
         {/* Sisi Kanan: Aksi Pengguna */}
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-2.5 shrink-0">
           {/* Pengatur Aksesibilitas & Kenyamanan Baca (Multi-Generasi) */}
           <AccessibilityControl />
 
@@ -337,12 +358,12 @@ export default function Navbar({
           {(!user || user.role === 'buyer') && (
             <Link
               href="/buyer/cart"
-              className="relative p-2.5 rounded-full text-ink hover:bg-surface-alt transition-colors"
+              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full text-ink hover:bg-surface-alt transition-colors flex items-center justify-center shrink-0"
               aria-label="Keranjang Belanja"
             >
               <ShoppingBag className="w-5 h-5 text-ink" />
               {cartCount > 0 && (
-                <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                <span className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold tabular-nums flex items-center justify-center shadow-sm">
                   {cartCount > 99 ? '99+' : cartCount}
                 </span>
               )}
@@ -353,7 +374,7 @@ export default function Navbar({
           {user && (
             <Link
               href="/chat"
-              className="relative p-2.5 rounded-full text-ink hover:bg-surface-alt transition-colors"
+              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full text-ink hover:bg-surface-alt transition-colors flex items-center justify-center shrink-0"
               aria-label="Pesan dan Chat"
               title="Pesan & Chat Koordinasi"
             >
@@ -367,12 +388,14 @@ export default function Navbar({
               <button
                 type="button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1.5 md:px-3 md:py-1.5 rounded-full hover:bg-surface-alt transition-colors border border-line/70"
+                className="flex items-center gap-2 p-1.5 lg:px-3 lg:py-1.5 rounded-full hover:bg-surface-alt transition-colors border border-line/70"
+                aria-expanded={userMenuOpen}
+                aria-label="Menu pengguna"
               >
                 <div className="w-7 h-7 rounded-full bg-primary-50 text-primary flex items-center justify-center font-bold text-xs uppercase overflow-hidden">
                   {user.name ? user.name.charAt(0) : 'U'}
                 </div>
-                <div className="hidden md:flex flex-col text-left">
+                <div className="hidden lg:flex flex-col text-left">
                   <span className="text-xs font-bold text-ink line-clamp-1 max-w-[120px]">
                     {user.name}
                   </span>
@@ -390,7 +413,7 @@ export default function Navbar({
                     onClick={() => setUserMenuOpen(false)}
                     aria-hidden="true"
                   />
-                  <div className="absolute right-0 mt-2 w-56 bg-canvas border border-line rounded-card shadow-float z-50 py-2 divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute right-0 mt-2 w-[min(14rem,calc(100vw-1.5rem))] bg-canvas border border-line rounded-card shadow-float z-50 py-2 divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-4 py-2">
                     <p className="text-xs text-ink-soft">Masuk sebagai</p>
                     <p className="text-xs font-bold text-ink truncate">{user.email}</p>
@@ -501,14 +524,14 @@ export default function Navbar({
             </div>
           ) : (
             /* Guest Actions */
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Link href="/login">
-                <Button variant="ghost" size="sm" pill>
+                <Button variant="ghost" size="sm" pill className="!px-2 sm:!px-3.5">
                   Masuk
                 </Button>
               </Link>
               <Link href="/register">
-                <Button variant="primary" size="sm" pill>
+                <Button variant="primary" size="sm" pill className="!px-2.5 sm:!px-4">
                   Daftar
                 </Button>
               </Link>
@@ -518,8 +541,8 @@ export default function Navbar({
       </div>
 
       {/* Baris Pencarian & Selektor Kampus di Mobile */}
-      <div className="md:hidden px-4 pb-3 flex items-center gap-2">
-        <div className="flex-1">
+      <div className="md:hidden px-3 sm:px-4 pb-2.5 flex items-center gap-2">
+        <div className="flex-1 min-w-0">
           <CampusSelector
             value={selectedCampus}
             onChange={handleCampusChange}
@@ -531,7 +554,7 @@ export default function Navbar({
         {showSearchBar && (
           <Link
             href="/products"
-            className="w-10 h-10 rounded-full bg-surface border border-line flex items-center justify-center text-ink shrink-0"
+            className="w-11 h-11 rounded-full bg-surface border border-line flex items-center justify-center text-ink shrink-0 hover:bg-surface-alt transition-colors"
             aria-label="Cari produk"
           >
             <Search className="w-4 h-4 text-ink-soft" />

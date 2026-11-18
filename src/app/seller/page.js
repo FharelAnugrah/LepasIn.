@@ -101,10 +101,10 @@ export default async function SellerDashboardPage() {
             <span className="text-xs font-semibold">Total Produk Lapak</span>
             <Package className="w-4 h-4 text-primary" />
           </div>
-          <div className="text-2xl md:text-3xl font-extrabold text-ink tracking-tight">
+          <div className="font-display text-2xl md:text-3xl font-bold tabular-nums text-ink tracking-tight">
             {stats.total_products}
           </div>
-          <div className="text-[11px] text-ink-soft mt-2 pt-2 border-t border-line/60">
+          <div className="text-[11px] text-ink-soft mt-2 pt-2 border-t border-line/60 tabular-nums">
             Total stok fisik: <strong className="text-ink">{stats.total_stock} item</strong>
           </div>
         </div>
@@ -115,7 +115,7 @@ export default async function SellerDashboardPage() {
             <span className="text-xs font-semibold">Pesanan Perlu Diproses</span>
             <Clock className="w-4 h-4 text-warning" />
           </div>
-          <div className="text-2xl md:text-3xl font-extrabold text-warning tracking-tight">
+          <div className="font-display text-2xl md:text-3xl font-bold tabular-nums text-warning tracking-tight">
             {stats.new_orders}
           </div>
           <div className="text-[11px] text-ink-soft mt-2 pt-2 border-t border-line/60 flex items-center justify-between">
@@ -132,7 +132,7 @@ export default async function SellerDashboardPage() {
             <span className="text-xs font-semibold">Total Pendapatan Selesai</span>
             <TrendingUp className="w-4 h-4 text-success" />
           </div>
-          <div className="text-xl md:text-2xl font-extrabold text-ink tracking-tight truncate">
+          <div className="font-display text-xl md:text-2xl font-bold tabular-nums text-ink tracking-tight truncate">
             {formatRupiah(stats.total_earnings)}
           </div>
           <div className="text-[11px] text-ink-soft mt-2 pt-2 border-t border-line/60">
@@ -143,7 +143,7 @@ export default async function SellerDashboardPage() {
 
       {/* Tabel Pesanan Masuk Terbaru */}
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        <div className="p-5 border-b border-line flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-base font-bold text-ink">Pesanan Masuk Terbaru</h2>
             <p className="text-xs text-ink-soft">Pesanan dari mahasiswa yang membeli barangmu.</p>
@@ -161,46 +161,77 @@ export default async function SellerDashboardPage() {
             Belum ada pesanan masuk ke tokomu.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs md:text-sm">
-              <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
-                <tr>
-                  <th className="py-3 px-4">Kode Pesanan</th>
-                  <th className="py-3 px-4">Nama Pembeli</th>
-                  <th className="py-3 px-4">Metode Pengiriman</th>
-                  <th className="py-3 px-4">Total</th>
-                  <th className="py-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/60">
-                {recentOrders.map((o) => (
-                  <tr key={o.id} className="hover:bg-surface/50 transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-ink">
-                      {o.order_code}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-ink">
-                      {o.buyer_name}
-                    </td>
-                    <td className="py-3.5 px-4 capitalize">
+          <>
+            {/* Mobile Cards (< md) */}
+            <div className="md:hidden divide-y divide-line/60">
+              {recentOrders.map((o) => (
+                <div key={o.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-sans tabular-nums font-bold tracking-wide text-sm text-ink">
+                        {o.order_code}
+                      </p>
+                      <p className="text-xs text-ink-soft truncate">{o.buyer_name}</p>
+                    </div>
+                    <OrderStatusBadge status={o.status} deliveryMethod={o.delivery_method} />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs pt-0.5">
+                    <span className="text-ink-soft">
                       {o.delivery_method === 'meetup' ? 'COD Sekampus' : 'Dikirim ke Kost'}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-ink">
+                    </span>
+                    <span className="font-bold tabular-nums text-ink">
                       {formatRupiah(o.total_amount)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <OrderStatusBadge status={o.status} deliveryMethod={o.delivery_method} />
-                    </td>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabel Desktop / Tablet (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs md:text-sm">
+                <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
+                  <tr>
+                    <th className="py-3 px-3 xl:px-4">Kode Pesanan</th>
+                    <th className="py-3 px-3 xl:px-4">Nama Pembeli</th>
+                    <th className="hidden xl:table-cell py-3 px-4">Metode Pengiriman</th>
+                    <th className="py-3 px-3 xl:px-4">Total</th>
+                    <th className="py-3 px-3 xl:px-4">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-line/60">
+                  {recentOrders.map((o) => (
+                    <tr key={o.id} className="hover:bg-surface/50 transition-colors">
+                      <td className="py-3.5 px-3 xl:px-4 font-sans tabular-nums font-bold tracking-wide text-ink">
+                        {o.order_code}
+                      </td>
+                      <td className="py-3.5 px-3 xl:px-4">
+                        <div className="font-medium text-ink">{o.buyer_name}</div>
+                        <div className="xl:hidden text-[11px] text-ink-soft mt-0.5">
+                          {o.delivery_method === 'meetup' ? 'COD Sekampus' : 'Dikirim ke Kost'}
+                        </div>
+                      </td>
+                      <td className="hidden xl:table-cell py-3.5 px-4">
+                        {o.delivery_method === 'meetup' ? 'COD Sekampus' : 'Dikirim ke Kost'}
+                      </td>
+                      <td className="py-3.5 px-3 xl:px-4 font-bold tabular-nums text-ink">
+                        {formatRupiah(o.total_amount)}
+                      </td>
+                      <td className="py-3.5 px-3 xl:px-4">
+                        <OrderStatusBadge status={o.status} deliveryMethod={o.delivery_method} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {/* Tabel Produk Lapak Terbaru */}
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        <div className="p-5 border-b border-line flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-base font-bold text-ink">Barang Lapakmu</h2>
             <p className="text-xs text-ink-soft">Produk yang saat ini tampil di katalog sekampus.</p>
@@ -221,47 +252,82 @@ export default async function SellerDashboardPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs md:text-sm">
-              <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
-                <tr>
-                  <th className="py-3 px-4">Nama Produk</th>
-                  <th className="py-3 px-4">Kategori</th>
-                  <th className="py-3 px-4">Kondisi</th>
-                  <th className="py-3 px-4">Harga</th>
-                  <th className="py-3 px-4">Sisa Stok</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/60">
-                {recentProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-surface/50 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-ink flex items-center gap-2">
-                      <Package className="w-4 h-4 text-primary shrink-0" />
-                      <span>{p.name}</span>
-                    </td>
-                    <td className="py-3.5 px-4 text-ink-soft">
-                      {p.category_name}
-                    </td>
-                    <td className="py-3.5 px-4">
+          <>
+            {/* Mobile Cards (< md) */}
+            <div className="md:hidden divide-y divide-line/60">
+              {recentProducts.map((p) => (
+                <div key={p.id} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-bold text-sm text-ink flex items-start gap-2 min-w-0">
+                      <Package className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="line-clamp-2 break-words">{p.name}</span>
+                    </div>
+                    <div className="shrink-0">
                       <ConditionBadge condition={p.condition} />
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-ink">
-                      {formatRupiah(p.price)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span
-                        className={`font-semibold ${
-                          p.stock <= 0 ? 'text-danger' : 'text-ink'
-                        }`}
-                      >
-                        {p.stock <= 0 ? 'Habis (0)' : `${p.stock} item`}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs pl-6">
+                    <span className="text-ink-soft">{p.category_name}</span>
+                    <div className="flex items-center gap-3 tabular-nums">
+                      <span className="font-bold text-ink">{formatRupiah(p.price)}</span>
+                      <span className={`font-semibold ${p.stock <= 0 ? 'text-danger' : 'text-ink-soft'}`}>
+                        {p.stock <= 0 ? 'Habis' : `${p.stock} stok`}
                       </span>
-                    </td>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabel Desktop / Tablet (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs md:text-sm">
+                <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
+                  <tr>
+                    <th className="py-3 px-3 xl:px-4">Nama Produk</th>
+                    <th className="hidden xl:table-cell py-3 px-4">Kategori</th>
+                    <th className="hidden xl:table-cell py-3 px-4">Kondisi</th>
+                    <th className="py-3 px-3 xl:px-4">Harga</th>
+                    <th className="py-3 px-3 xl:px-4">Sisa Stok</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-line/60">
+                  {recentProducts.map((p) => (
+                    <tr key={p.id} className="hover:bg-surface/50 transition-colors">
+                      <td className="py-3.5 px-3 xl:px-4">
+                        <div className="font-bold text-ink flex items-center gap-2">
+                          <Package className="w-4 h-4 text-primary shrink-0" />
+                          <span>{p.name}</span>
+                        </div>
+                        <div className="xl:hidden flex flex-wrap items-center gap-1.5 mt-1 pl-6">
+                          <span className="text-[11px] text-ink-soft">{p.category_name}</span>
+                          <ConditionBadge condition={p.condition} />
+                        </div>
+                      </td>
+                      <td className="hidden xl:table-cell py-3.5 px-4 text-ink-soft">
+                        {p.category_name}
+                      </td>
+                      <td className="hidden xl:table-cell py-3.5 px-4">
+                        <ConditionBadge condition={p.condition} />
+                      </td>
+                      <td className="py-3.5 px-3 xl:px-4 font-bold tabular-nums text-ink">
+                        {formatRupiah(p.price)}
+                      </td>
+                      <td className="py-3.5 px-3 xl:px-4 tabular-nums">
+                        <span
+                          className={`font-semibold ${
+                            p.stock <= 0 ? 'text-danger' : 'text-ink'
+                          }`}
+                        >
+                          {p.stock <= 0 ? 'Habis (0)' : `${p.stock} item`}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

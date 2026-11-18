@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
+import { parsePositiveInt, parseNonNegativeInt } from '@/lib/params';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import BottomNav from '@/components/layout/BottomNav';
@@ -17,14 +18,14 @@ export default async function ProductsPage({ searchParams }) {
   const user = await getCurrentUser();
 
   const q = sp?.q || null;
-  const campus = sp?.campus ? Number(sp.campus) : null;
-  const category = sp?.category ? Number(sp.category) : null;
-  const store = sp?.store ? Number(sp.store) : null;
+  const campus = parsePositiveInt(sp?.campus);
+  const category = parsePositiveInt(sp?.category);
+  const store = parsePositiveInt(sp?.store);
   const condition = sp?.condition || null;
-  const minPrice = sp?.minPrice ? Number(sp.minPrice) : null;
-  const maxPrice = sp?.maxPrice ? Number(sp.maxPrice) : null;
+  const minPrice = parseNonNegativeInt(sp?.minPrice);
+  const maxPrice = parseNonNegativeInt(sp?.maxPrice);
   const sort = sp?.sort || 'latest';
-  const page = Math.max(1, Number(sp?.page) || 1);
+  const page = Math.max(1, parsePositiveInt(sp?.page) || 1);
   const limit = 12;
   const offset = (page - 1) * limit;
 

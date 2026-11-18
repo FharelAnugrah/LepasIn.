@@ -314,7 +314,7 @@ export default function RegisterForm() {
         <div className="text-center mb-6">
           <Link
             href="/"
-            className="inline-flex items-center text-ink font-extrabold text-2xl tracking-tight mb-2"
+            className="inline-flex items-center font-display text-ink font-extrabold text-2xl tracking-tight mb-2"
           >
             <span className="text-primary">Lepas</span><span>In</span><span className="w-2 h-2 rounded-full bg-accent inline-block ml-0.5"></span>
           </Link>
@@ -327,20 +327,20 @@ export default function RegisterForm() {
         </div>
 
         {/* Toggle Pilihan Peran: Pembeli vs Penjual */}
-        <div className="flex p-1.5 bg-surface rounded-2xl mb-6 border border-line/60">
+        <div className="grid grid-cols-2 gap-1.5 p-1.5 bg-surface rounded-2xl mb-6 border border-line/60">
           <button
             type="button"
             onClick={() => {
               setRole('buyer');
               setFieldErrors({});
             }}
-            className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`py-2.5 px-2 sm:px-3 rounded-xl font-display text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer text-center ${
               role === 'buyer'
                 ? 'bg-canvas text-primary shadow-sm'
                 : 'text-ink-soft hover:text-ink'
             }`}
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="w-4 h-4 shrink-0" />
             <span>Sebagai Pembeli</span>
           </button>
           <button
@@ -349,14 +349,16 @@ export default function RegisterForm() {
               setRole('seller');
               setFieldErrors({});
             }}
-            className={`flex-1 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`py-2.5 px-2 sm:px-3 rounded-xl font-display text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5 sm:gap-2 transition-all cursor-pointer text-center ${
               role === 'seller'
                 ? 'bg-canvas text-primary shadow-sm'
                 : 'text-ink-soft hover:text-ink'
             }`}
           >
-            <Store className="w-4 h-4" />
-            <span>Sebagai Penjual (Buka Toko)</span>
+            <Store className="w-4 h-4 shrink-0" />
+            <span>
+              Sebagai Penjual<span className="hidden sm:inline"> (Buka Toko)</span>
+            </span>
           </button>
         </div>
 

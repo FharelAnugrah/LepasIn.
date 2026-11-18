@@ -213,27 +213,106 @@ export default function CategoriesManager({ initialCategories }) {
       </div>
 
       {/* Pencarian Kategori */}
-      <div className="relative max-w-sm">
+      <div className="relative w-full sm:max-w-sm">
         <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="text"
           placeholder="Cari kategori..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-10 pl-9 pr-4 text-xs md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
+          className="w-full h-11 md:h-10 pl-9 pr-4 text-base md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
         />
       </div>
 
-      {/* Tabel Kategori */}
+      {/* Daftar & Tabel Kategori */}
       <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Tampilan Kartu Mobile (< md) */}
+        <div className="md:hidden divide-y divide-line/60">
+          {filteredCategories.length === 0 ? (
+            <div className="py-8 px-4 text-center text-sm text-ink-soft">
+              Kategori tidak ditemukan.
+            </div>
+          ) : (
+            filteredCategories.map((c) => {
+              const isSystemCategory = /^(lainnya|lain-lain)$/i.test(c.name?.trim());
+              return (
+                <div key={c.id} className="p-4 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm text-ink flex items-center gap-2 flex-wrap">
+                        <Tags className="w-4 h-4 text-primary shrink-0" />
+                        <span>{c.name}</span>
+                        {isSystemCategory && (
+                          <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-primary-50 text-primary">
+                            Sistem
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-ink-soft tabular-nums pl-6 mt-0.5">
+                        ID #{c.id}
+                      </p>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 tabular-nums ${
+                        c.product_count > 0
+                          ? 'bg-primary-50 text-primary'
+                          : 'bg-surface text-ink-soft'
+                      }`}
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                      <span>{c.product_count} produk</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      pill
+                      icon={Edit2}
+                      onClick={() => handleOpenEdit(c)}
+                      disabled={isSystemCategory}
+                      title={
+                        isSystemCategory
+                          ? 'Kategori sistem tidak dapat diubah'
+                          : 'Edit nama kategori'
+                      }
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      pill
+                      icon={Trash2}
+                      onClick={() => handleOpenDelete(c)}
+                      disabled={c.product_count > 0 || isSystemCategory}
+                      title={
+                        isSystemCategory
+                          ? 'Kategori sistem tidak dapat dihapus'
+                          : c.product_count > 0
+                          ? 'Tidak bisa dihapus karena masih ada produk di kategori ini'
+                          : 'Hapus kategori'
+                      }
+                    >
+                      Hapus
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tampilan Tabel Desktop / Tablet (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs md:text-sm">
             <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
               <tr>
-                <th className="py-3 px-5 w-16 text-center">ID</th>
-                <th className="py-3 px-5">Nama Kategori</th>
-                <th className="py-3 px-5">Jumlah Produk Aktif</th>
-                <th className="py-3 px-5 text-right">Aksi</th>
+                <th className="py-3 px-3 xl:px-5 w-16 text-center">ID</th>
+                <th className="py-3 px-3 xl:px-5">Nama Kategori</th>
+                <th className="py-3 px-3 xl:px-5">Jumlah Produk Aktif</th>
+                <th className="py-3 px-3 xl:px-5 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
@@ -248,21 +327,23 @@ export default function CategoriesManager({ initialCategories }) {
                   const isSystemCategory = /^(lainnya|lain-lain)$/i.test(c.name?.trim());
                   return (
                     <tr key={c.id} className="hover:bg-surface/50 transition-colors">
-                      <td className="py-4 px-5 text-center font-mono font-bold text-ink-soft">
+                      <td className="py-4 px-3 xl:px-5 text-center font-sans tabular-nums font-semibold text-ink-soft">
                         {c.id}
                       </td>
-                      <td className="py-4 px-5 font-bold text-ink flex items-center gap-2">
-                        <Tags className="w-4 h-4 text-primary shrink-0" />
-                        <span>{c.name}</span>
-                        {isSystemCategory && (
-                          <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-primary-50 text-primary">
-                            Sistem
-                          </span>
-                        )}
+                      <td className="py-4 px-3 xl:px-5">
+                        <div className="font-bold text-ink flex items-center gap-2 flex-wrap">
+                          <Tags className="w-4 h-4 text-primary shrink-0" />
+                          <span>{c.name}</span>
+                          {isSystemCategory && (
+                            <span className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-primary-50 text-primary">
+                              Sistem
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-4 px-5">
+                      <td className="py-4 px-3 xl:px-5">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums ${
                             c.product_count > 0
                               ? 'bg-primary-50 text-primary'
                               : 'bg-surface text-ink-soft'
@@ -272,8 +353,8 @@ export default function CategoriesManager({ initialCategories }) {
                           <span>{c.product_count} produk</span>
                         </span>
                       </td>
-                      <td className="py-4 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="py-4 px-3 xl:px-5 text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           <Button
                             variant="secondary"
                             size="sm"

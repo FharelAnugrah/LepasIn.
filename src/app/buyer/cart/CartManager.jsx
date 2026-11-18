@@ -19,6 +19,27 @@ import Button from '@/components/ui/Button';
 import { ConditionBadge, formatRupiah } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
 
+function CartItemImage({ src, alt }) {
+  const [error, setError] = useState(false);
+  if (!error && src) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        unoptimized
+        onError={() => setError(true)}
+        className="object-cover"
+      />
+    );
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
+      <Package className="w-6 h-6" />
+    </div>
+  );
+}
+
 export default function CartManager({ initialItems }) {
   const router = useRouter();
   const toast = useToast();
@@ -178,9 +199,9 @@ export default function CartManager({ initialItems }) {
           >
             {/* Header Toko */}
             <div className="p-4 bg-surface/70 border-b border-line flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <Store className="w-4 h-4 text-primary shrink-0" />
-                <span className="font-bold text-sm text-ink">{group.storeName}</span>
+                <span className="font-display font-bold text-sm text-ink">{group.storeName}</span>
                 <span className="text-line">·</span>
                 <span className="text-xs font-semibold text-pine flex items-center gap-1">
                   <GraduationCap className="w-3.5 h-3.5" />
@@ -198,19 +219,7 @@ export default function CartManager({ initialItems }) {
                     <div className="flex items-center gap-3.5 flex-1 min-w-0">
                       {/* Foto Produk */}
                       <div className="relative w-18 h-18 rounded-2xl bg-surface overflow-hidden border border-line shrink-0">
-                        {item.image_url ? (
-                          <Image
-                            src={item.image_url}
-                            alt={item.product_name}
-                            fill
-                            unoptimized
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
-                            <Package className="w-6 h-6" />
-                          </div>
-                        )}
+                        <CartItemImage src={item.image_url} alt={item.product_name} />
                       </div>
 
                       {/* Detail Nama & Harga Satuan */}
@@ -223,7 +232,7 @@ export default function CartManager({ initialItems }) {
                         </Link>
                         <div className="flex items-center gap-2">
                           <ConditionBadge condition={item.condition} />
-                          <span className="text-xs font-semibold text-ink-soft">
+                          <span className="text-xs font-semibold text-ink-soft tabular-nums">
                             {formatRupiah(item.price)} / unit
                           </span>
                         </div>
@@ -231,37 +240,37 @@ export default function CartManager({ initialItems }) {
                     </div>
 
                     {/* Kontrol Jumlah & Subtotal */}
-                    <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-line/40">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-line/40">
                       {/* +/- Tombol */}
                       <div className="flex items-center bg-surface rounded-full border border-line p-1">
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.product_name)}
                           disabled={isItemLoading}
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
                           aria-label="Kurangi"
                           title="Kurangi"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-8 text-center font-bold text-xs text-ink">
+                        <span className="w-8 text-center font-bold tabular-nums text-xs text-ink">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.product_name)}
                           disabled={item.quantity >= item.stock || isItemLoading}
-                          className="w-7 h-7 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
+                          className="w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
                           aria-label="Tambah"
                           title="Tambah"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
                       {/* Subtotal Item */}
-                      <div className="text-right min-w-[90px]">
-                        <div className="font-extrabold text-sm text-primary">
+                      <div className="text-right min-w-[80px] sm:min-w-[90px]">
+                        <div className="font-bold tabular-nums text-sm text-primary">
                           {formatRupiah(item.quantity * item.price)}
                         </div>
                       </div>
@@ -271,8 +280,9 @@ export default function CartManager({ initialItems }) {
                         type="button"
                         onClick={() => handleRemoveItem(item.id, item.product_name)}
                         disabled={isItemLoading}
-                        className="text-ink-soft hover:text-danger p-1 rounded-lg transition-colors cursor-pointer"
+                        className="text-ink-soft hover:text-danger w-10 h-10 flex items-center justify-center rounded-full hover:bg-danger-50 transition-colors cursor-pointer shrink-0"
                         title="Hapus item"
+                        aria-label={`Hapus ${item.product_name}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -294,15 +304,15 @@ export default function CartManager({ initialItems }) {
         <div className="flex flex-col gap-2.5 text-xs md:text-sm">
           <div className="flex items-center justify-between text-ink-soft">
             <span>Total Item</span>
-            <span className="font-bold text-ink">{totalItems} barang</span>
+            <span className="font-bold text-ink tabular-nums">{totalItems} barang</span>
           </div>
           <div className="flex items-center justify-between text-ink-soft">
             <span>Jumlah Toko</span>
-            <span className="font-bold text-ink">{storeGroups.length} toko</span>
+            <span className="font-bold text-ink tabular-nums">{storeGroups.length} toko</span>
           </div>
-          <div className="flex items-center justify-between text-base font-extrabold text-ink pt-3 border-t border-line">
-            <span>Total Tagihan</span>
-            <span className="text-primary text-xl font-black">
+          <div className="flex items-center justify-between text-base font-bold text-ink pt-3 border-t border-line">
+            <span className="font-display">Total Tagihan</span>
+            <span className="font-display text-primary text-xl font-bold tabular-nums tracking-tight">
               {formatRupiah(totalPrice)}
             </span>
           </div>
