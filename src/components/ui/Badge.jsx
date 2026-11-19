@@ -8,30 +8,32 @@ export default function Badge({
   icon: Icon = null,
 }) {
   const variants = {
-    primary: 'bg-primary-50 text-primary',
-    secondary: 'bg-surface-alt text-ink',
-    success: 'bg-success-50 text-success font-medium',
-    warning: 'bg-warning-50 text-warning font-medium',
-    danger: 'bg-danger-50 text-danger font-medium',
-    info: 'bg-info-50 text-info font-medium',
-    pine: 'bg-pine-50 text-pine font-semibold',
-    sold: 'bg-ink/80 text-white backdrop-blur-xs font-bold tracking-wide',
-    outline: 'border border-line text-ink-soft',
+    primary: 'bg-brand-blue-soft text-brand-blue border border-brand-blue-border',
+    navy: 'bg-info-bg text-navy-900 border border-brand-blue-border',
+    secondary: 'bg-surface-muted text-ink-secondary border border-border-subtle',
+    success: 'bg-success-bg text-success-text border border-green-200',
+    mint: 'bg-condition-mint-bg text-condition-mint-text border border-condition-mint-border',
+    warning: 'bg-warning-bg text-warning-text border border-amber-200',
+    danger: 'bg-danger-bg text-danger-text border border-red-200',
+    info: 'bg-info-bg text-info-text border border-brand-blue-border',
+    gold: 'bg-campus-gold-soft text-warning-text border border-amber-200',
+    sold: 'bg-ink/85 text-white border border-white/15 font-bold tracking-wide',
+    outline: 'border border-border-subtle text-ink-secondary bg-surface',
   };
 
   const sizes = {
-    xs: 'text-[10px] px-2 py-0.5 rounded-[8px]',
-    sm: 'text-xs px-2.5 py-1 rounded-[10px]',
-    md: 'text-sm px-3 py-1 rounded-[12px]',
+    xs: 'text-[11px] px-2 py-0.5 rounded-md',
+    sm: 'text-xs px-2.5 py-0.5 rounded-md',
+    md: 'text-xs md:text-sm px-3 py-1 rounded-lg',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-sans font-medium whitespace-nowrap select-none ${
+      className={`inline-flex items-center gap-1.5 font-semibold whitespace-nowrap select-none shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_1.5px_0_rgba(15,41,74,0.08)] ${
         variants[variant] || variants.primary
       } ${sizes[size] || sizes.sm} ${className}`}
     >
-      {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+      {Icon && <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
       {children}
     </span>
   );
@@ -48,32 +50,32 @@ export function formatRupiah(amount) {
 }
 
 /**
- * Price Pill khas LepasIn (Biru kobalt #1E5EFF, rounded-full, teks putih tebal)
+ * Blue Price Pill khas LepasIn (#1B4375, rounded-full, teks putih tebal)
  */
 export function PricePill({ amount, className = '', size = 'md' }) {
   const sizeClasses = {
-    sm: 'text-xs px-2.5 py-0.5',
-    md: 'text-xs md:text-sm px-3.5 py-1',
-    lg: 'text-base md:text-lg px-4.5 py-1.5',
+    sm: 'text-xs px-3 py-1',
+    md: 'text-sm px-3.5 py-1',
+    lg: 'text-xl md:text-2xl px-4 py-1.5',
   };
 
   return (
-    <div
-      className={`bg-primary text-white font-display font-bold tabular-nums rounded-full inline-flex items-center tracking-tight shadow-sm select-none ${
+    <span
+      className={`price-pill-3d text-white font-bold tabular-nums rounded-full inline-flex items-center tracking-tight select-none ${
         sizeClasses[size] || sizeClasses.md
       } ${className}`}
     >
       {formatRupiah(amount)}
-    </div>
+    </span>
   );
 }
 
 /**
- * Badge Kondisi Barang Preloved
+ * Badge Kondisi Barang Preloved (design2.md 3 & 5.3)
  */
 export function ConditionBadge({ condition, className = '' }) {
   const conditionMap = {
-    like_new: { text: 'Seperti Baru', variant: 'success' },
+    like_new: { text: 'Seperti Baru', variant: 'mint' },
     good: { text: 'Baik', variant: 'primary' },
     fair: { text: 'Layak Pakai', variant: 'warning' },
     minor_defect: { text: 'Ada Minus', variant: 'danger' },
@@ -82,34 +84,38 @@ export function ConditionBadge({ condition, className = '' }) {
   const current = conditionMap[condition] || { text: condition, variant: 'secondary' };
 
   return (
-    <Badge variant={current.variant} size="xs" className={className}>
+    <Badge
+      variant={current.variant}
+      size="xs"
+      className={`rounded-full px-2.5 py-0.5 ${className}`}
+    >
       {current.text}
     </Badge>
   );
 }
 
 /**
- * Badge Kampus Perguruan Tinggi
+ * Badge Kampus Perguruan Tinggi (design2.md 5.3)
  */
 export function CampusBadge({ shortName, cityName, className = '' }) {
   return (
-    <Badge variant="pine" size="xs" icon={GraduationCap} className={className}>
+    <Badge variant="primary" size="xs" icon={GraduationCap} className={className}>
       <span>{shortName}</span>
-      {cityName && <span className="opacity-75">· {cityName}</span>}
+      {cityName && <span className="opacity-80">- {cityName}</span>}
     </Badge>
   );
 }
 
 /**
- * Badge Status Pesanan
+ * Badge Status Pesanan (design2.md section 3 Semantic & Status Tokens)
  */
 export function OrderStatusBadge({ status, deliveryMethod = 'delivery', className = '' }) {
   const statusMap = {
     pending_payment: { text: 'Menunggu Pembayaran', variant: 'warning' },
-    processing: { text: 'Sedang Diproses', variant: 'info' },
+    processing: { text: 'Diproses Penjual', variant: 'primary' },
     shipped: {
       text: deliveryMethod === 'meetup' ? 'Siap Ketemuan di Kampus' : 'Sedang Dikirim',
-      variant: 'primary',
+      variant: deliveryMethod === 'meetup' ? 'navy' : 'info',
     },
     completed: { text: 'Selesai', variant: 'success' },
     cancelled: { text: 'Dibatalkan', variant: 'danger' },
@@ -125,7 +131,7 @@ export function OrderStatusBadge({ status, deliveryMethod = 'delivery', classNam
 }
 
 /**
- * Badge Status Verifikasi Seller
+ * Badge Status Verifikasi Seller (design2.md section 3)
  */
 export function SellerStatusBadge({ status, wasApproved = false, className = '' }) {
   const statusMap = {

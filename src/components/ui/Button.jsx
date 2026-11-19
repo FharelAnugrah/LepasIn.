@@ -17,25 +17,27 @@ export default function Button({
   ...props
 }) {
   const baseStyles =
-    'inline-flex items-center justify-center font-display font-semibold tracking-[-0.01em] transition-all duration-150 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 select-none';
+    'btn-3d inline-flex items-center justify-center font-semibold disabled:opacity-50 disabled:pointer-events-none select-none';
 
   const variants = {
-    primary: 'bg-primary text-white hover:bg-primary-hover shadow-sm',
-    accent: 'bg-accent text-ink hover:bg-accent-hover font-bold shadow-sm',
-    secondary: 'bg-surface text-ink border border-line hover:bg-surface-alt',
-    ghost: 'bg-transparent text-ink hover:bg-surface-alt',
-    danger: 'bg-danger text-white hover:bg-red-700 shadow-sm',
-    success: 'bg-success text-white hover:bg-green-700 shadow-sm',
-    outline: 'border border-primary text-primary bg-transparent hover:bg-primary-50',
+    primary: 'btn-3d-primary',
+    navy: 'btn-3d-navy',
+    accent: 'btn-3d-accent font-bold',
+    secondary: 'btn-3d-secondary',
+    ghost: 'bg-transparent text-ink-secondary hover:bg-surface-muted hover:text-ink active:translate-y-0.5',
+    danger: 'btn-3d-danger',
+    success: 'btn-3d-success',
+    outline: 'btn-3d-outline',
   };
 
   const sizes = {
-    sm: 'h-9 px-3.5 text-xs gap-1.5',
-    md: 'h-11 px-5 text-sm gap-2',
-    lg: 'h-[50px] px-6 text-base gap-2.5',
+    xs: 'min-h-[36px] md:min-h-[32px] px-2.5 text-xs gap-1.5',
+    sm: 'min-h-[40px] md:min-h-[36px] px-3.5 text-xs gap-1.5',
+    md: 'min-h-[44px] px-4.5 text-sm gap-2',
+    lg: 'min-h-[48px] px-6 text-sm md:text-base gap-2',
   };
 
-  const radius = pill ? 'rounded-full' : 'rounded-[14px]';
+  const radius = pill ? 'rounded-full' : 'rounded-xl';
 
   const renderIcon = (ic) => {
     if (!ic) return null;
@@ -43,7 +45,7 @@ export default function Button({
       return ic;
     }
     const IconComponent = ic;
-    return <IconComponent className="w-4 h-4 shrink-0" />;
+    return <IconComponent className="w-4 h-4 shrink-0" aria-hidden="true" />;
   };
 
   const combinedClasses = `${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${radius} ${className}`;
@@ -53,7 +55,7 @@ export default function Button({
       <Link href={href} className={combinedClasses} {...props}>
         {loading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
             <span>Memproses...</span>
           </>
         ) : (
@@ -76,7 +78,7 @@ export default function Button({
     >
       {loading ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
           <span>Memproses...</span>
         </>
       ) : (

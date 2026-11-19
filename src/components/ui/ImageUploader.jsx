@@ -94,7 +94,7 @@ export default function ImageUploader({
 
     if (newUploadedUrls.length > 0) {
       onChange([...images, ...newUploadedUrls]);
-      toast.success(`${newUploadedUrls.length} foto berhasil ditambahkan! 📸`);
+      toast.success(`${newUploadedUrls.length} foto berhasil ditambahkan.`);
     }
 
     setUploading(false);
@@ -127,7 +127,7 @@ export default function ImageUploader({
     const selected = images[indexToPrimary];
     const remaining = images.filter((_, idx) => idx !== indexToPrimary);
     onChange([selected, ...remaining]);
-    toast.info('Foto utama berhasil diubah ⭐');
+    toast.info('Foto utama berhasil diubah.');
   };
 
   const handleCameraCapture = async (capturedFile) => {
@@ -137,7 +137,7 @@ export default function ImageUploader({
     try {
       const url = await uploadFile(capturedFile);
       onChange([...images, url]);
-      toast.success('Foto dari kamera berhasil disimpan! 📸');
+      toast.success('Foto dari kamera berhasil disimpan.');
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Gagal mengunggah foto dari kamera');
@@ -148,56 +148,48 @@ export default function ImageUploader({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
-      {/* Area Drag & Drop / 2 Tombol Utama: Kamera & Upload File */}
+      {/* Area Unggah per design2.md 5.7 */}
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`border-2 border-dashed rounded-card p-6 md:p-8 flex flex-col items-center justify-center text-center transition-all ${
+        className={`input-3d border-2 border-dashed rounded-2xl p-5 md:p-6 text-center transition-all ${
           isDragOver
-            ? 'border-primary bg-primary-50/70 scale-[1.01]'
-            : 'border-primary/40 bg-primary-50/30 hover:border-primary/70 hover:bg-primary-50/50'
+            ? 'border-brand-blue bg-brand-blue-soft scale-[1.01]'
+            : 'border-border-subtle hover:border-brand-blue bg-canvas/70'
         }`}
       >
-        <div className="w-12 h-12 rounded-full bg-primary-50 text-primary flex items-center justify-center mb-3">
-          <UploadCloud className="w-6 h-6" />
+        <div className="w-12 h-12 rounded-2xl icon-plinth-3d text-brand-blue flex items-center justify-center mx-auto mb-3">
+          <UploadCloud className="w-5 h-5" aria-hidden="true" />
         </div>
 
-        <h3 className="text-sm md:text-base font-bold text-ink">
-          Foto Barang Preloved
-        </h3>
-        <p className="text-xs text-ink-soft max-w-sm mt-1 mb-4 leading-relaxed">
-          Ambil foto langsung melalui kamera atau upload file gambar dari perangkatmu.
-          <br />
-          <span className="font-semibold text-primary">Hanya format JPG/JPEG, PNG, dan WebP</span> (maks. 2 MB per foto).
+        <p className="text-sm font-semibold text-ink">
+          Unggah 1 sampai {maxImages} foto barang
+        </p>
+        <p className="text-xs text-ink-muted max-w-md mx-auto mt-1 mb-4 leading-relaxed">
+          Ambil foto langsung lewat kamera atau pilih dari galeri (drag and drop di desktop).
+          Format JPG/JPEG, PNG, atau WebP, maksimal 2 MB per foto.
         </p>
 
-        {/* 2 Fitur Saja: Kamera atau Upload File */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          {/* Fitur 1: Kamera */}
           <Button
             type="button"
-            variant="primary"
-            pill
+            variant="navy"
             disabled={uploading || images.length >= maxImages}
             onClick={() => setCameraModalOpen(true)}
-            className="text-xs md:text-sm font-bold shadow-xs px-5 py-2.5"
+            icon={Camera}
           >
-            <Camera className="w-4 h-4 mr-2" />
-            <span>Kamera</span>
+            Ambil Foto (Kamera)
           </Button>
 
-          {/* Fitur 2: Upload File */}
           <Button
             type="button"
             variant="secondary"
-            pill
             disabled={uploading || images.length >= maxImages}
             onClick={() => fileInputRef.current?.click()}
-            className="text-xs md:text-sm font-bold shadow-xs px-5 py-2.5"
+            icon={UploadCloud}
           >
-            <UploadCloud className="w-4 h-4 mr-2" />
-            <span>Upload File</span>
+            Pilih dari Galeri
           </Button>
 
           <input
@@ -214,91 +206,88 @@ export default function ImageUploader({
         </div>
 
         {uploading && (
-          <div className="flex items-center gap-2 mt-4 text-xs font-semibold text-primary animate-pulse">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="inline-flex items-center gap-2 mt-4 text-xs font-semibold text-brand-blue">
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             <span>Sedang mengunggah dan memverifikasi foto...</span>
           </div>
         )}
       </div>
 
-      {/* Grid Pratinjau Foto */}
+      {/* Grid Pratinjau Thumbnail (design2.md 5.7) */}
       {images.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-bold text-ink px-1">
-            <span>Daftar Foto ({images.length}/{maxImages})</span>
-            <span className="text-[11px] text-ink-soft font-normal">
+        <div className="flex flex-col gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink px-0.5">
+            <span className="font-semibold tabular-nums">
+              Daftar Foto ({images.length}/{maxImages})
+            </span>
+            <span className="text-ink-muted">
               Foto pertama otomatis menjadi foto utama sampul
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="flex flex-wrap gap-3">
             {images.map((url, idx) => (
               <div
-                key={idx}
-                className="relative aspect-square rounded-2xl bg-surface border border-line overflow-hidden group shadow-xs transition hover:border-primary"
+                key={`${url}-${idx}`}
+                className="relative w-24 h-24 rounded-lg bg-surface-muted border border-border-subtle overflow-visible shrink-0"
               >
-                <Image
-                  src={url}
-                  alt={`Foto barang ${idx + 1}`}
-                  fill
-                  unoptimized
-                  className="object-cover"
-                  sizes="160px"
-                />
+                <div className="relative w-full h-full rounded-lg overflow-hidden">
+                  <Image
+                    src={url}
+                    alt={`Foto barang ${idx + 1}`}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                    sizes="96px"
+                  />
+                </div>
 
-                {/* Badge Foto Utama */}
                 {idx === 0 && (
-                  <div className="absolute top-2 left-2 z-10">
-                    <span className="bg-primary text-white font-sans text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs tracking-wide">
-                      FOTO UTAMA
-                    </span>
-                  </div>
+                  <span className="absolute bottom-1.5 left-1.5 z-10 bg-brand-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                    Utama
+                  </span>
                 )}
 
-                {/* Overlay Aksi saat Hover / Tap */}
-                <div className="absolute inset-0 bg-ink/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
-                  {idx !== 0 && (
-                    <button
-                      type="button"
-                      onClick={() => handleSetPrimary(idx)}
-                      className="w-8 h-8 rounded-full bg-white text-ink hover:text-accent shadow-sm flex items-center justify-center transition hover:scale-110 cursor-pointer"
-                      title="Jadikan Foto Utama"
-                      aria-label="Jadikan Foto Utama"
-                    >
-                      <Star className="w-4 h-4" />
-                    </button>
-                  )}
-
+                {idx !== 0 && (
                   <button
                     type="button"
-                    onClick={() => handleRemoveImage(idx)}
-                    className="w-8 h-8 rounded-full bg-danger text-white shadow-sm flex items-center justify-center transition hover:scale-110 cursor-pointer"
-                    title="Hapus Foto"
-                    aria-label="Hapus Foto"
+                    onClick={() => handleSetPrimary(idx)}
+                    className="absolute bottom-1.5 left-1.5 z-10 min-w-[28px] h-7 px-1.5 rounded-md bg-surface/95 text-ink border border-border-subtle hover:bg-campus-gold-soft hover:text-warning-text text-[10px] font-semibold shadow-xs flex items-center gap-0.5"
+                    title="Jadikan Foto Utama"
+                    aria-label={`Jadikan foto ${idx + 1} sebagai utama`}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Star className="w-3 h-3 text-campus-gold fill-campus-gold" aria-hidden="true" />
+                    <span>Utama</span>
                   </button>
-                </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute -top-2 -right-2 z-20 w-7 h-7 rounded-full bg-danger-text text-white shadow-xs flex items-center justify-center hover:bg-red-800 transition-colors"
+                  title="Hapus Foto"
+                  aria-label={`Hapus foto ${idx + 1}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                </button>
               </div>
             ))}
 
-            {/* Kotak Tambah Cepat jika slot belum penuh */}
             {images.length < maxImages && (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="aspect-square rounded-2xl border-2 border-dashed border-line hover:border-primary bg-surface/40 hover:bg-surface flex flex-col items-center justify-center text-ink-soft hover:text-primary transition gap-1 cursor-pointer"
+                className="w-24 h-24 rounded-lg border-2 border-dashed border-border-subtle hover:border-brand-blue bg-canvas hover:bg-surface flex flex-col items-center justify-center text-ink-muted hover:text-brand-blue transition-colors gap-1 shrink-0"
               >
-                <Plus className="w-6 h-6" />
-                <span className="text-[11px] font-bold">Tambah Foto</span>
+                <Plus className="w-5 h-5" aria-hidden="true" />
+                <span className="text-[11px] font-semibold">Tambah</span>
               </button>
             )}
           </div>
         </div>
       )}
 
-      {/* Modal Kamera Web */}
       <CameraModal
         isOpen={cameraModalOpen}
         onClose={() => setCameraModalOpen(false)}

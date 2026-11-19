@@ -53,31 +53,4 @@ export default function AccessibilityControl() {
     }
   };
 
-  return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      aria-label={
-        isComfortMode
-          ? 'Kembalikan ke ukuran teks standar'
-          : 'Aktifkan teks besar agar lebih nyaman dibaca'
-      }
-      title={
-        isComfortMode
-          ? 'Mode Nyaman Aktif (Klik untuk ukuran normal)'
-          : 'Perbesar Teks & Pertajam Tampilan'
-      }
-      className={`h-9 sm:h-10 w-9 sm:w-auto sm:px-3 justify-center rounded-full border text-xs font-bold transition flex items-center gap-0.5 sm:gap-1.5 cursor-pointer shrink-0 ${
-        isComfortMode
-          ? 'bg-primary text-white border-primary shadow-xs'
-          : 'bg-surface text-ink border-line hover:bg-surface-alt'
-      }`}
-    >
-      <span className="font-display font-bold text-sm leading-none">A</span>
-      <span className="font-sans text-xs leading-none">A</span>
-      <span className="hidden lg:inline font-sans font-semibold text-xs">
-        {isComfortMode ? 'Teks Besar' : 'Perbesar'}
-      </span>
-    </button>
-  );
 }

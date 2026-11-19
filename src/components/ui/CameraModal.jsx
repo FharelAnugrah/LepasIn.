@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, X, RefreshCw, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, X, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 export default function CameraModal({ isOpen, onClose, onCapture }) {
@@ -11,7 +11,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
   const [capturedBlob, setCapturedBlob] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Default untuk perangkat 2 kamera: kamera depan ('user')
   const [facingMode, setFacingMode] = useState('user');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [cameraError, setCameraError] = useState(null);
@@ -27,11 +26,8 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
   /**
    * Deteksi apakah perangkat memiliki 2 kamera (kamera depan & kamera belakang).
-   * Pada laptop/PC biasa: hanya ada 1 webcam (tidak punya kamera belakang).
-   * Pada smartphone/tablet: umumnya terdapat minimal 2 kamera fisik (depan & belakang).
    */
   const checkCameraConfiguration = useCallback((stream, devicesList) => {
-    // 1. Cek User Agent: apakah perangkat adalah smartphone / tablet
     const isMobileDevice =
       typeof navigator !== 'undefined' &&
       (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -41,7 +37,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
           navigator.maxTouchPoints > 1 &&
           !/Windows NT/i.test(navigator.userAgent)));
 
-    // 2. Filter videoinput unik (buang duplikat 'default' atau IR sensor Windows Hello)
     const validVideoInputs = (devicesList || []).filter((d) => {
       if (d.kind !== 'videoinput') return false;
       const lbl = (d.label || '').toLowerCase();
@@ -49,7 +44,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
       return true;
     });
 
-    // 3. Cek capability facingMode dari track kamera yang aktif
     let supportsDualFacing = false;
     if (stream) {
       const track = stream.getVideoTracks()[0];
@@ -65,15 +59,10 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
       }
     }
 
-    // 4. Cek apakah ada label depan & belakang yang jelas
     const hasFrontAndBackLabels =
       validVideoInputs.some((d) => /front|user|depan|selfie/i.test(d.label)) &&
       validVideoInputs.some((d) => /back|rear|environment|belakang/i.test(d.label));
 
-    // Perangkat dianggap memiliki 2 kamera (depan & belakang) hanya jika:
-    // - Mendukung dual facingMode, ATAU
-    // - Merupakan mobile device dengan minimal 2 kamera videoinput, ATAU
-    // - Memiliki label kamera depan & belakang yang jelas
     const isDualCamera =
       supportsDualFacing ||
       (isMobileDevice && validVideoInputs.length >= 2) ||
@@ -94,8 +83,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
           throw new Error('Kamera tidak didukung oleh browser ini.');
         }
 
-        // Buka kamera dengan ideal facingMode
-        // Default awal mode = 'user' (kamera depan untuk perangkat 2 kamera, atau kamera tunggal laptop)
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: mode },
@@ -111,7 +98,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         }
         setLoading(false);
 
-        // Setelah stream aktif, baca daftar perangkat dan evaluasi konfigurasi kamera
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
           checkCameraConfiguration(stream, devices);
@@ -123,7 +109,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         setCameraError(
           err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
             ? 'Izin akses kamera ditolak. Silakan izinkan akses kamera di pengaturan browser.'
-            : 'Tidak dapat mengakses kamera perangkat. Silakan gunakan opsi Upload File.'
+            : 'Tidak dapat mengakses kamera perangkat. Silakan gunakan opsi Pilih dari Galeri.'
         );
         setLoading(false);
       }
@@ -131,11 +117,34 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     [stopStream, checkCameraConfiguration]
   );
 
-  // Buka kamera saat modal dibuka
+  const handleClose = useCallback(() => {
+    stopStream();
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+    setCapturedBlob(null);
+    setCameraError(null);
+    setSwitchNotice(null);
+    setFacingMode('user');
+    onClose();
+  }, [stopStream, previewUrl, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKeyDown(e) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, handleClose]);
+
   useEffect(() => {
     let timer = null;
     if (isOpen && !capturedBlob) {
-      // Default: buka kamera depan ('user')
       timer = setTimeout(() => {
         startCamera('user');
       }, 0);
@@ -152,23 +161,13 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     };
   }, [isOpen, capturedBlob, startCamera, stopStream, previewUrl]);
 
-  /**
-   * Logika Switch Kamera Sesuai Permintaan:
-   * 1. Jika perangkat memiliki 2 kamera (depan & belakang):
-   *    Switch antara kamera depan dan kamera belakang.
-   * 2. Jika perangkat hanya memiliki 1 kamera (seperti laptop):
-   *    Kamera TETAP mengarah ke kamera yang aktif dan mirror TIDAK BERUBAH.
-   */
   const handleToggleCamera = () => {
-    // Jika laptop / hanya 1 kamera:
-    // TETAP mengarah ke kamera yang aktif, mirror tidak boleh berubah!
     if (!hasMultipleCameras) {
-      setSwitchNotice('Perangkat Anda hanya memiliki 1 kamera. Kamera aktif tetap dipertahankan.');
+      setSwitchNotice('Perangkat Anda hanya memiliki 1 kamera aktif.');
       setTimeout(() => setSwitchNotice(null), 2500);
       return;
     }
 
-    // Jika perangkat memiliki 2 kamera (smartphone/tablet):
     const nextMode = facingMode === 'user' ? 'environment' : 'user';
     setFacingMode(nextMode);
     startCamera(nextMode);
@@ -180,9 +179,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     setTimeout(() => setSwitchNotice(null), 2000);
   };
 
-  // Status apakah tampilan sedang di-mirror:
-  // Kamera depan ('user') atau kamera laptop tunggal di-mirror secara alami
-  // Kamera belakang ('environment') pada perangkat dual-kamera TIDAK di-mirror
   const isMirrored = !hasMultipleCameras || facingMode === 'user';
 
   const handleTakePhoto = () => {
@@ -190,12 +186,14 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
 
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
+    const maxW = 1280;
+    const rawW = video.videoWidth || 1280;
+    const rawH = video.videoHeight || 720;
+    const scale = rawW > maxW ? maxW / rawW : 1;
+    canvas.width = Math.round(rawW * scale);
+    canvas.height = Math.round(rawH * scale);
 
     const ctx = canvas.getContext('2d');
-
-    // Jika tampilan di-mirror (kamera depan / webcam laptop), simpan foto sesuai yang dilihat
     if (isMirrored) {
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
@@ -234,19 +232,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
     handleClose();
   };
 
-  const handleClose = () => {
-    stopStream();
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-    setCapturedBlob(null);
-    setCameraError(null);
-    setSwitchNotice(null);
-    setFacingMode('user');
-    onClose();
-  };
-
   const handleNativeFallback = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -258,21 +243,25 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/75 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-black sm:rounded-card shadow-float overflow-hidden flex flex-col h-dvh sm:h-auto sm:max-h-[90dvh]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ambil Foto dengan Kamera"
+      className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-ink/80 backdrop-blur-xs"
+    >
+      <div className="relative w-full max-w-lg bg-ink sm:rounded-2xl shadow-lg overflow-hidden flex flex-col h-dvh sm:h-auto sm:max-h-[90dvh] border border-white/15">
         {/* Header Modal */}
-        <div className="flex items-center justify-between p-4 bg-black/70 text-white z-10 border-b border-white/10 shrink-0">
+        <div className="flex items-center justify-between p-4 bg-navy-900 text-white z-10 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <Camera className="w-5 h-5 text-primary shrink-0" />
+            <Camera className="w-5 h-5 text-campus-gold shrink-0" aria-hidden="true" />
             <span className="font-bold text-sm truncate">Ambil Foto Barang</span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Status Indikator Kamera */}
             {!cameraError && !previewUrl && (
-              <span className="hidden xs:inline-block sm:inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/15 text-white/90">
+              <span className="hidden sm:inline-block text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-white/15 text-white">
                 {!hasMultipleCameras
-                  ? 'Kamera Laptop (1 Kamera)'
+                  ? 'Kamera Laptop'
                   : facingMode === 'user'
                   ? 'Kamera Depan'
                   : 'Kamera Belakang'}
@@ -282,32 +271,31 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
             <button
               type="button"
               onClick={handleClose}
-              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer"
+              className="w-11 h-11 md:w-10 md:h-10 rounded-lg bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
               aria-label="Tutup kamera"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
 
         {/* Viewport Kamera / Pratinjau Foto */}
-        <div className="relative flex-1 bg-black flex items-center justify-center min-h-[200px] sm:min-h-[380px] overflow-hidden">
-          {/* Banner Pemberitahuan Switch Kamera */}
+        <div className="relative flex-1 bg-black flex items-center justify-center min-h-[240px] sm:min-h-[380px] overflow-hidden">
           {switchNotice && (
-            <div className="absolute top-4 z-20 px-4 py-2 rounded-full bg-black/85 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-float flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              <Sparkles className="w-3.5 h-3.5 text-accent" />
+            <div className="absolute top-4 z-20 px-4 py-2 rounded-lg bg-navy-900/95 border border-white/20 text-white text-xs font-semibold shadow-lg flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-campus-gold" aria-hidden="true" />
               <span>{switchNotice}</span>
             </div>
           )}
 
           {cameraError ? (
             <div className="p-6 text-center flex flex-col items-center gap-3 max-w-xs text-white">
-              <AlertCircle className="w-12 h-12 text-warning" />
-              <p className="text-xs md:text-sm text-white/80 leading-relaxed">
+              <AlertCircle className="w-12 h-12 text-campus-gold" aria-hidden="true" />
+              <p className="text-xs md:text-sm text-white/90 leading-relaxed">
                 {cameraError}
               </p>
-              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-white text-xs font-bold hover:bg-primary-hover transition shadow-sm mt-2">
-                <Camera className="w-4 h-4" />
+              <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue-hover transition-colors mt-2">
+                <Camera className="w-4 h-4" aria-hidden="true" />
                 <span>Buka Kamera Perangkat</span>
                 <input
                   type="file"
@@ -319,7 +307,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
               </label>
             </div>
           ) : previewUrl ? (
-            // Pratinjau Hasil Foto yang Dijepret
             <div className="relative w-full h-full flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -329,7 +316,6 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
               />
             </div>
           ) : (
-            // Live Video Streaming Kamera
             <>
               <video
                 ref={videoRef}
@@ -341,7 +327,7 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
                 }`}
               />
               {loading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-xs font-medium">
+                <div className="absolute inset-0 bg-ink/70 flex items-center justify-center text-white text-xs font-medium">
                   Memulai kamera...
                 </div>
               )}
@@ -350,35 +336,38 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
         </div>
 
         {/* Footer Tombol Aksi */}
-        <div className="px-4 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] bg-black/80 border-t border-white/10 flex items-center justify-around text-white shrink-0">
+        <div className="px-4 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] bg-navy-900 border-t border-white/10 flex items-center justify-around text-white shrink-0">
           {previewUrl ? (
-            <div className="w-full flex items-center justify-center gap-4">
+            <div className="w-full flex items-center justify-center gap-3">
               <Button
                 variant="secondary"
-                pill
                 onClick={handleRetake}
-                className="text-xs font-bold bg-white/20 text-white hover:bg-white/30 border-0"
+                className="bg-white/15 text-white border-white/25 hover:bg-white/25 hover:text-white"
+                icon={RefreshCw}
               >
-                <RefreshCw className="w-4 h-4 mr-1.5" />
                 Ambil Ulang
               </Button>
               <Button
                 variant="primary"
-                pill
                 onClick={handleConfirmPhoto}
-                className="text-xs font-bold"
+                icon={Check}
               >
-                <Check className="w-4 h-4 mr-1.5" />
                 Gunakan Foto Ini
               </Button>
             </div>
           ) : !cameraError ? (
-            <div className="w-full flex items-center justify-between px-6">
-              {/* Tombol Switch Kamera */}
+            <div className="w-full flex items-center justify-between px-4">
               <button
                 type="button"
                 onClick={handleToggleCamera}
-                className="p-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer flex items-center gap-1.5"
+                className="w-11 h-11 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors flex items-center justify-center"
+                aria-label={
+                  !hasMultipleCameras
+                    ? 'Informasi kamera perangkat'
+                    : facingMode === 'user'
+                    ? 'Ganti ke Kamera Belakang'
+                    : 'Ganti ke Kamera Depan'
+                }
                 title={
                   !hasMultipleCameras
                     ? 'Perangkat hanya memiliki 1 kamera'
@@ -387,22 +376,21 @@ export default function CameraModal({ isOpen, onClose, onCapture }) {
                     : 'Ganti ke Kamera Depan'
                 }
               >
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className="w-5 h-5" aria-hidden="true" />
               </button>
 
-              {/* Tombol Jepret Foto Utama */}
+              {/* Tombol Shutter Lingkaran Besar per design2.md 5.7 */}
               <button
                 type="button"
                 onClick={handleTakePhoto}
                 disabled={loading}
                 aria-label="Jepret Foto"
-                className="w-16 h-16 rounded-full border-4 border-white bg-primary flex items-center justify-center shadow-float hover:scale-105 active:scale-95 transition cursor-pointer"
+                className="w-14 h-14 rounded-full bg-white ring-4 ring-brand-blue flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
               >
-                <div className="w-6 h-6 rounded-full bg-white" />
+                <span className="w-5 h-5 rounded-full bg-brand-blue" />
               </button>
 
-              {/* Spacer penyeimbang layout */}
-              <div className="w-11" />
+              <div className="w-11" aria-hidden="true" />
             </div>
           ) : null}
         </div>

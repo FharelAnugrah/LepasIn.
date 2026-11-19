@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useId } from 'react';
 import { X } from 'lucide-react';
 
 export default function Modal({
@@ -12,65 +12,117 @@ export default function Modal({
   showClose = true,
 }) {
   const modalRef = useRef(null);
+  const bodyRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const titleId = useId();
 
-  // Kunci scroll body saat modal aktif
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-  // Handle ESC
+  // Kunci scroll body dan perangkap fokus keyboard hanya saat status buka/tutup modal berubah (R-32)
   useEffect(() => {
+    if (!isOpen) return;
+
+    const previousFocus = document.activeElement;
+    document.body.style.overflow = 'hidden';
+
+    const modalEl = modalRef.current;
+    const bodyEl = bodyRef.current;
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const formFieldSelector =
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
+
+    const timer = setTimeout(() => {
+      if (modalEl && !modalEl.contains(document.activeElement)) {
+        const firstField = bodyEl?.querySelector(formFieldSelector);
+        if (firstField) {
+          firstField.focus();
+        } else {
+          const focusable = modalEl.querySelectorAll(focusableSelector);
+          if (focusable.length > 0) {
+            focusable[0].focus();
+          } else {
+            modalEl.focus();
+          }
+        }
+      }
+    }, 20);
+
     function handleKeyDown(e) {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (e.key === 'Tab' && modalEl) {
+        const focusable = modalEl.querySelectorAll(focusableSelector);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     }
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+      if (
+        previousFocus &&
+        typeof previousFocus.focus === 'function' &&
+        document.contains(previousFocus)
+      ) {
+        previousFocus.focus();
+      }
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-ink/40 backdrop-blur-xs animate-in fade-in duration-200">
-      {/* Backdrop click */}
-      <div className="absolute inset-0" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-navy-900/55">
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
-      {/* Konten Modal / Bottom Sheet di Mobile */}
       <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${maxWidth} bg-canvas rounded-t-[28px] md:rounded-card shadow-float border border-line/60 z-10 max-h-[90dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 md:zoom-in-95 duration-200 pb-[env(safe-area-inset-bottom)]`}
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
+        className={`relative w-full ${maxWidth} surface-3d animate-modal-3d rounded-t-2xl md:rounded-2xl z-10 max-h-[90dvh] flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)] outline-none`}
       >
-        {/* Header Modal */}
         {(title || showClose) && (
-          <div className="flex items-center justify-between gap-2 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-line/40 shrink-0">
+          <div className="flex items-center justify-between gap-2 px-5 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border-subtle shrink-0">
             {title ? (
-              <h3 className="text-base md:text-lg font-bold text-ink truncate">{title}</h3>
-            ) : <div />}
+              <h3 id={titleId} className="text-base md:text-lg font-bold text-ink truncate">
+                {title}
+              </h3>
+            ) : (
+              <div />
+            )}
             {showClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="w-10 h-10 -mr-1.5 rounded-full flex items-center justify-center text-ink-soft hover:text-ink hover:bg-surface-alt transition-colors shrink-0"
-                aria-label="Tutup"
+                className="w-11 h-11 md:w-10 md:h-10 -mr-2 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-surface-muted transition-colors shrink-0"
+                aria-label="Tutup dialog"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             )}
           </div>
         )}
 
-        {/* Body Modal */}
-        <div className="px-5 sm:px-6 py-4 sm:py-5 overflow-y-auto">{children}</div>
+        <div ref={bodyRef} className="px-5 sm:px-6 py-4 sm:py-5 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

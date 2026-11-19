@@ -13,36 +13,40 @@ export default function ConfirmDialog({
   confirmText = 'Ya, Lanjutkan',
   cancelText = 'Batal',
   confirmVariant = 'danger',
+  danger = false,
   loading = false,
-  type = 'warning', // warning, info, danger, success
+  type = 'warning',
 }) {
+  const effectiveVariant = danger ? 'danger' : confirmVariant;
+  const effectiveType = danger ? 'danger' : type;
+
   const iconMap = {
-    warning: <AlertTriangle className="w-6 h-6 text-warning" />,
-    danger: <AlertTriangle className="w-6 h-6 text-danger" />,
-    info: <Info className="w-6 h-6 text-info" />,
-    success: <CheckCircle2 className="w-6 h-6 text-success" />,
+    warning: <AlertTriangle className="w-6 h-6 text-warning-text" aria-hidden="true" />,
+    danger: <AlertTriangle className="w-6 h-6 text-danger-text" aria-hidden="true" />,
+    info: <Info className="w-6 h-6 text-info-text" aria-hidden="true" />,
+    success: <CheckCircle2 className="w-6 h-6 text-success-text" aria-hidden="true" />,
   };
 
   const bgIconMap = {
-    warning: 'bg-warning-50',
-    danger: 'bg-danger-50',
-    info: 'bg-info-50',
-    success: 'bg-success-50',
+    warning: 'bg-warning-bg border border-amber-200',
+    danger: 'bg-danger-bg border border-red-200',
+    info: 'bg-info-bg border border-brand-blue-border',
+    success: 'bg-success-bg border border-green-200',
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} showClose={!loading} maxWidth="max-w-md">
       <div className="flex flex-col items-center text-center">
         <div
-          className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
-            bgIconMap[type] || 'bg-surface-alt'
+          className={`w-13 h-13 rounded-2xl flex items-center justify-center mb-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85),0_3px_0_rgba(15,41,74,0.12)] ${
+            bgIconMap[effectiveType] || 'bg-surface-muted border border-border-subtle'
           }`}
         >
-          {iconMap[type] || <AlertTriangle className="w-6 h-6 text-ink-soft" />}
+          {iconMap[effectiveType] || <AlertTriangle className="w-6 h-6 text-ink-muted" aria-hidden="true" />}
         </div>
 
         <h3 className="text-lg font-bold text-ink mb-2">{title}</h3>
-        <p className="text-sm text-ink-soft mb-6 leading-relaxed">{message}</p>
+        <p className="text-sm text-ink-secondary mb-6 leading-relaxed">{message}</p>
 
         <div className="flex items-center gap-3 w-full">
           <Button
@@ -54,7 +58,7 @@ export default function ConfirmDialog({
             {cancelText}
           </Button>
           <Button
-            variant={confirmVariant}
+            variant={effectiveVariant}
             className="flex-1"
             onClick={onConfirm}
             loading={loading}

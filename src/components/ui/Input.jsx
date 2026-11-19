@@ -1,6 +1,7 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 const Input = forwardRef(function Input(
   {
@@ -17,15 +18,18 @@ const Input = forwardRef(function Input(
   },
   ref
 ) {
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
-  const radius = pill ? 'rounded-full' : 'rounded-[14px]';
+  const generatedId = useId();
+  const inputId = id || (label ? `${label.toLowerCase().replace(/\s+/g, '-')}-${generatedId}` : generatedId);
+  const errorId = error ? `${inputId}-error` : undefined;
+  const helperId = !error && helperText ? `${inputId}-helper` : undefined;
+  const radius = pill ? 'rounded-full' : 'rounded-lg';
 
   return (
     <div className="w-full flex flex-col gap-1.5">
       {label && (
         <label
           htmlFor={inputId}
-          className="text-xs md:text-sm font-semibold text-ink flex items-center justify-between"
+          className="text-sm font-medium text-ink-secondary flex items-center justify-between"
         >
           <span>{label}</span>
         </label>
@@ -33,8 +37,8 @@ const Input = forwardRef(function Input(
 
       <div className="relative flex items-center">
         {Icon && (
-          <div className="absolute left-3.5 text-ink-soft pointer-events-none">
-            <Icon className="w-4 h-4" />
+          <div className="absolute left-3.5 text-ink-muted pointer-events-none">
+            <Icon className="w-4 h-4" aria-hidden="true" />
           </div>
         )}
 
@@ -42,6 +46,8 @@ const Input = forwardRef(function Input(
           ref={ref}
           id={inputId}
           type={type}
+          aria-invalid={Boolean(error)}
+          aria-describedby={errorId || helperId}
           onWheel={(e) => {
             if (type === 'number') {
               e.currentTarget.blur();
@@ -50,31 +56,33 @@ const Input = forwardRef(function Input(
               props.onWheel(e);
             }
           }}
-          className={`w-full h-[46px] ${Icon ? 'pl-10' : 'pl-4'} ${
-            IconRight ? 'pr-10' : 'pr-4'
-          } ${radius} bg-surface font-sans text-ink text-base md:text-sm placeholder:text-ink-soft/70 ${
+          className={`input-3d w-full h-11 ${Icon ? 'pl-10' : 'pl-3.5'} ${
+            IconRight ? 'pr-10' : 'pr-3.5'
+          } ${radius} bg-surface font-sans text-ink text-base md:text-sm placeholder:text-ink-muted ${
             type === 'number' || type === 'tel' ? 'tabular-nums' : ''
           } border ${
             error
-              ? 'border-danger focus:border-danger focus:ring-4 focus:ring-danger-50'
-              : 'border-line/70 focus:border-primary focus:bg-canvas focus:ring-4 focus:ring-primary-50'
-          } outline-none transition-all duration-150 disabled:opacity-50 disabled:bg-surface-alt ${className}`}
+              ? 'border-danger-text focus:border-danger-text focus:ring-3 focus:ring-danger-bg'
+              : 'border-border-subtle focus:border-brand-blue focus:ring-3 focus:ring-brand-blue-soft'
+          } outline-none disabled:opacity-60 disabled:bg-surface-muted ${className}`}
           {...props}
         />
 
         {IconRight && (
-          <div className="absolute right-3.5 text-ink-soft flex items-center">
+          <div className="absolute right-2.5 text-ink-muted flex items-center">
             {IconRight}
           </div>
         )}
       </div>
 
       {error ? (
-        <p className="text-xs text-danger font-medium flex items-center gap-1 mt-0.5">
-          <span>{error}</span>
+        <p id={errorId} role="alert" className="text-xs text-danger-text font-medium mt-0.5">
+          {error}
         </p>
       ) : helperText ? (
-        <p className="text-xs text-ink-soft mt-0.5">{helperText}</p>
+        <p id={helperId} className="text-xs text-ink-muted mt-0.5">
+          {helperText}
+        </p>
       ) : null}
     </div>
   );
@@ -94,14 +102,17 @@ export const Textarea = forwardRef(function Textarea(
   },
   ref
 ) {
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const generatedId = useId();
+  const inputId = id || (label ? `${label.toLowerCase().replace(/\s+/g, '-')}-${generatedId}` : generatedId);
+  const errorId = error ? `${inputId}-error` : undefined;
+  const helperId = !error && helperText ? `${inputId}-helper` : undefined;
 
   return (
     <div className="w-full flex flex-col gap-1.5">
       {label && (
         <label
           htmlFor={inputId}
-          className="text-xs md:text-sm font-semibold text-ink"
+          className="text-sm font-medium text-ink-secondary"
         >
           {label}
         </label>
@@ -111,18 +122,24 @@ export const Textarea = forwardRef(function Textarea(
         ref={ref}
         id={inputId}
         rows={rows}
-        className={`w-full p-4 rounded-[14px] bg-surface text-ink text-base md:text-sm placeholder:text-ink-soft/70 border ${
+        aria-invalid={Boolean(error)}
+        aria-describedby={errorId || helperId}
+        className={`input-3d w-full p-3.5 rounded-xl bg-surface text-ink text-base md:text-sm placeholder:text-ink-muted border ${
           error
-            ? 'border-danger focus:border-danger focus:ring-4 focus:ring-danger-50'
-            : 'border-line/70 focus:border-primary focus:bg-canvas focus:ring-4 focus:ring-primary-50'
-        } outline-none transition-all duration-150 resize-y disabled:opacity-50 disabled:bg-surface-alt ${className}`}
+            ? 'border-danger-text focus:border-danger-text focus:ring-3 focus:ring-danger-bg'
+            : 'border-border-subtle focus:border-brand-blue focus:ring-3 focus:ring-brand-blue-soft'
+        } outline-none resize-y disabled:opacity-60 disabled:bg-surface-muted ${className}`}
         {...props}
       />
 
       {error ? (
-        <p className="text-xs text-danger font-medium mt-0.5">{error}</p>
+        <p id={errorId} role="alert" className="text-xs text-danger-text font-medium mt-0.5">
+          {error}
+        </p>
       ) : helperText ? (
-        <p className="text-xs text-ink-soft mt-0.5">{helperText}</p>
+        <p id={helperId} className="text-xs text-ink-muted mt-0.5">
+          {helperText}
+        </p>
       ) : null}
     </div>
   );
@@ -141,14 +158,17 @@ export const Select = forwardRef(function Select(
   },
   ref
 ) {
-  const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+  const generatedId = useId();
+  const inputId = id || (label ? `${label.toLowerCase().replace(/\s+/g, '-')}-${generatedId}` : generatedId);
+  const errorId = error ? `${inputId}-error` : undefined;
+  const helperId = !error && helperText ? `${inputId}-helper` : undefined;
 
   return (
     <div className="w-full flex flex-col gap-1.5">
       {label && (
         <label
           htmlFor={inputId}
-          className="text-xs md:text-sm font-semibold text-ink"
+          className="text-sm font-medium text-ink-secondary"
         >
           {label}
         </label>
@@ -156,39 +176,39 @@ export const Select = forwardRef(function Select(
 
       <div className="relative flex items-center">
         {Icon && (
-          <div className="absolute left-3.5 text-ink-soft pointer-events-none">
-            <Icon className="w-4 h-4" />
+          <div className="absolute left-3.5 text-ink-muted pointer-events-none">
+            <Icon className="w-4 h-4" aria-hidden="true" />
           </div>
         )}
 
         <select
           ref={ref}
           id={inputId}
-          className={`w-full h-[46px] ${Icon ? 'pl-10' : 'pl-4'} pr-8 rounded-[14px] bg-surface text-ink text-base md:text-sm border ${
+          aria-invalid={Boolean(error)}
+          aria-describedby={errorId || helperId}
+          className={`input-3d w-full h-11 ${Icon ? 'pl-10' : 'pl-3.5'} pr-9 rounded-xl bg-surface text-ink text-base md:text-sm border ${
             error
-              ? 'border-danger focus:border-danger focus:ring-4 focus:ring-danger-50'
-              : 'border-line/70 focus:border-primary focus:bg-canvas focus:ring-4 focus:ring-primary-50'
-          } outline-none transition-all duration-150 appearance-none cursor-pointer disabled:opacity-50 disabled:bg-surface-alt ${className}`}
+              ? 'border-danger-text focus:border-danger-text focus:ring-3 focus:ring-danger-bg'
+              : 'border-border-subtle focus:border-brand-blue focus:ring-3 focus:ring-brand-blue-soft'
+          } outline-none appearance-none cursor-pointer disabled:opacity-60 disabled:bg-surface-muted ${className}`}
           {...props}
         >
           {children}
         </select>
 
-        <div className="absolute right-3.5 pointer-events-none text-ink-soft">
-          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
+        <div className="absolute right-3 pointer-events-none text-ink-muted">
+          <ChevronDown className="w-4 h-4" aria-hidden="true" />
         </div>
       </div>
 
       {error ? (
-        <p className="text-xs text-danger font-medium mt-0.5">{error}</p>
+        <p id={errorId} role="alert" className="text-xs text-danger-text font-medium mt-0.5">
+          {error}
+        </p>
       ) : helperText ? (
-        <p className="text-xs text-ink-soft mt-0.5">{helperText}</p>
+        <p id={helperId} className="text-xs text-ink-muted mt-0.5">
+          {helperText}
+        </p>
       ) : null}
     </div>
   );
