@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, Heart, User, ShoppingBag } from 'lucide-react';
+import { Home, Package, Heart, User, ShoppingCart } from 'lucide-react';
 import { formatRupiah } from '@/components/ui/Badge';
 
 export default function BottomNav({
@@ -40,7 +40,6 @@ export default function BottomNav({
     return () => window.removeEventListener('cart-updated', handleCartUpdated);
   }, []);
 
-  // Tentukan rute tab berdasarkan role
   const getOrdersLink = () => {
     if (!user) return '/login?next=/buyer/orders';
     if (user.role === 'seller') return '/seller/orders';
@@ -52,13 +51,13 @@ export default function BottomNav({
     if (!user) return '/login';
     if (user.role === 'admin') return '/admin';
     if (user.role === 'seller') return user.seller_status === 'approved' ? '/seller' : '/pending-seller';
-    return '/buyer/profile';
+    return '/buyer';
   };
 
   const getWishlistLink = () => {
     if (!user) return '/login?next=/buyer/wishlist';
     if (user.role === 'buyer') return '/buyer/wishlist';
-    return '/';
+    return '/products';
   };
 
   const tabs = [
@@ -81,11 +80,13 @@ export default function BottomNav({
       isActive: pathname.startsWith('/buyer/wishlist'),
     },
     {
-      label: 'Profil',
+      label: 'Akun',
       href: getProfileLink(),
       icon: User,
       isActive:
+        pathname === '/buyer' ||
         pathname.startsWith('/buyer/profile') ||
+        pathname.startsWith('/buyer/addresses') ||
         pathname.startsWith('/seller') ||
         pathname.startsWith('/admin') ||
         pathname === '/pending-seller' ||
@@ -101,63 +102,74 @@ export default function BottomNav({
 
   return (
     <>
-      {/* Ruang cadangan di alur dokumen agar konten bawah tidak tertutup BottomNav / Floating Cart di ponsel */}
+      {/* Ruang cadangan di alur dokumen agar konten bawah tidak tertutup BottomNav / Floating Cart Bar */}
       <div
         className={`md:hidden shrink-0 ${
           showFloatingCart
-            ? 'h-[calc(8rem+env(safe-area-inset-bottom))]'
+            ? 'h-[calc(8.75rem+env(safe-area-inset-bottom))]'
             : 'h-[calc(4.5rem+env(safe-area-inset-bottom))]'
         }`}
         aria-hidden="true"
       />
+      {/* Floating Cart Bar 3D (Khusus Mobile: Mengambang di atas BottomNav, Tersembunyi di Desktop/Laptop) */}
+      {showFloatingCart && (
+        <div
+          role="region"
+          aria-label="Ringkasan keranjang belanja"
+          className="block md:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] inset-x-3 sm:inset-x-4 max-w-3xl mx-auto z-40"
+        >
+          <div className="plinth-navy-3d text-white rounded-2xl p-3.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl icon-plinth-gold text-ink flex items-center justify-center shrink-0">
+                <ShoppingCart className="w-5 h-5" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-slate-300 tabular-nums">
+                  <strong className="text-white font-semibold">{cartCount} barang</strong> di keranjang
+                </p>
+                <p className="text-sm sm:text-base font-bold text-white tabular-nums tracking-tight truncate">
+                  {formatRupiah(cartTotal)}
+                </p>
+              </div>
+            </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-        {/* Floating Cart Bar (Melayang Tepat di Atas Bottom Nav) */}
-        {showFloatingCart && (
-          <div className="px-3 sm:px-4 pb-2 animate-in slide-in-from-bottom-3 duration-200 pointer-events-auto">
             <Link
               href="/buyer/cart"
-              className="flex items-center justify-between gap-2 bg-primary text-white rounded-full shadow-float px-4 sm:px-5 py-2.5 sm:py-3 hover:bg-primary-hover transition-colors"
+              className="btn-3d btn-3d-accent inline-flex items-center justify-center min-h-[44px] md:min-h-[40px] px-4 py-2 rounded-xl font-bold text-xs sm:text-sm shrink-0"
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-                <span className="font-display text-xs sm:text-sm font-bold truncate">Lihat Keranjang</span>
-                <span className="bg-white text-primary font-display text-[11px] sm:text-xs font-bold tabular-nums px-2 py-0.5 rounded-full shrink-0">
-                  {cartCount}x
-                </span>
-              </div>
-              <div className="font-display text-xs sm:text-sm font-bold tabular-nums tracking-tight shrink-0">
-                {formatRupiah(cartTotal)}
-              </div>
+              Lihat Keranjang
             </Link>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 4 Tab Bottom Navigation */}
-        <nav className="bg-canvas/95 backdrop-blur-md border-t border-line px-1.5 sm:px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-float pointer-events-auto">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <Link
-                key={tab.label}
-                href={tab.href}
-                className={`flex-1 min-w-0 min-h-[44px] flex flex-col items-center justify-center py-1 px-1.5 sm:px-3 rounded-xl transition-all duration-150 ${
-                  tab.isActive
-                    ? 'text-primary font-bold'
-                    : 'text-ink-soft hover:text-ink font-medium'
-                }`}
-              >
-                <Icon
-                  className={`w-5 h-5 mb-0.5 transition-transform ${
-                    tab.isActive ? 'stroke-[2.5px] scale-105' : 'stroke-[1.8px]'
-                  }`}
-                />
-                <span className="text-[11px] leading-tight tracking-tight truncate max-w-full">{tab.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      {/* 4 Tab Bottom Navigation Mobile */}
+      <nav
+        aria-label="Navigasi utama ponsel"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/95 border-t border-border-subtle px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-6px_22px_-8px_rgba(15,41,74,0.14)]"
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <Link
+              key={tab.label}
+              href={tab.href}
+              aria-current={tab.isActive ? 'page' : undefined}
+              className={`flex-1 min-w-0 min-h-[46px] flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition-all ${
+                tab.isActive
+                  ? 'nav-pill-3d-active font-semibold'
+                  : 'text-ink-muted hover:text-ink font-medium'
+              }`}
+            >
+              <Icon
+                className={`w-5 h-5 mb-0.5 ${tab.isActive ? 'stroke-[2.25px]' : 'stroke-[1.75px]'}`}
+                aria-hidden="true"
+              />
+              <span className="text-[11px] leading-tight truncate max-w-full">{tab.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   );
 }

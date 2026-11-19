@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
-  ShoppingBag,
+  ShoppingCart,
   Search,
   User,
   LogOut,
@@ -13,16 +13,13 @@ import {
   ShieldCheck,
   Package,
   Heart,
-  SlidersHorizontal,
-  Menu,
-  X,
-  GraduationCap,
+  MapPin,
   Loader2,
-  ArrowRight,
+  X,
   MessageCircle,
+  LayoutDashboard,
 } from 'lucide-react';
 import CampusSelector from '@/components/ui/CampusSelector';
-import Button from '@/components/ui/Button';
 import AccessibilityControl from '@/components/ui/AccessibilityControl';
 import { formatRupiah } from '@/components/ui/Badge';
 
@@ -41,8 +38,8 @@ function NavbarItemImage({ src, alt }) {
     );
   }
   return (
-    <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
-      <Package className="w-4 h-4" />
+    <div className="w-full h-full flex items-center justify-center text-ink-muted">
+      <Package className="w-4 h-4" aria-hidden="true" />
     </div>
   );
 }
@@ -51,6 +48,7 @@ export default function Navbar({
   user = null,
   cartCount: initialCartCount = 0,
   selectedCampus = null,
+  campuses = null,
   showSearchBar = true,
 }) {
   const router = useRouter();
@@ -60,13 +58,11 @@ export default function Navbar({
   const [cartCount, setCartCount] = useState(initialCartCount);
   const [prevInitialCartCount, setPrevInitialCartCount] = useState(initialCartCount);
 
-  // Sync state bila prop dari server berubah
   if (initialCartCount !== prevInitialCartCount) {
     setPrevInitialCartCount(initialCartCount);
     setCartCount(initialCartCount);
   }
 
-  // Dengarkan event pembaruan keranjang realtime dari client action
   useEffect(() => {
     function handleCartUpdated(e) {
       if (e.detail && typeof e.detail.cartCount === 'number') {
@@ -81,23 +77,20 @@ export default function Navbar({
   const [searchQuery, setSearchQuery] = useState(urlQuery);
   const [prevUrlQuery, setPrevUrlQuery] = useState(urlQuery);
 
-  // Sync state saat URL search params berubah tanpa cascading render
   if (urlQuery !== prevUrlQuery) {
     setPrevUrlQuery(urlQuery);
     setSearchQuery(urlQuery);
   }
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const userMenuTriggerRef = useRef(null);
 
-  // Live / Instant Search State
   const [liveResults, setLiveResults] = useState({ products: [], stores: [] });
   const [isLiveSearching, setIsLiveSearching] = useState(false);
   const [isLiveDropdownOpen, setIsLiveDropdownOpen] = useState(false);
   const searchContainerRef = useRef(null);
 
-  // Live / Instant Search saat pengguna mengetik di Navbar (debounce 250ms)
   useEffect(() => {
     const trimmed = searchQuery.trim();
     if (trimmed.length < 2) {
@@ -124,7 +117,6 @@ export default function Navbar({
     return () => clearTimeout(timer);
   }, [searchQuery, selectedCampus]);
 
-  // Tutup menu & dropdown saat klik luar
   useEffect(() => {
     function handleClickOutside(e) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
@@ -134,9 +126,24 @@ export default function Navbar({
         setIsLiveDropdownOpen(false);
       }
     }
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        if (userMenuOpen) {
+          setUserMenuOpen(false);
+          userMenuTriggerRef.current?.focus();
+        }
+        if (isLiveDropdownOpen) {
+          setIsLiveDropdownOpen(false);
+        }
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [userMenuOpen, isLiveDropdownOpen]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -158,7 +165,6 @@ export default function Navbar({
     const params = new URLSearchParams(searchParams.toString());
 
     if (pathname === '/') {
-      // Di beranda, tandai "Semua Kampus" secara eksplisit agar tidak fallback ke kampus default user
       if (campus && campus.id) {
         params.set('campus', String(campus.id));
       } else {
@@ -175,14 +181,16 @@ export default function Navbar({
     } else {
       params.delete('campus');
     }
-    params.set('page', '1');
-    router.push(`/products?${params.toString()}`);
+    params.delete('page');
+    const queryString = params.toString();
+    router.push(queryString ? `/products?${queryString}` : '/products');
   };
 
   const handleLogout = async () => {
     try {
       const res = await fetch('/api/auth/logout', { method: 'POST' });
       if (res.ok) {
+        setUserMenuOpen(false);
         router.push('/login');
         router.refresh();
       }
@@ -191,37 +199,55 @@ export default function Navbar({
     }
   };
 
+  const sellerShortcutHref =
+    user?.role === 'seller'
+      ? user.seller_status === 'approved'
+        ? '/seller'
+        : '/pending-seller'
+      : '/admin';
+
   return (
-    <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-md border-b border-line">
-      {/* Baris Atas Navbar */}
-      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-1 sm:gap-3">
-        {/* Sisi Kiri: Logo LepasIn & Selektor Kampus */}
-        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 min-w-0 shrink-0">
+    <header className="sticky top-0 z-40 navbar-3d">
+      {/* Baris Utama Navbar (Tinggi 64px) */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3">
+        {/* Kiri: Brand Logo LepasIn + Campus Selector Pill */}
+        <div className="flex items-center gap-2 lg:gap-3 min-w-0 shrink-0">
           <Link
             href="/"
-            className="inline-flex items-center font-display text-ink font-extrabold text-base sm:text-xl md:text-2xl tracking-tight shrink-0"
+            className="group inline-flex items-baseline font-extrabold text-xl text-navy-900 tracking-tight shrink-0 transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
           >
-            <span className="text-primary">Lepas</span><span>In</span><span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-accent inline-block ml-0.5"></span>
+            <span>LepasIn</span>
+            <span
+              className="w-2 h-2 rounded-[4px] bg-campus-gold inline-block ml-0.5 mb-0.5 shadow-[0_2px_0_#B87D04] transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:rotate-12"
+              aria-hidden="true"
+            />
           </Link>
 
-          {/* Selektor Kampus di Tablet & Desktop */}
-          <div className="hidden md:block md:ml-1 lg:ml-3 max-w-[175px] lg:max-w-[230px]">
+          <div className="hidden md:block max-w-[190px] lg:max-w-[230px]">
             <CampusSelector
               value={selectedCampus}
               onChange={handleCampusChange}
+              campuses={campuses}
               allowAll={true}
               allLabel="Semua Kampus"
             />
           </div>
         </div>
 
-        {/* Tengah: Search Bar di Tablet & Desktop (Live / Instant Search) */}
+        {/* Tengah: Search Bar Tablet & Desktop */}
         {showSearchBar && (
-          <div className="hidden md:flex flex-1 min-w-0 max-w-xs lg:max-w-md mx-2 lg:mx-4 relative" ref={searchContainerRef}>
-            <form onSubmit={handleSearchSubmit} className="relative w-full">
+          <div
+            className="hidden md:flex flex-1 min-w-0 max-w-sm lg:max-w-md mx-2 relative"
+            ref={searchContainerRef}
+          >
+            <form onSubmit={handleSearchSubmit} className="relative w-full" role="search">
+              <label htmlFor="navbar-search" className="sr-only">
+                Cari barang atau toko
+              </label>
               <input
+                id="navbar-search"
                 type="text"
-                placeholder="Cari barang atau toko..."
+                placeholder="Cari kasur, kipas, buku, atau toko..."
                 value={searchQuery}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -233,12 +259,15 @@ export default function Navbar({
                 onFocus={() => {
                   if (searchQuery.trim().length >= 2) setIsLiveDropdownOpen(true);
                 }}
-                className="w-full h-10 pl-9 lg:pl-10 pr-9 lg:pr-10 text-base md:text-sm bg-surface rounded-full border border-line focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
+                className="input-3d w-full h-10 pl-10 pr-10 text-sm bg-surface-muted/80 text-ink placeholder:text-ink-subtle rounded-full border border-border-subtle/80 focus:bg-surface focus:border-brand-blue outline-none"
               />
-              <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search
+                className="w-4 h-4 text-ink-subtle absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                aria-hidden="true"
+              />
               {isLiveSearching ? (
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-primary">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-blue">
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 </div>
               ) : searchQuery ? (
                 <button
@@ -247,22 +276,21 @@ export default function Navbar({
                     setSearchQuery('');
                     setIsLiveDropdownOpen(false);
                   }}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink p-0.5 cursor-pointer"
-                  title="Bersihkan"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-subtle hover:text-ink p-1.5 rounded-full"
+                  aria-label="Bersihkan kata kunci pencarian"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               ) : null}
             </form>
 
-            {/* Dropdown Live Search Popover */}
+            {/* Dropdown Hasil Live Search */}
             {isLiveDropdownOpen && searchQuery.trim().length >= 2 && (
-              <div className="absolute left-0 right-0 top-full mt-2 bg-canvas border border-line rounded-card shadow-float z-50 overflow-hidden divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
-                {/* Section Toko Ditemukan */}
+              <div className="absolute left-0 right-0 top-full mt-2.5 dropdown-3d rounded-2xl z-50 overflow-hidden divide-y divide-border-subtle">
                 {liveResults.stores?.length > 0 && (
                   <div className="p-2">
-                    <div className="px-3 py-1 text-[11px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1.5">
-                      <Store className="w-3.5 h-3.5 text-primary" />
+                    <div className="px-2.5 py-1 text-xs font-semibold text-ink-muted flex items-center gap-1.5">
+                      <Store className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />
                       <span>Toko Terkait</span>
                     </div>
                     {liveResults.stores.map((st) => (
@@ -270,18 +298,20 @@ export default function Navbar({
                         key={st.id}
                         href={`/stores/${st.id}`}
                         onClick={() => setIsLiveDropdownOpen(false)}
-                        className="flex items-center justify-between p-2 rounded-xl hover:bg-surface-alt transition"
+                        className="flex items-center justify-between p-2 rounded-lg hover:bg-canvas transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-7 h-7 rounded-full bg-primary-50 text-primary flex items-center justify-center shrink-0">
-                            <Store className="w-3.5 h-3.5" />
+                          <div className="w-7 h-7 rounded-lg bg-brand-blue-soft text-brand-blue flex items-center justify-center shrink-0">
+                            <Store className="w-3.5 h-3.5" aria-hidden="true" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-ink truncate">{st.name}</p>
-                            <p className="text-[10px] text-ink-soft truncate">{st.location || 'Area kampus'}</p>
+                            <p className="text-xs font-semibold text-ink truncate">{st.name}</p>
+                            <p className="text-[11px] text-ink-muted truncate">
+                              {st.location || 'Area kampus'}
+                            </p>
                           </div>
                         </div>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pine-50 text-pine shrink-0">
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-brand-blue-soft text-brand-blue shrink-0">
                           {st.campus_short_name}
                         </span>
                       </Link>
@@ -289,11 +319,10 @@ export default function Navbar({
                   </div>
                 )}
 
-                {/* Section Produk Ditemukan */}
                 {liveResults.products?.length > 0 && (
                   <div className="p-2">
-                    <div className="px-3 py-1 text-[11px] font-bold text-ink-soft uppercase tracking-wider flex items-center gap-1.5">
-                      <Package className="w-3.5 h-3.5 text-primary" />
+                    <div className="px-2.5 py-1 text-xs font-semibold text-ink-muted flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />
                       <span>Produk Langsung</span>
                     </div>
                     {liveResults.products.map((p) => (
@@ -301,47 +330,42 @@ export default function Navbar({
                         key={p.id}
                         href={`/products/${p.id}`}
                         onClick={() => setIsLiveDropdownOpen(false)}
-                        className="flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-surface-alt transition"
+                        className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-canvas transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="relative w-9 h-9 rounded-lg bg-surface overflow-hidden shrink-0 border border-line/60">
+                          <div className="relative w-9 h-9 rounded-lg bg-surface-muted overflow-hidden shrink-0 border border-border-subtle">
                             <NavbarItemImage src={p.image_url} alt={p.name} />
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-ink truncate">{p.name}</p>
-                            <p className="text-[10px] text-ink-soft truncate">
-                              Toko {p.store_name} · {p.campus_short_name}
+                            <p className="text-[11px] text-ink-muted truncate">
+                              {p.store_name} ({p.campus_short_name})
                             </p>
                           </div>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <span className="font-sans text-xs font-bold text-primary tabular-nums">
-                            {formatRupiah(p.price)}
-                          </span>
-                        </div>
+                        <span className="text-xs font-bold text-brand-blue tabular-nums shrink-0">
+                          {formatRupiah(p.price)}
+                        </span>
                       </Link>
                     ))}
                   </div>
                 )}
 
-                {/* Kosong */}
                 {!isLiveSearching &&
                   (!liveResults.products || liveResults.products.length === 0) &&
                   (!liveResults.stores || liveResults.stores.length === 0) && (
-                    <div className="p-5 text-center text-xs text-ink-soft">
+                    <div className="p-4 text-center text-xs text-ink-muted">
                       Tidak ada produk atau toko yang cocok dengan &ldquo;{searchQuery}&rdquo;
                     </div>
                   )}
 
-                {/* Tombol Lihat Semua Hasil */}
-                <div className="p-2 bg-surface">
+                <div className="p-2 bg-canvas">
                   <button
                     type="button"
                     onClick={handleSearchSubmit}
-                    className="w-full py-2 px-3 text-center text-xs font-bold text-primary hover:bg-primary-50 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                    className="w-full py-2 px-3 text-center text-xs font-semibold text-brand-blue hover:bg-brand-blue-soft rounded-lg transition-colors"
                   >
-                    <span>Lihat semua hasil untuk &ldquo;{searchQuery}&rdquo;</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    Lihat semua hasil untuk &ldquo;{searchQuery}&rdquo;
                   </button>
                 </div>
               </div>
@@ -349,63 +373,93 @@ export default function Navbar({
           </div>
         )}
 
-        {/* Sisi Kanan: Aksi Pengguna */}
-        <div className="flex items-center gap-1 sm:gap-2 md:gap-2.5 shrink-0">
-          {/* Pengatur Aksesibilitas & Kenyamanan Baca (Multi-Generasi) */}
+        {/* Kanan: Aksi Pengguna per design2.md 5.1 */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <AccessibilityControl />
 
-          {/* Keranjang Belanja (Buyer atau Guest) */}
+          {/* Buyer Quick Actions: Wishlist & Cart */}
           {(!user || user.role === 'buyer') && (
-            <Link
-              href="/buyer/cart"
-              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full text-ink hover:bg-surface-alt transition-colors flex items-center justify-center shrink-0"
-              aria-label="Keranjang Belanja"
-            >
-              <ShoppingBag className="w-5 h-5 text-ink" />
-              {cartCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold tabular-nums flex items-center justify-center shadow-sm">
-                  {cartCount > 99 ? '99+' : cartCount}
-                </span>
+            <>
+              {user?.role === 'buyer' && (
+                <Link
+                  href="/buyer/wishlist"
+                  className="hidden sm:inline-flex w-11 h-11 md:w-10 md:h-10 rounded-xl chip-3d items-center justify-center shrink-0"
+                  aria-label="Barang Favorit"
+                  title="Barang Favorit"
+                >
+                  <Heart className="w-4.5 h-4.5" aria-hidden="true" />
+                </Link>
               )}
-            </Link>
+
+              <Link
+                href="/buyer/cart"
+                className="relative w-11 h-11 md:w-10 md:h-10 rounded-xl chip-3d flex items-center justify-center shrink-0"
+                aria-label={`Keranjang Belanja${cartCount > 0 ? `, ${cartCount} barang` : ''}`}
+                title="Keranjang Belanja"
+              >
+                <ShoppingCart className="w-4.5 h-4.5" aria-hidden="true" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1 rounded-full icon-plinth-gold text-ink text-[10px] font-extrabold tabular-nums flex items-center justify-center">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </Link>
+            </>
           )}
 
-          {/* Chat Pesanan (Buyer atau Seller) */}
-          {user && (
+          {/* Tombol Pintas Seller / Admin */}
+          {user && (user.role === 'seller' || user.role === 'admin') && (
             <Link
-              href="/chat"
-              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full text-ink hover:bg-surface-alt transition-colors flex items-center justify-center shrink-0"
-              aria-label="Pesan dan Chat"
-              title="Pesan & Chat Koordinasi"
+              href={sellerShortcutHref}
+              className="hidden sm:inline-flex btn-3d btn-3d-navy items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0"
             >
-              <MessageCircle className="w-5 h-5 text-ink" />
+              {user.role === 'admin' ? (
+                <ShieldCheck className="w-4 h-4 text-campus-gold" aria-hidden="true" />
+              ) : (
+                <Store className="w-4 h-4 text-campus-gold" aria-hidden="true" />
+              )}
+              <span>{user.role === 'admin' ? 'Panel Admin' : 'Dashboard Toko'}</span>
             </Link>
           )}
 
-          {/* User Logged In Menu */}
+          {/* Chat Koordinasi (akses utama menuju halaman Chat sesuai role pengguna) */}
+          {user &&
+            (user.role === 'buyer' ||
+              (user.role === 'seller' && user.seller_status === 'approved')) && (
+              <Link
+                href="/chat"
+                className="w-11 h-11 md:w-10 md:h-10 rounded-xl chip-3d flex items-center justify-center shrink-0"
+                aria-label="Pesan dan Chat"
+                title="Pesan dan Chat"
+              >
+                <MessageCircle className="w-4.5 h-4.5" aria-hidden="true" />
+              </Link>
+            )}
+
           {user ? (
             <div className="relative" ref={userMenuRef}>
               <button
+                ref={userMenuTriggerRef}
                 type="button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1.5 lg:px-3 lg:py-1.5 rounded-full hover:bg-surface-alt transition-colors border border-line/70"
+                className="chip-3d flex items-center gap-2 min-h-[44px] md:min-h-[38px] px-2 lg:px-2.5 rounded-xl"
                 aria-expanded={userMenuOpen}
-                aria-label="Menu pengguna"
+                aria-haspopup="menu"
+                aria-label="Menu akun pengguna"
               >
-                <div className="w-7 h-7 rounded-full bg-primary-50 text-primary flex items-center justify-center font-bold text-xs uppercase overflow-hidden">
+                <span className="w-7 h-7 rounded-lg icon-plinth-navy text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
                   {user.name ? user.name.charAt(0) : 'U'}
-                </div>
-                <div className="hidden lg:flex flex-col text-left">
-                  <span className="text-xs font-bold text-ink line-clamp-1 max-w-[120px]">
+                </span>
+                <span className="hidden lg:flex flex-col text-left">
+                  <span className="text-xs font-semibold text-ink line-clamp-1 max-w-[110px]">
                     {user.name}
                   </span>
-                  <span className="text-[10px] text-ink-soft capitalize leading-none">
+                  <span className="text-[11px] text-ink-muted capitalize leading-none">
                     {user.role}
                   </span>
-                </div>
+                </span>
               </button>
 
-              {/* Dropdown Menu Pengguna */}
               {userMenuOpen && (
                 <>
                   <div
@@ -413,151 +467,165 @@ export default function Navbar({
                     onClick={() => setUserMenuOpen(false)}
                     aria-hidden="true"
                   />
-                  <div className="absolute right-0 mt-2 w-[min(14rem,calc(100vw-1.5rem))] bg-canvas border border-line rounded-card shadow-float z-50 py-2 divide-y divide-line/60 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-4 py-2">
-                    <p className="text-xs text-ink-soft">Masuk sebagai</p>
-                    <p className="text-xs font-bold text-ink truncate">{user.email}</p>
-                    {user.campus_name && (
-                      <p className="text-[11px] text-pine font-medium mt-0.5 truncate flex items-center gap-1">
-                        <GraduationCap className="w-3 h-3" />
-                        {user.campus_short_name || user.campus_name}
-                      </p>
-                    )}
-                  </div>
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2.5 w-[min(15.5rem,calc(100vw-1.5rem))] dropdown-3d rounded-2xl z-50 py-1.5 divide-y divide-border-subtle"
+                  >
+                    <div className="px-4 py-2.5">
+                      <p className="text-[11px] text-ink-muted">Masuk sebagai</p>
+                      <p className="text-xs font-bold text-ink truncate">{user.email}</p>
+                      {user.campus_name && (
+                        <p className="text-[11px] text-brand-blue font-semibold mt-1 truncate flex items-center gap-1">
+                          <MapPin className="w-3 h-3 shrink-0" aria-hidden="true" />
+                          <span>{user.campus_short_name || user.campus_name}</span>
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="py-1">
-                    {user.role === 'admin' && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors font-medium"
-                      >
-                        <ShieldCheck className="w-4 h-4 text-primary" />
-                        <span>Dashboard Admin</span>
-                      </Link>
-                    )}
-
-                    {user.role === 'seller' && (
-                      <>
+                    <div className="py-1">
+                      {user.role === 'admin' && (
                         <Link
-                          href={user.seller_status === 'approved' ? '/seller' : '/pending-seller'}
+                          role="menuitem"
+                          href="/admin"
                           onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors font-medium"
+                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-canvas transition-colors font-medium"
                         >
-                          <Store className="w-4 h-4 text-primary" />
-                          <span>Toko Saya</span>
+                          <ShieldCheck className="w-4 h-4 text-brand-blue" aria-hidden="true" />
+                          <span>Dashboard Admin</span>
                         </Link>
-                        {user.seller_status === 'approved' && (
-                          <>
+                      )}
+
+                      {user.role === 'seller' && (
+                        <>
+                          <Link
+                            role="menuitem"
+                            href={user.seller_status === 'approved' ? '/seller' : '/pending-seller'}
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-canvas transition-colors font-medium"
+                          >
+                            <Store className="w-4 h-4 text-brand-blue" aria-hidden="true" />
+                            <span>Toko Saya</span>
+                          </Link>
+                          {user.seller_status === 'approved' && (
                             <Link
+                              role="menuitem"
                               href="/seller/orders"
                               onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
+                              className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink-secondary hover:text-ink hover:bg-canvas transition-colors"
                             >
-                              <Package className="w-4 h-4 text-ink-soft" />
+                              <Package className="w-4 h-4 text-ink-muted" aria-hidden="true" />
                               <span>Pesanan Masuk</span>
                             </Link>
-                            <Link
-                              href="/chat"
-                              onClick={() => setUserMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
-                            >
-                              <MessageCircle className="w-4 h-4 text-primary" />
-                              <span>Chat Pembeli</span>
-                            </Link>
-                          </>
-                        )}
-                      </>
-                    )}
+                          )}
+                        </>
+                      )}
 
-                    {user.role === 'buyer' && (
-                      <>
-                        <Link
-                          href="/buyer/orders"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
-                        >
-                          <Package className="w-4 h-4 text-ink-soft" />
-                          <span>Pesanan Saya</span>
-                        </Link>
-                        <Link
-                          href="/chat"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
-                        >
-                          <MessageCircle className="w-4 h-4 text-primary" />
-                          <span>Chat Penjual</span>
-                        </Link>
-                        <Link
-                          href="/buyer/wishlist"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
-                        >
-                          <Heart className="w-4 h-4 text-danger" />
-                          <span>Barang Favorit</span>
-                        </Link>
-                        <Link
-                          href="/buyer/profile"
-                          onClick={() => setUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-surface-alt transition-colors"
-                        >
-                          <User className="w-4 h-4 text-ink-soft" />
-                          <span>Profil Saya</span>
-                        </Link>
-                      </>
-                    )}
-                  </div>
+                      {user.role === 'buyer' && (
+                        <>
+                          <Link
+                            role="menuitem"
+                            href="/buyer"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink hover:bg-canvas transition-colors font-medium"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-brand-blue" aria-hidden="true" />
+                            <span>Ringkasan Akun</span>
+                          </Link>
+                          <Link
+                            role="menuitem"
+                            href="/buyer/orders"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink-secondary hover:text-ink hover:bg-canvas transition-colors"
+                          >
+                            <Package className="w-4 h-4 text-ink-muted" aria-hidden="true" />
+                            <span>Pesanan Saya</span>
+                          </Link>
+                          <Link
+                            role="menuitem"
+                            href="/buyer/wishlist"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink-secondary hover:text-ink hover:bg-canvas transition-colors"
+                          >
+                            <Heart className="w-4 h-4 text-danger-text" aria-hidden="true" />
+                            <span>Barang Favorit</span>
+                          </Link>
+                          <Link
+                            role="menuitem"
+                            href="/buyer/profile"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink-secondary hover:text-ink hover:bg-canvas transition-colors"
+                          >
+                            <User className="w-4 h-4 text-ink-muted" aria-hidden="true" />
+                            <span>Profil & Kampus</span>
+                          </Link>
+                          <Link
+                            role="menuitem"
+                            href="/buyer/addresses"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-ink-secondary hover:text-ink hover:bg-canvas transition-colors"
+                          >
+                            <MapPin className="w-4 h-4 text-ink-muted" aria-hidden="true" />
+                            <span>Alamat Kost</span>
+                          </Link>
+                        </>
+                      )}
+                    </div>
 
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-danger hover:bg-danger-50 transition-colors font-medium text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Keluar Akun</span>
-                    </button>
+                    <div className="pt-1">
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs md:text-sm text-danger-text hover:bg-danger-bg transition-colors font-semibold text-left"
+                      >
+                        <LogOut className="w-4 h-4" aria-hidden="true" />
+                        <span>Keluar</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
                 </>
               )}
             </div>
           ) : (
-            /* Guest Actions */
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Link href="/login">
-                <Button variant="ghost" size="sm" pill className="!px-2 sm:!px-3.5">
-                  Masuk
-                </Button>
+            /* Guest Actions 3D */
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link
+                href="/login"
+                className="btn-3d btn-3d-secondary inline-flex items-center justify-center min-h-[44px] md:min-h-[38px] px-3.5 text-sm font-semibold rounded-xl"
+              >
+                Masuk
               </Link>
-              <Link href="/register">
-                <Button variant="primary" size="sm" pill className="!px-2.5 sm:!px-4">
-                  Daftar
-                </Button>
+              <Link
+                href="/register"
+                className="btn-3d btn-3d-navy inline-flex items-center justify-center min-h-[44px] md:min-h-[38px] px-4 py-2 text-sm font-semibold rounded-xl"
+              >
+                Daftar
               </Link>
             </div>
           )}
         </div>
       </div>
 
-      {/* Baris Pencarian & Selektor Kampus di Mobile */}
-      <div className="md:hidden px-3 sm:px-4 pb-2.5 flex items-center gap-2">
+      {/* Baris Pencarian & Selektor Kampus di Mobile (< md) */}
+      <div className="md:hidden px-3 sm:px-4 pb-3 pt-1 flex items-center gap-2 border-t border-border-subtle/60 bg-surface">
         <div className="flex-1 min-w-0">
           <CampusSelector
             value={selectedCampus}
             onChange={handleCampusChange}
+            campuses={campuses}
             allowAll={true}
             allLabel="Semua Kampus"
+            fullWidth={true}
             className="w-full"
           />
         </div>
         {showSearchBar && (
           <Link
             href="/products"
-            className="w-11 h-11 rounded-full bg-surface border border-line flex items-center justify-center text-ink shrink-0 hover:bg-surface-alt transition-colors"
-            aria-label="Cari produk"
+            className="w-11 h-11 rounded-full bg-surface-muted border border-border-subtle flex items-center justify-center text-ink-secondary hover:text-ink shrink-0 transition-colors"
+            aria-label="Cari produk di katalog"
           >
-            <Search className="w-4 h-4 text-ink-soft" />
+            <Search className="w-4 h-4" aria-hidden="true" />
           </Link>
         )}
       </div>
