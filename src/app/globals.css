@@ -1,42 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #FFFFFF;
-  --color-surface: #F7F8FA;
-  --color-surface-alt: #EFF2F7;
-  --color-ink: #111827;
-  --color-ink-soft: #6B7280;
-  --color-line: #E5E7EB;
+  /* Font Family */
+  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 
-  --color-primary: #1E5EFF;
-  --color-primary-hover: #1549D6;
-  --color-primary-50: #EEF4FF;
-  --color-accent: #FFD60A;
-  --color-accent-hover: #F0C800;
-  --color-pine: #0D9488;
-  --color-pine-50: #CCFBF1;
+  /* Brand & Accent Colors (Deep Campus Navy, Royal Campus Blue, Campus Gold) */
+  --color-navy-900: #0F294A;
+  --color-navy-800: #1B4375;
+  --color-brand-blue: #1B4375;
+  --color-brand-blue-hover: #143661;
+  --color-brand-blue-soft: #EBF1F8;
+  --color-brand-blue-border: #C5D6EA;
+  --color-campus-gold: #FBBF24;
+  --color-campus-gold-hover: #F59E0B;
+  --color-campus-gold-soft: #FEF3C7;
 
-  --color-success: #166534;
-  --color-success-50: #DCFCE7;
-  --color-warning: #92400E;
-  --color-warning-50: #FEF3C7;
-  --color-danger: #DC2626;
-  --color-danger-50: #FEE2E2;
-  --color-info: #1D4ED8;
-  --color-info-50: #DBEAFE;
+  /* Neutral Surfaces & Borders (Studio Daylight untuk kontras elevasi 3D) */
+  --color-canvas: #F1F5FA;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #E9EFF6;
+  --color-border-subtle: #D6E0EC;
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-card: 20px;
+  /* Typography Colors (WCAG AA terverifikasi >= 4.5:1 di atas canvas & surface) */
+  --color-ink: #0F172A;
+  --color-ink-secondary: #334155;
+  --color-ink-muted: #52627A;
+  --color-ink-subtle: #475569;
 
-  --shadow-card: 0 2px 10px rgb(17 24 39 / 0.05);
-  --shadow-card-hover: 0 8px 24px rgb(30 94 255 / 0.12);
-  --shadow-float: 0 10px 25px rgb(17 24 39 / 0.12);
-}
-
-@theme inline {
-  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Semantic Status Colors (WCAG AA terverifikasi >= 4.5:1) */
+  --color-success-bg: #DCFCE7;
+  --color-success-text: #15803D;
+  --color-condition-mint-bg: #ECFDF5;
+  --color-condition-mint-text: #047857;
+  --color-condition-mint-border: #A7F3D0;
+  --color-warning-bg: #FEF3C7;
+  --color-warning-text: #B45309;
+  --color-info-bg: #DCE6F2;
+  --color-info-text: #1B4375;
+  --color-danger-bg: #FEF2F2;
+  --color-danger-text: #B91C1C;
 }
 
 @layer base {
@@ -47,75 +49,690 @@
     font-size: 16px;
     overflow-x: clip;
   }
+
   html.text-size-lg {
     font-size: 18px;
   }
-  html.text-size-xl {
-    font-size: 20px;
-  }
+
   html.high-contrast {
-    --color-ink: #000000;
-    --color-ink-soft: #374151;
-    --color-line: #94A3B8;
+    --color-ink: #020617;
+    --color-ink-secondary: #1E293B;
+    --color-ink-muted: #334155;
+    --color-ink-subtle: #1E293B;
+    --color-border-subtle: #94A3B8;
   }
+
   body {
     font-family: var(--font-sans);
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     line-height: 1.55;
+    background-color: var(--color-canvas);
+    background-image:
+      radial-gradient(
+        ellipse 120% 48% at 50% -6%,
+        #FFFFFF 0%,
+        #F4F7FC 48%,
+        #ECF2F9 100%
+      ),
+      radial-gradient(circle at 1px 1px, rgba(27, 67, 117, 0.04) 1px, transparent 0);
+    background-size: 100% 100%, 32px 32px;
+    background-attachment: fixed;
+    color: var(--color-ink);
     overflow-x: clip;
     -webkit-font-smoothing: antialiased;
   }
-  button, a, input, select, textarea, [role="button"] {
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"] {
     touch-action: manipulation;
   }
+
+  /* Pointer cursor base layer untuk seluruh kontrol interaktif */
   a[href],
-  button:not(:disabled),
+  button,
   summary,
-  select:not(:disabled),
+  select,
   label[for],
-  [role="button"]:not([aria-disabled="true"]) {
+  label:has(> input[type="checkbox"], > input[type="radio"]),
+  [role="button"],
+  [role="link"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [role="switch"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  input[type="range"],
+  input[type="color"] {
     cursor: pointer;
   }
-  button:disabled,
-  select:disabled,
-  input:disabled,
-  textarea:disabled {
+
+  :disabled,
+  [aria-disabled="true"] {
     cursor: not-allowed;
   }
-  h1, h2 {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
-  }
-  h3 {
-    font-family: var(--font-display);
-    letter-spacing: -0.01em;
-  }
+
   :focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid var(--color-brand-blue);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--color-primary-50);
+    box-shadow: 0 0 0 4px var(--color-brand-blue-soft);
   }
-  @media (min-width: 768px) {
-    body {
-      font-size: 0.9375rem;
-    }
-  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
       animation: none !important;
       scroll-behavior: auto !important;
     }
+    .tilt-3d,
+    .depth-layer-1,
+    .depth-layer-2,
+    .depth-layer-3,
+    .hero-luminous-mesh,
+    .hero-aurora-gold,
+    .hero-aurora-blue,
+    .hero-aurora-cyan,
+    .hero-orbit-outer,
+    .hero-orbit-inner,
+    .hero-orbit-core,
+    .hero-sparkle,
+    .hero-mote,
+    .hero-wave-drift {
+      transform: none !important;
+      animation: none !important;
+    }
   }
 }
 
-/* Utilitas sembunyikan scrollbar untuk chip kategori horizontal */
+/* ============================================================================
+   SISTEM TACTILE ARCHITECTURAL 3D LEPASIN
+   Elevasi fisik nyata (bevel atas + rim ekstrusi bawah + bayangan kontak)
+   dan perspektif 3D responsif kursor (GPU-accelerated, 60fps).
+   ============================================================================ */
+
+.perspective-stage {
+  perspective: 1100px;
+}
+
+/* Permukaan Panel 3D (Form, Tabel, Kartu Informasi, Sidebar Card) */
+.surface-3d {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FCFDFE 100%);
+  border: 1px solid #D5E0EC;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 3px 0 #D3DFEC,
+    0 12px 26px -14px rgba(15, 41, 74, 0.16);
+}
+
+/* Kartu Interaktif 3D (ProductCard, KPI Card, Store Card, Radio Card) */
+.card-3d {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
+  border: 1px solid #D2DEEB;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    0 4px 0 #CCD9E8,
+    0 14px 26px -12px rgba(15, 41, 74, 0.16);
+  transition:
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease;
+}
+
+.card-3d:hover {
+  border-color: #9FB9D8;
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 6px 0 #BACCE2,
+    0 24px 40px -14px rgba(15, 41, 74, 0.24);
+}
+
+.card-3d-selected {
+  background: linear-gradient(180deg, #F3F8FF 0%, #EBF2FC 100%);
+  border: 2px solid #1B4375;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 4px 0 #143661,
+    0 14px 24px -10px rgba(27, 67, 117, 0.22);
+}
+
+/* Engine Perspektif 3D Real-Time (digerakkan oleh CSS custom properties) */
+.tilt-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  transform:
+    perspective(1000px)
+    rotateX(var(--tilt-x, 0deg))
+    rotateY(var(--tilt-y, 0deg))
+    translateY(var(--tilt-lift, 0px));
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s ease;
+  will-change: transform;
+}
+
+.tilt-3d[data-tilting="true"] {
+  transition:
+    transform 0.08s linear,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tilt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 20;
+  opacity: var(--glare-opacity, 0);
+  transition: opacity 0.28s ease;
+  background: radial-gradient(
+    circle 260px at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(255, 255, 255, 0.14) 36%,
+    transparent 70%
+  );
+}
+
+.tilt-glare-dark {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 20;
+  opacity: var(--glare-opacity, 0);
+  transition: opacity 0.28s ease;
+  background: radial-gradient(
+    circle 360px at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(251, 191, 36, 0.12) 32%,
+    rgba(59, 130, 246, 0.08) 55%,
+    transparent 72%
+  );
+}
+
+/* Lapisan Elevasi Sumbu Z untuk Efek Parallax Nyata di Dalam Kartu 3D */
+@media (hover: hover) and (pointer: fine) {
+  .depth-layer-1 {
+    transform: translateZ(14px);
+    transform-style: preserve-3d;
+  }
+  .depth-layer-2 {
+    transform: translateZ(26px);
+    transform-style: preserve-3d;
+  }
+  .depth-layer-3 {
+    transform: translateZ(38px);
+    transform-style: preserve-3d;
+  }
+}
+
+/* Plinth Deep Campus Navy 3D (Hero Monolith & Floating Cart Bar) */
+.plinth-navy-3d {
+  background: linear-gradient(142deg, #0D2442 0%, #143661 52%, #1D4B82 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(5, 16, 32, 0.45),
+    0 7px 0 #07172C,
+    0 26px 48px -16px rgba(15, 41, 74, 0.42);
+}
+
+.plinth-navy-inset {
+  background: linear-gradient(160deg, rgba(10, 29, 54, 0.88) 0%, rgba(16, 44, 80, 0.82) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 5px 0 rgba(6, 18, 34, 0.72),
+    0 18px 34px -10px rgba(4, 13, 26, 0.55);
+}
+
+.plinth-navy-tile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.07) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 3px 0 rgba(6, 18, 34, 0.48);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s ease;
+}
+
+.plinth-navy-tile:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.1) 100%);
+}
+
+/* Tombol Mekanis 3D (Memiliki ketebalan fisik dan tekan ke bawah saat diklik) */
+.btn-3d {
+  position: relative;
+  transition:
+    transform 0.14s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.14s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn-3d-primary {
+  background: linear-gradient(180deg, #245591 0%, #1B4375 100%);
+  color: #FFFFFF;
+  border: 1px solid #163761;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 0 #0D2545,
+    0 8px 16px -6px rgba(15, 41, 74, 0.38);
+}
+.btn-3d-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #285DA0 0%, #183E6D 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 5.5px 0 #0D2545,
+    0 12px 22px -6px rgba(15, 41, 74, 0.42);
+}
+.btn-3d-primary:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 2px rgba(7, 21, 40, 0.35),
+    0 1px 0 #0D2545,
+    0 2px 6px -2px rgba(15, 41, 74, 0.3);
+}
+
+.btn-3d-navy {
+  background: linear-gradient(180deg, #173C6A 0%, #0F294A 100%);
+  color: #FFFFFF;
+  border: 1px solid #0B1F3A;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 0 #061426,
+    0 8px 16px -6px rgba(15, 41, 74, 0.42);
+}
+.btn-3d-navy:hover:not(:disabled) {
+  background: linear-gradient(180deg, #1D4980 0%, #123158 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 5.5px 0 #061426,
+    0 12px 22px -6px rgba(15, 41, 74, 0.46);
+}
+.btn-3d-navy:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 2px rgba(4, 13, 26, 0.45),
+    0 1px 0 #061426;
+}
+
+.btn-3d-accent {
+  background: linear-gradient(180deg, #FDD835 0%, #FBBF24 100%);
+  color: #0F172A;
+  border: 1px solid #E5A90A;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 4px 0 #B87D04,
+    0 9px 18px -6px rgba(184, 125, 4, 0.45);
+}
+.btn-3d-accent:hover:not(:disabled) {
+  background: linear-gradient(180deg, #FFE159 0%, #F5B710 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 5.5px 0 #B87D04,
+    0 14px 24px -6px rgba(184, 125, 4, 0.5);
+}
+.btn-3d-accent:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 2px rgba(130, 88, 0, 0.25),
+    0 1px 0 #B87D04;
+}
+
+.btn-3d-secondary {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 100%);
+  color: #334155;
+  border: 1px solid #CBD7E6;
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 3px 0 #C4D2E3,
+    0 6px 12px -6px rgba(15, 41, 74, 0.14);
+}
+.btn-3d-secondary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #FFFFFF 0%, #EDF3FA 100%);
+  color: #0F172A;
+  border-color: #9FB8D6;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 4px 0 #B3C5DB,
+    0 10px 18px -6px rgba(15, 41, 74, 0.18);
+}
+.btn-3d-secondary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 1px 2px rgba(15, 41, 74, 0.08),
+    0 1px 0 #C4D2E3;
+}
+
+.btn-3d-danger {
+  background: linear-gradient(180deg, #DC2626 0%, #B91C1C 100%);
+  color: #FFFFFF;
+  border: 1px solid #991B1B;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 4px 0 #7F1D1D,
+    0 8px 16px -6px rgba(185, 28, 28, 0.36);
+}
+.btn-3d-danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, #E53535 0%, #A91717 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 5.5px 0 #7F1D1D,
+    0 12px 20px -6px rgba(185, 28, 28, 0.42);
+}
+.btn-3d-danger:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #7F1D1D;
+}
+
+.btn-3d-success {
+  background: linear-gradient(180deg, #16A34A 0%, #15803D 100%);
+  color: #FFFFFF;
+  border: 1px solid #166534;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 4px 0 #14532D,
+    0 8px 16px -6px rgba(21, 128, 61, 0.35);
+}
+.btn-3d-success:hover:not(:disabled) {
+  background: linear-gradient(180deg, #1DB153 0%, #147336 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 5.5px 0 #14532D,
+    0 12px 20px -6px rgba(21, 128, 61, 0.4);
+}
+.btn-3d-success:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #14532D;
+}
+
+.btn-3d-outline {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%);
+  color: #1B4375;
+  border: 1.5px solid #1B4375;
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 3px 0 #143661,
+    0 6px 12px -6px rgba(27, 67, 117, 0.2);
+}
+.btn-3d-outline:hover:not(:disabled) {
+  background: linear-gradient(180deg, #F0F6FE 0%, #E4EEF9 100%);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 4px 0 #143661,
+    0 10px 18px -6px rgba(27, 67, 117, 0.25);
+}
+.btn-3d-outline:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #143661;
+}
+
+.btn-3d-frost {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.09) 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 4px 0 rgba(6, 18, 34, 0.55);
+}
+.btn-3d-frost:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.14) 100%);
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 5.5px 0 rgba(6, 18, 34, 0.6);
+}
+.btn-3d-frost:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(6, 18, 34, 0.55);
+}
+
+/* Chip Kategori & Filter 3D (Keycap Ringan) */
+.chip-3d {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFD 100%);
+  color: #334155;
+  border: 1px solid #D2DEEB;
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 3px 0 #CBD8E6,
+    0 5px 10px -6px rgba(15, 41, 74, 0.14);
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.chip-3d:hover {
+  color: #0F172A;
+  border-color: #9EB7D6;
+  transform: translateY(-1.5px);
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 4.5px 0 #BACCE1,
+    0 9px 16px -6px rgba(15, 41, 74, 0.18);
+}
+.chip-3d:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #CBD8E6;
+}
+
+.chip-3d-active {
+  background: linear-gradient(180deg, #173C6A 0%, #0F294A 100%);
+  color: #FFFFFF;
+  border: 1px solid #0B1F3A;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 3px 0 #061426,
+    0 8px 16px -6px rgba(15, 41, 74, 0.36);
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.15s ease;
+}
+.chip-3d-active:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 4px 0 #061426,
+    0 10px 18px -6px rgba(15, 41, 74, 0.4);
+}
+.chip-3d-active:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #061426;
+}
+
+/* Input Well Terukir (Recessed 3D Tray) */
+.input-3d {
+  box-shadow:
+    inset 0 2px 4px rgba(15, 41, 74, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+.input-3d:focus {
+  box-shadow:
+    inset 0 1px 2px rgba(15, 41, 74, 0.04),
+    0 0 0 3px var(--color-brand-blue-soft),
+    0 4px 12px -4px rgba(27, 67, 117, 0.18);
+}
+
+/* Price Pill Enamel 3D */
+.price-pill-3d {
+  background: linear-gradient(180deg, #245796 0%, #1B4375 100%);
+  border: 1px solid #15355E;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 3px 0 #0C2342,
+    0 8px 16px -6px rgba(15, 41, 74, 0.35);
+}
+
+/* Ikon Kubus Mini 3D (Plinth Icon) */
+.icon-plinth-3d {
+  background: linear-gradient(180deg, #F6FAFF 0%, #E6EFF9 100%);
+  border: 1px solid #C6D8EC;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 3px 0 #BDD0E5,
+    0 6px 12px -4px rgba(15, 41, 74, 0.14);
+}
+
+.icon-plinth-navy {
+  background: linear-gradient(160deg, #1B4375 0%, #0F294A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 3px 0 #07162B,
+    0 8px 16px -5px rgba(15, 41, 74, 0.36);
+}
+
+.icon-plinth-gold {
+  background: linear-gradient(180deg, #FDE047 0%, #FBBF24 100%);
+  border: 1px solid #E2A508;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 3px 0 #B37903,
+    0 6px 14px -4px rgba(180, 122, 4, 0.38);
+}
+
+/* Nav Pill Aktif 3D untuk Sidebar Dashboard */
+.nav-pill-3d-active {
+  background: linear-gradient(180deg, #F3F8FF 0%, #E6EFF9 100%);
+  color: #1B4375;
+  border: 1px solid #BDD2EA;
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 2.5px 0 #BDD2EA,
+    0 6px 12px -6px rgba(27, 67, 117, 0.22);
+}
+
+/* Navbar Floating Bevel (Glass accent dibatasi hanya di header per R-10) */
+.navbar-3d {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #D4DFEC;
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.8),
+    0 4px 20px -8px rgba(15, 41, 74, 0.12);
+}
+
+/* Dropdown & Popover 3D */
+.dropdown-3d {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFBFD 100%);
+  border: 1px solid #CBD7E6;
+  box-shadow:
+    inset 0 1px 0 #FFFFFF,
+    0 4px 0 #CBD7E6,
+    0 22px 44px -12px rgba(15, 41, 74, 0.26);
+  animation: modalPop3d 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Animasi transisi smooth untuk Multi-step Form Stepper */
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-step-fade {
+  animation: stepFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Animasi Masuk Modal & Dropdown 3D */
+@keyframes modalPop3d {
+  from {
+    opacity: 0;
+    transform: perspective(900px) translateY(10px) scale(0.97) rotateX(4deg);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
+.animate-modal-3d {
+  animation: modalPop3d 0.22s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Skip link aksesibilitas keyboard */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 100;
+  background: var(--color-navy-900);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.2);
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+/* Utilitas sembunyikan scrollbar untuk baris kategori & tab horizontal */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Sticky sidebar reusable untuk layout multi-kolom (nonaktif di mobile/single-column < 1024px) */
+@media (min-width: 1024px) {
+  .sticky-sidebar-panel,
+  .sticky-sidebar-flush {
+    position: sticky;
+    align-self: flex-start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-subtle) transparent;
+  }
+
+  .sticky-sidebar-panel {
+    top: 5rem;
+    max-height: calc(100dvh - 6rem);
+  }
+
+  .sticky-sidebar-flush {
+    top: 4rem;
+    height: calc(100dvh - 4rem);
+  }
+
+  .sticky-sidebar-panel::-webkit-scrollbar,
+  .sticky-sidebar-flush::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sticky-sidebar-panel::-webkit-scrollbar-thumb,
+  .sticky-sidebar-flush::-webkit-scrollbar-thumb {
+    background-color: var(--color-border-subtle);
+    border-radius: 9999px;
+  }
+
+  .sticky-sidebar-panel::-webkit-scrollbar-track,
+  .sticky-sidebar-flush::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /* Cegah scroll increment dan sembunyikan spinner bawaan browser pada input number */
@@ -127,3 +744,304 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Pastikan select dengan ikon panah kustom menyembunyikan panah bawaan browser secara konsisten */
+select.select-custom-arrow {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+select.select-custom-arrow::-ms-expand {
+  display: none;
+}
+
+/* ============================================================================
+   ANIMASI LATAR BELAKANG HERO BANNER & AMBIENT CANVAS (GPU-ACCELERATED)
+   ============================================================================ */
+
+.hero-luminous-mesh {
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 30%, rgba(30, 75, 130, 0.75) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(251, 191, 36, 0.22) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 60% at 50% 50%, rgba(19, 55, 99, 0.6) 0%, transparent 75%);
+  background-size: 160% 160%;
+  animation: heroMeshDrift 16s ease-in-out infinite alternate;
+  will-change: background-position;
+}
+
+@keyframes heroMeshDrift {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 80%;
+  }
+  100% {
+    background-position: 30% 100%;
+  }
+}
+
+.hero-aurora-gold {
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.32) 0%, rgba(251, 191, 36, 0.08) 50%, transparent 72%);
+  animation: heroPulseGold 11s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes heroPulseGold {
+  0% {
+    transform: scale(0.92) translate3d(0, 0, 0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.12) translate3d(24px, -18px, 0);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.02) translate3d(-14px, 12px, 0);
+    opacity: 0.8;
+  }
+}
+
+.hero-aurora-blue {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(27, 67, 117, 0.18) 48%, transparent 72%);
+  animation: heroPulseBlue 14s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes heroPulseBlue {
+  0% {
+    transform: scale(1.05) translate3d(0, 0, 0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(0.9) translate3d(-30px, 20px, 0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.18) translate3d(15px, -16px, 0);
+    opacity: 0.82;
+  }
+}
+
+.hero-aurora-cyan {
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(14, 165, 233, 0.08) 50%, transparent 70%);
+  animation: heroPulseCyan 17s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes heroPulseCyan {
+  0% {
+    transform: scale(0.95) translate3d(0, 0, 0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.15) translate3d(20px, 15px, 0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.0) translate3d(-15px, -20px, 0);
+    opacity: 0.6;
+  }
+}
+
+.hero-orbit-outer {
+  animation: heroOrbitSpin 46s linear infinite;
+  transform-origin: center center;
+}
+
+@keyframes heroOrbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hero-orbit-inner {
+  animation: heroOrbitSpinReverse 34s linear infinite;
+  transform-origin: center center;
+}
+
+@keyframes heroOrbitSpinReverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.hero-orbit-core {
+  animation: heroCoreBreathe 7s ease-in-out infinite alternate;
+}
+
+@keyframes heroCoreBreathe {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+.hero-sparkle {
+  animation: heroSparkleTwinkle 3.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.hero-sparkle-1 {
+  animation-delay: 0s;
+}
+
+.hero-sparkle-2 {
+  animation-delay: 1.3s;
+}
+
+.hero-sparkle-3 {
+  animation-delay: 2.5s;
+}
+
+@keyframes heroSparkleTwinkle {
+  0%, 100% {
+    transform: scale(0.7) rotate(0deg);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.3) rotate(45deg);
+    opacity: 0.95;
+  }
+}
+
+.hero-mote {
+  animation: heroMoteFloat 8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.hero-mote-1 {
+  animation-duration: 9s;
+  animation-delay: 0.4s;
+}
+
+.hero-mote-2 {
+  animation-duration: 11s;
+  animation-delay: 2.2s;
+}
+
+.hero-mote-3 {
+  animation-duration: 7.5s;
+  animation-delay: 3.8s;
+}
+
+@keyframes heroMoteFloat {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate3d(12px, -24px, 0);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(22px, -48px, 0);
+    opacity: 0;
+  }
+}
+
+.hero-wave-drift {
+  animation: heroWaveTranslate 24s linear infinite;
+  will-change: transform;
+}
+
+@keyframes heroWaveTranslate {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Orbiting 3D Item Showcase Animations */
+.hero-showcase-badge-1 {
+  animation: heroBadgeFloat1 5.5s ease-in-out infinite;
+}
+
+.hero-showcase-badge-2 {
+  animation: heroBadgeFloat2 6.5s ease-in-out infinite 0.8s;
+}
+
+.hero-showcase-badge-3 {
+  animation: heroBadgeFloat3 6s ease-in-out infinite 1.6s;
+}
+
+.hero-showcase-badge-4 {
+  animation: heroBadgeFloat4 7s ease-in-out infinite 2.4s;
+}
+
+.hero-starburst-pulse {
+  animation: heroStarburstPulse 4s ease-in-out infinite;
+}
+
+@keyframes heroBadgeFloat1 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(-1deg);
+  }
+}
+
+@keyframes heroBadgeFloat2 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(1.5deg);
+  }
+}
+
+@keyframes heroBadgeFloat3 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-1.5deg);
+  }
+}
+
+@keyframes heroBadgeFloat4 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(1deg);
+  }
+}
+
+@keyframes heroStarburstPulse {
+  0%, 100% {
+    transform: scale(1) rotate(6deg);
+  }
+  50% {
+    transform: scale(1.05) rotate(8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-showcase-badge-1,
+  .hero-showcase-badge-2,
+  .hero-showcase-badge-3,
+  .hero-showcase-badge-4,
+  .hero-starburst-pulse {
+    animation: none !important;
+  }
+}
+
+
