@@ -5,13 +5,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  ShoppingBag,
+  ShoppingCart,
   Store,
   GraduationCap,
   Trash2,
   Plus,
   Minus,
-  ArrowRight,
   ShieldCheck,
   Package,
 } from 'lucide-react';
@@ -34,8 +33,8 @@ function CartItemImage({ src, alt }) {
     );
   }
   return (
-    <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
-      <Package className="w-6 h-6" />
+    <div className="w-full h-full flex items-center justify-center text-ink-muted">
+      <Package className="w-6 h-6" aria-hidden="true" />
     </div>
   );
 }
@@ -47,7 +46,6 @@ export default function CartManager({ initialItems }) {
   const [items, setItems] = useState(initialItems);
   const [loadingItemId, setLoadingItemId] = useState(null);
 
-  // Kelompokkan item per toko
   const groupedByStore = items.reduce((acc, item) => {
     const storeId = item.store_id;
     if (!acc[storeId]) {
@@ -65,12 +63,10 @@ export default function CartManager({ initialItems }) {
 
   const storeGroups = Object.values(groupedByStore);
 
-  // Hitung total harga dan jumlah
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
   const handleUpdateQuantity = async (cartItemId, newQty, productName = '') => {
-    // Jika jumlah dikurangi hingga kurang dari 1 (misal dari 1 menjadi 0), otomatis hapus dari keranjang
     if (newQty < 1) {
       return handleRemoveItem(cartItemId, productName);
     }
@@ -160,176 +156,164 @@ export default function CartManager({ initialItems }) {
 
   if (items.length === 0) {
     return (
-      <div className="bg-canvas border border-line rounded-card p-12 text-center max-w-lg mx-auto shadow-card my-8">
-        <div className="w-20 h-20 rounded-full bg-primary-50 text-primary flex items-center justify-center mx-auto mb-5 shadow-xs">
-          <ShoppingBag className="w-10 h-10 stroke-[1.5]" />
+      <div className="surface-3d rounded-3xl p-10 text-center max-w-lg mx-auto my-8">
+        <div className="w-16 h-16 rounded-2xl icon-plinth-3d text-brand-blue flex items-center justify-center mx-auto mb-4">
+          <ShoppingCart className="w-8 h-8" aria-hidden="true" />
         </div>
-        <h1 className="text-xl md:text-2xl font-extrabold text-ink tracking-tight mb-2">
+        <h1 className="text-xl md:text-2xl font-bold text-ink tracking-tight mb-2">
           Keranjang Belanjamu Kosong
         </h1>
-        <p className="text-xs md:text-sm text-ink-soft mb-8 leading-relaxed max-w-sm mx-auto">
-          Belum ada barang kost yang kamu masukkan. Jelajahi kasur lipat, kipas, rice cooker, atau buku kuliah sekampus sekarang.
+        <p className="text-sm text-ink-muted mb-6 leading-relaxed max-w-sm mx-auto">
+          Belum ada barang kost yang ditambahkan. Jelajahi produk preloved dari sesama Mahasiswa sekampus.
         </p>
-        <Link href="/products">
-          <Button variant="primary" size="lg" pill iconRight={ArrowRight}>
-            Mulai Belanja Sekampus
-          </Button>
-        </Link>
+        <Button href="/products" variant="primary" size="lg" className="rounded-xl">
+          Mulai Belanja Sekampus
+        </Button>
       </div>
     );
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      {/* Kolom Kiri: Daftar Item per Toko (8 kolom) */}
-      <div className="lg:col-span-8 flex flex-col gap-6">
+      <div className="lg:col-span-8 flex flex-col gap-5">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-ink tracking-tight">
+          <h1 className="text-2xl font-bold text-ink tracking-tight">
             Keranjang Belanja
           </h1>
-          <p className="text-xs md:text-sm text-ink-soft mt-1">
-            Pesanan dikelompokkan per toko agar memudahkan COD di kampus atau pengiriman.
+          <p className="text-sm text-ink-muted mt-1">
+            Barang dikelompokkan per toko agar mudah memilih COD kampus atau pengiriman ke kost.
           </p>
         </div>
 
         {storeGroups.map((group) => (
-          <div
+          <section
             key={group.storeId}
-            className="bg-canvas border border-line rounded-card shadow-card overflow-hidden"
+            className="surface-3d rounded-2xl overflow-hidden"
           >
-            {/* Header Toko */}
-            <div className="p-4 bg-surface/70 border-b border-line flex items-center justify-between">
-              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                <Store className="w-4 h-4 text-primary shrink-0" />
-                <span className="font-display font-bold text-sm text-ink">{group.storeName}</span>
-                <span className="text-line">·</span>
-                <span className="text-xs font-semibold text-pine flex items-center gap-1">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  <span>{group.campusShortName} ({group.campusCity})</span>
+            {/* Header Toko (design2.md 5.5) */}
+            <div className="px-4 py-3.5 bg-canvas border-b border-border-subtle flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Store className="w-4 h-4 text-brand-blue shrink-0" aria-hidden="true" />
+                <span className="font-bold text-sm text-ink">{group.storeName}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-brand-blue-soft text-brand-blue">
+                  <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{group.campusShortName}</span>
                 </span>
               </div>
+              <span className="text-xs text-ink-muted">{group.campusCity}</span>
             </div>
 
-            {/* List Barang dalam Toko Ini */}
-            <div className="divide-y divide-line/60">
+            <div className="divide-y divide-border-subtle">
               {group.items.map((item) => {
                 const isItemLoading = loadingItemId === item.id;
                 return (
-                  <div key={item.id} className="p-4 md:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div
+                    key={item.id}
+                    className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  >
                     <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                      {/* Foto Produk */}
-                      <div className="relative w-18 h-18 rounded-2xl bg-surface overflow-hidden border border-line shrink-0">
+                      <div className="relative w-18 h-18 rounded-xl bg-surface-muted overflow-hidden border border-border-subtle shrink-0">
                         <CartItemImage src={item.image_url} alt={item.product_name} />
                       </div>
 
-                      {/* Detail Nama & Harga Satuan */}
-                      <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex flex-col gap-1.5 min-w-0 flex-1">
                         <Link
                           href={`/products/${item.product_id}`}
-                          className="font-bold text-xs md:text-sm text-ink line-clamp-1 hover:text-primary transition-colors"
+                          className="font-semibold text-sm text-ink line-clamp-1 hover:text-brand-blue transition-colors"
                         >
                           {item.product_name}
                         </Link>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <ConditionBadge condition={item.condition} />
-                          <span className="text-xs font-semibold text-ink-soft tabular-nums">
+                          <span className="text-xs font-medium text-ink-muted tabular-nums">
                             {formatRupiah(item.price)} / unit
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Kontrol Jumlah & Subtotal */}
-                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-5 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-line/40">
-                      {/* +/- Tombol */}
-                      <div className="flex items-center bg-surface rounded-full border border-line p-1">
+                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-border-subtle">
+                      <div className="inline-flex items-center bg-canvas rounded-lg border border-border-subtle p-1">
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.product_name)}
                           disabled={isItemLoading}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
-                          aria-label="Kurangi"
-                          title="Kurangi"
+                          className="w-10 h-10 md:w-8 md:h-8 rounded-md flex items-center justify-center text-ink hover:bg-surface disabled:opacity-30 transition-colors"
+                          aria-label={`Kurangi jumlah ${item.product_name}`}
                         >
-                          <Minus className="w-3.5 h-3.5" />
+                          <Minus className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
-                        <span className="w-8 text-center font-bold tabular-nums text-xs text-ink">
+                        <span className="w-9 text-center font-bold tabular-nums text-xs md:text-sm text-ink">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.product_name)}
                           disabled={item.quantity >= item.stock || isItemLoading}
-                          className="w-9 h-9 rounded-full flex items-center justify-center text-ink hover:bg-canvas disabled:opacity-30 cursor-pointer transition-colors"
-                          aria-label="Tambah"
-                          title="Tambah"
+                          className="w-10 h-10 md:w-8 md:h-8 rounded-md flex items-center justify-center text-ink hover:bg-surface disabled:opacity-30 transition-colors"
+                          aria-label={`Tambah jumlah ${item.product_name}`}
                         >
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                       </div>
 
-                      {/* Subtotal Item */}
-                      <div className="text-right min-w-[80px] sm:min-w-[90px]">
-                        <div className="font-bold tabular-nums text-sm text-primary">
+                      <div className="text-right min-w-[90px]">
+                        <div className="font-bold tabular-nums text-sm text-brand-blue">
                           {formatRupiah(item.quantity * item.price)}
                         </div>
                       </div>
 
-                      {/* Hapus Item */}
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(item.id, item.product_name)}
                         disabled={isItemLoading}
-                        className="text-ink-soft hover:text-danger w-10 h-10 flex items-center justify-center rounded-full hover:bg-danger-50 transition-colors cursor-pointer shrink-0"
+                        className="text-ink-muted hover:text-danger-text w-11 h-11 md:w-9 md:h-9 flex items-center justify-center rounded-lg hover:bg-danger-bg transition-colors shrink-0"
                         title="Hapus item"
                         aria-label={`Hapus ${item.product_name}`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </section>
         ))}
       </div>
 
-      {/* Kolom Kanan: Ringkasan Total & Tombol Checkout (4 kolom) */}
-      <div className="lg:col-span-4 bg-canvas border border-line rounded-card p-6 shadow-card sticky top-20 flex flex-col gap-5">
-        <h2 className="text-base font-bold text-ink border-b border-line pb-3">
+      {/* Ringkasan Belanja 3D */}
+      <aside className="lg:col-span-4 surface-3d rounded-2xl p-6 flex flex-col gap-5 sticky-sidebar-panel">
+        <h2 className="text-base font-bold text-ink border-b border-border-subtle pb-3">
           Ringkasan Belanja
         </h2>
 
-        <div className="flex flex-col gap-2.5 text-xs md:text-sm">
-          <div className="flex items-center justify-between text-ink-soft">
+        <div className="flex flex-col gap-2.5 text-sm">
+          <div className="flex items-center justify-between text-ink-secondary">
             <span>Total Item</span>
-            <span className="font-bold text-ink tabular-nums">{totalItems} barang</span>
+            <span className="font-semibold text-ink tabular-nums">{totalItems} barang</span>
           </div>
-          <div className="flex items-center justify-between text-ink-soft">
+          <div className="flex items-center justify-between text-ink-secondary">
             <span>Jumlah Toko</span>
-            <span className="font-bold text-ink tabular-nums">{storeGroups.length} toko</span>
+            <span className="font-semibold text-ink tabular-nums">{storeGroups.length} toko</span>
           </div>
-          <div className="flex items-center justify-between text-base font-bold text-ink pt-3 border-t border-line">
-            <span className="font-display">Total Tagihan</span>
-            <span className="font-display text-primary text-xl font-bold tabular-nums tracking-tight">
+          <div className="flex items-center justify-between text-base font-bold text-ink pt-3 border-t border-border-subtle">
+            <span>Total Tagihan</span>
+            <span className="text-brand-blue text-xl font-bold tabular-nums tracking-tight">
               {formatRupiah(totalPrice)}
             </span>
           </div>
         </div>
 
-        <div className="p-3 rounded-xl bg-primary-50 text-primary text-xs leading-relaxed flex items-center gap-2 font-medium">
-          <ShieldCheck className="w-5 h-5 shrink-0" />
-          <span>Bebas pilih COD di kampus atau pengiriman ke kost saat checkout.</span>
+        <div className="p-3 rounded-lg bg-info-bg border border-brand-blue-border text-navy-900 text-xs leading-relaxed flex items-center gap-2 font-medium">
+          <ShieldCheck className="w-4 h-4 text-brand-blue shrink-0" aria-hidden="true" />
+          <span>Pilih COD di kampus atau pengiriman ke kost pada langkah checkout.</span>
         </div>
 
-        <Link href="/buyer/checkout" className="w-full">
-          <Button variant="primary" size="lg" pill className="w-full">
-            <span>Lanjut ke Pembayaran</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
-      </div>
+        <Button href="/buyer/checkout" variant="primary" size="lg" className="w-full rounded-xl">
+          Lanjut ke Checkout
+        </Button>
+      </aside>
     </div>
   );
 }

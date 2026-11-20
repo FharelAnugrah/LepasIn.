@@ -2,14 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import {
   MapPin,
   Plus,
   Edit2,
   Trash2,
-  CheckCircle2,
-  ArrowLeft,
   Building,
   Phone,
   User,
@@ -20,6 +17,7 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Badge from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
+import { preventEnterSubmitOnInput } from '@/lib/form-utils';
 
 export default function AddressManager({ initialAddresses = [], user }) {
   const router = useRouter();
@@ -29,7 +27,6 @@ export default function AddressManager({ initialAddresses = [], user }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
 
-  // Form states
   const [label, setLabel] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [phone, setPhone] = useState('');
@@ -41,7 +38,6 @@ export default function AddressManager({ initialAddresses = [], user }) {
   const [formLoading, setFormLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
-  // Confirm delete dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addressToDelete, setAddressToDelete] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -74,6 +70,7 @@ export default function AddressManager({ initialAddresses = [], user }) {
 
   const handleSaveAddress = async (e) => {
     e.preventDefault();
+    if (formLoading) return;
     setFormErrors({});
     setFormLoading(true);
 
@@ -109,12 +106,11 @@ export default function AddressManager({ initialAddresses = [], user }) {
       }
 
       toast.success(
-        editingAddress ? 'Alamat berhasil diperbarui!' : 'Alamat baru berhasil ditambahkan! 🎉'
+        editingAddress ? 'Alamat berhasil diperbarui.' : 'Alamat baru berhasil ditambahkan.'
       );
       setModalOpen(false);
       setFormLoading(false);
       router.refresh();
-      // Reload list
       const updatedRes = await fetch('/api/buyer/addresses');
       const updatedData = await updatedRes.json();
       if (updatedData.addresses) setAddresses(updatedData.addresses);
@@ -180,45 +176,32 @@ export default function AddressManager({ initialAddresses = [], user }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Tombol Balik ke Profil */}
-      <div>
-        <Link
-          href="/buyer/profile"
-          className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-ink-soft hover:text-primary transition-colors mb-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Kembali ke Profil</span>
-        </Link>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-ink tracking-tight flex items-center gap-2">
-              <MapPin className="w-7 h-7 text-primary" />
-              <span>Daftar Alamat Pengiriman</span>
-            </h1>
-            <p className="text-xs md:text-sm text-ink-soft mt-1">
-              Simpan lokasi kost atau rumah untuk memudahkan saat checkout kirim langsung ke kamarmu.
-            </p>
-          </div>
-          <Button variant="primary" pill onClick={openAddModal}>
-            <Plus className="w-4 h-4" />
-            <span>Tambah Alamat Baru</span>
-          </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-ink tracking-tight flex items-center gap-2">
+            <MapPin className="w-6 h-6 text-brand-blue" aria-hidden="true" />
+            <span>Daftar Alamat Kost</span>
+          </h1>
+          <p className="text-sm text-ink-muted mt-1">
+            Simpan lokasi kost atau rumah untuk mempercepat checkout pengiriman.
+          </p>
         </div>
+        <Button variant="primary" onClick={openAddModal} icon={Plus}>
+          Tambah Alamat Baru
+        </Button>
       </div>
 
-      {/* List Alamat */}
       {addresses.length === 0 ? (
-        <div className="bg-canvas border border-line rounded-card p-12 text-center shadow-card max-w-md mx-auto my-6">
-          <div className="w-16 h-16 rounded-full bg-primary-50 text-primary flex items-center justify-center mx-auto mb-4">
-            <Building className="w-8 h-8" />
+        <div className="surface-3d rounded-2xl p-10 text-center max-w-md mx-auto my-6">
+          <div className="w-14 h-14 rounded-2xl icon-plinth-3d text-brand-blue flex items-center justify-center mx-auto mb-4">
+            <Building className="w-7 h-7" aria-hidden="true" />
           </div>
-          <h2 className="text-lg font-bold text-ink mb-1">Belum Ada Alamat Tersimpan</h2>
-          <p className="text-xs text-ink-soft mb-6 leading-relaxed">
-            Tambahkan alamat kost atau tempat tinggalmu agar saat checkout tidak perlu mengetik ulang.
+          <h2 className="text-base font-bold text-ink mb-1">Belum Ada Alamat Tersimpan</h2>
+          <p className="text-xs md:text-sm text-ink-muted mb-5 leading-relaxed">
+            Tambahkan alamat kost atau tempat tinggalmu agar tidak perlu mengetik ulang saat checkout.
           </p>
-          <Button variant="primary" pill onClick={openAddModal}>
-            <Plus className="w-4 h-4" />
-            <span>Tambah Alamat Sekarang</span>
+          <Button variant="primary" onClick={openAddModal} icon={Plus}>
+            Tambah Alamat Sekarang
           </Button>
         </div>
       ) : (
@@ -226,10 +209,10 @@ export default function AddressManager({ initialAddresses = [], user }) {
           {addresses.map((addr) => (
             <div
               key={addr.id}
-              className={`bg-canvas border rounded-card p-5 shadow-card flex flex-col justify-between gap-4 transition-all ${
+              className={`rounded-2xl p-5 flex flex-col justify-between gap-4 transition-colors ${
                 addr.is_default
-                  ? 'border-primary ring-2 ring-primary/20 bg-primary-50/10'
-                  : 'border-line hover:border-line-hover'
+                  ? 'card-3d-selected'
+                  : 'card-3d'
               }`}
             >
               <div className="flex flex-col gap-2">
@@ -237,7 +220,7 @@ export default function AddressManager({ initialAddresses = [], user }) {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-ink">{addr.label}</span>
                     {addr.is_default && (
-                      <Badge variant="pine" size="xs">
+                      <Badge variant="primary" size="xs">
                         Alamat Utama
                       </Badge>
                     )}
@@ -245,25 +228,25 @@ export default function AddressManager({ initialAddresses = [], user }) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink mt-1">
-                  <User className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <User className="w-3.5 h-3.5 text-brand-blue shrink-0" aria-hidden="true" />
                   <span>{addr.recipient_name}</span>
-                  <span className="text-line">·</span>
-                  <Phone className="w-3.5 h-3.5 text-ink-soft shrink-0" />
-                  <span className="text-ink-soft">{addr.phone}</span>
+                  <span className="text-border-subtle" aria-hidden="true">|</span>
+                  <Phone className="w-3.5 h-3.5 text-ink-muted shrink-0" aria-hidden="true" />
+                  <span className="text-ink-secondary tabular-nums">{addr.phone}</span>
                 </div>
 
-                <p className="text-xs text-ink-soft leading-relaxed mt-1">
+                <p className="text-xs text-ink-secondary leading-relaxed mt-1">
                   {addr.address_line}, {addr.city} {addr.postal_code || ''}
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-3 border-t border-line/60 gap-2">
+              <div className="flex items-center justify-between pt-3 border-t border-border-subtle gap-2">
                 <div>
                   {!addr.is_default && (
                     <button
                       type="button"
                       onClick={() => handleSetDefault(addr.id)}
-                      className="text-xs font-semibold text-primary hover:underline"
+                      className="text-xs font-semibold text-brand-blue hover:underline py-1"
                     >
                       Jadikan Utama
                     </button>
@@ -272,27 +255,28 @@ export default function AddressManager({ initialAddresses = [], user }) {
 
                 <div className="flex items-center gap-1.5">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    pill
+                    variant="secondary"
+                    size="xs"
                     onClick={() => openEditModal(addr)}
-                    className="p-2 text-ink hover:bg-surface-alt"
+                    aria-label={`Ubah alamat ${addr.label}`}
                     title="Ubah Alamat"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Edit</span>
                   </Button>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    pill
+                    size="xs"
                     onClick={() => {
                       setAddressToDelete(addr);
                       setDeleteDialogOpen(true);
                     }}
-                    className="p-2 text-danger hover:bg-danger-50"
+                    className="text-danger-text hover:bg-danger-bg"
+                    aria-label={`Hapus alamat ${addr.label}`}
                     title="Hapus Alamat"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Hapus</span>
                   </Button>
                 </div>
               </div>
@@ -301,14 +285,17 @@ export default function AddressManager({ initialAddresses = [], user }) {
         </div>
       )}
 
-      {/* Modal Form Tambah / Edit Alamat */}
       <Modal
         isOpen={modalOpen}
         onClose={() => !formLoading && setModalOpen(false)}
         title={editingAddress ? 'Ubah Alamat Pengiriman' : 'Tambah Alamat Kost / Rumah'}
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleSaveAddress} className="flex flex-col gap-4">
+        <form
+          onSubmit={handleSaveAddress}
+          onKeyDown={preventEnterSubmitOnInput}
+          className="flex flex-col gap-4"
+        >
           <Input
             label="Label Alamat (mis. Kost Tamalanrea, Rumah Makassar)"
             placeholder="Contoh: Kost Griya Putri"
@@ -365,37 +352,35 @@ export default function AddressManager({ initialAddresses = [], user }) {
             />
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer mt-1">
+          <label className="flex items-center gap-2.5 mt-1 min-h-[40px]">
             <input
               type="checkbox"
               checked={isDefault}
               onChange={(e) => setIsDefault(e.target.checked)}
-              className="w-4 h-4 rounded text-primary border-line focus:ring-primary"
+              className="w-4 h-4 rounded accent-brand-blue border-border-subtle"
             />
             <span className="text-xs font-semibold text-ink">
               Jadikan sebagai alamat pengiriman utama
             </span>
           </label>
 
-          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-4 border-t border-line mt-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2.5 pt-4 border-t border-border-subtle mt-2">
             <Button
               type="button"
               variant="secondary"
-              pill
               disabled={formLoading}
               onClick={() => setModalOpen(false)}
               className="w-full sm:w-auto"
             >
               Batal
             </Button>
-            <Button type="submit" variant="primary" pill loading={formLoading} className="w-full sm:w-auto">
-              <span>{editingAddress ? 'Simpan Perubahan' : 'Tambahkan Alamat'}</span>
+            <Button type="submit" variant="primary" loading={formLoading} className="w-full sm:w-auto">
+              {editingAddress ? 'Simpan Perubahan' : 'Tambahkan Alamat'}
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* Confirm Dialog Hapus */}
       <ConfirmDialog
         isOpen={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -404,7 +389,8 @@ export default function AddressManager({ initialAddresses = [], user }) {
         message={`Alamat "${addressToDelete?.label}" akan dihapus dari daftar tersimpan.`}
         confirmText="Ya, Hapus Alamat"
         cancelText="Batal"
-        danger
+        confirmVariant="danger"
+        type="danger"
         loading={deleteLoading}
       />
     </div>

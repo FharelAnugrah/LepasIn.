@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, User, Mail, Phone, ShieldCheck, Store, GraduationCap } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone } from 'lucide-react';
 import Input, { Select } from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import CampusSelector from '@/components/ui/CampusSelector';
 import { useToast } from '@/components/ui/Toast';
+import { preventEnterSubmitOnInput } from '@/lib/form-utils';
+import { validateFullName, validatePhone } from '@/lib/validation';
 
 export default function EditUserClient({ user, initialCampus }) {
   const router = useRouter();
@@ -20,11 +22,32 @@ export default function EditUserClient({ user, initialCampus }) {
   const [campus, setCampus] = useState(initialCampus);
 
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  const validateForm = () => {
+    const errs = {};
+    const nameErr = validateFullName(name);
+    if (nameErr) errs.name = nameErr;
+    if (phone) {
+      const phoneErr = validatePhone(phone);
+      if (phoneErr) errs.phone = phoneErr;
+    }
+    return errs;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
+
+    const errs = validateForm();
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      return;
+    }
+
+    setFieldErrors({});
     setLoading(true);
 
     try {
@@ -60,37 +83,65 @@ export default function EditUserClient({ user, initialCampus }) {
 
   return (
     <div className="max-w-xl mx-auto flex flex-col gap-6">
-      {/* Header & Back Link */}
       <div>
         <Link
           href="/admin/users"
-          className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-primary hover:underline mb-2"
+          className="inline-flex items-center gap-1.5 min-h-[36px] text-xs md:text-sm font-semibold text-brand-blue hover:text-brand-blue-hover transition-colors mb-2"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           <span>Kembali ke Daftar Pengguna</span>
         </Link>
-        <h1 className="text-2xl font-extrabold text-ink tracking-tight">
+        <h1 className="text-2xl font-bold text-ink tracking-tight">
           Edit Pengguna: {user.name}
         </h1>
-        <p className="text-xs md:text-sm text-ink-soft">
+        <p className="text-xs md:text-sm text-ink-muted mt-1">
           Ubah peran, status verifikasi penjual, nomor kontak, atau asal kampus pengguna.
         </p>
       </div>
 
-      {/* Form Card */}
-      <div className="bg-canvas border border-line rounded-card p-6 md:p-8 shadow-card">
+      <div className="bg-surface border border-border-subtle rounded-xl p-6 md:p-8">
         {error && (
-          <div className="mb-5 p-3 rounded-xl bg-danger-50 border border-danger/20 text-danger text-xs md:text-sm font-medium">
+          <div
+            role="alert"
+            className="mb-5 p-3 rounded-lg bg-danger-bg border border-red-200 text-danger-text text-xs md:text-sm font-medium"
+          >
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          onKeyDown={preventEnterSubmitOnInput}
+          className="flex flex-col gap-4"
+        >
           <Input
+            id="admin-edit-name"
             label="Nama Lengkap"
             icon={User}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (fieldErrors.name) {
+                const err = validateFullName(e.target.value);
+                setFieldErrors((prev) => {
+                  const n = { ...prev };
+                  if (err) n.name = err;
+                  else delete n.name;
+                  return n;
+                });
+              }
+            }}
+            onBlur={() => {
+              const err = validateFullName(name);
+              setFieldErrors((prev) => {
+                const n = { ...prev };
+                if (err) n.name = err;
+                else delete n.name;
+                return n;
+              });
+            }}
+            error={fieldErrors.name}
             required
           />
 
@@ -104,11 +155,35 @@ export default function EditUserClient({ user, initialCampus }) {
           />
 
           <Input
+            id="admin-edit-phone"
             label="Nomor WhatsApp / HP"
             type="tel"
             icon={Phone}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              if (fieldErrors.phone) {
+                const err = e.target.value ? validatePhone(e.target.value) : null;
+                setFieldErrors((prev) => {
+                  const n = { ...prev };
+                  if (err) n.phone = err;
+                  else delete n.phone;
+                  return n;
+                });
+              }
+            }}
+            onBlur={() => {
+              if (phone) {
+                const err = validatePhone(phone);
+                setFieldErrors((prev) => {
+                  const n = { ...prev };
+                  if (err) n.phone = err;
+                  else delete n.phone;
+                  return n;
+                });
+              }
+            }}
+            error={fieldErrors.phone}
             placeholder="081234567890"
           />
 
@@ -135,26 +210,28 @@ export default function EditUserClient({ user, initialCampus }) {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs md:text-sm font-semibold text-ink">
+            <span className="text-xs md:text-sm font-semibold text-ink">
               Asal Kampus
-            </label>
+            </span>
             <CampusSelector
               value={campus}
               onChange={setCampus}
               allowAll={true}
               allLabel="Tidak Mengikat Kampus"
               placeholder="Pilih kampus..."
-              className="w-full"
+              fullWidth={true}
             />
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-line/60 mt-2">
-            <Link href="/admin/users">
-              <Button variant="secondary" pill disabled={loading}>
-                Batal
-              </Button>
-            </Link>
-            <Button type="submit" variant="primary" pill loading={loading}>
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-subtle mt-2">
+            <Button
+              href="/admin/users"
+              variant="secondary"
+              disabled={loading}
+            >
+              Batal
+            </Button>
+            <Button type="submit" variant="primary" loading={loading}>
               Simpan Perubahan
             </Button>
           </div>

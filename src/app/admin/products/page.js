@@ -5,7 +5,7 @@ import ProductsModerationManager from './ProductsModerationManager';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Moderasi Produk — Admin LepasIn',
+  title: 'Moderasi Produk | Admin LepasIn',
 };
 
 export default async function AdminProductsPage() {

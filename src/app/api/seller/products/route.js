@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query, withTransaction } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { extractAndProcessImages } from '@/lib/image-util';
+import { createProductNameSchema } from '@/lib/product-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,29 +59,32 @@ const originalPriceValidator = z
       .nullable()
   );
 
-const stockValidator = z
-  .union([z.string(), z.number()])
-  .refine(
-    (val) => {
-      const str = String(val).trim();
-      return !/^0\d+/.test(str);
-    },
-    {
+const stockValidator = z.preprocess(
+  (val) => (val === undefined || val === null ? '' : String(val).trim()),
+  z
+    .string()
+    .min(1, 'Jumlah stok wajib diisi.')
+    .refine((str) => !/^0\d+/.test(str), {
       message: 'Jumlah stok tidak boleh diawali dengan angka 0 (contoh: 05).',
-    }
-  )
-  .transform((val) => Number(val))
-  .pipe(
-    z
-      .number({ invalid_type_error: 'Stok harus berupa angka.' })
-      .int('Stok harus berupa bilangan bulat.')
-      .min(0, 'Stok minimal 0.')
-  )
-  .default(1);
+    })
+    .refine((str) => /^-?\d+$/.test(str), {
+      message: 'Stok harus berupa bilangan bulat.',
+    })
+    .transform((str) => Number(str))
+    .pipe(
+      z
+        .number({ invalid_type_error: 'Stok harus berupa angka.' })
+        .int('Stok harus berupa bilangan bulat.')
+        .min(1, 'Jumlah stok minimal 1 barang dan tidak boleh bernilai 0.')
+        .max(10000, 'Jumlah stok maksimal 10.000.')
+    )
+);
+
+const productNameValidator = createProductNameSchema(z);
 
 const productSchema = z
   .object({
-    name: z.string().trim().min(3, 'Nama barang minimal 3 karakter').max(150, 'Nama barang maksimal 150 karakter'),
+    name: productNameValidator,
     description: z.string().trim().min(10, 'Deskripsi minimal 10 karakter'),
     price: priceValidator,
     original_price: originalPriceValidator,
@@ -153,13 +157,14 @@ export async function POST(request) {
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
+      const rawName = formData.get('name');
       payload = {
-        name: formData.get('name'),
-        description: formData.get('description'),
-        price: formData.get('price'),
+        name: rawName === null ? '' : rawName,
+        description: String(formData.get('description') ?? ''),
+        price: formData.get('price') ?? '',
         original_price: formData.get('original_price'),
         stock: formData.get('stock'),
-        condition: formData.get('condition'),
+        condition: formData.get('condition') ?? '',
         category_id: formData.get('category_id'),
       };
       imageUrls = await extractAndProcessImages(formData);

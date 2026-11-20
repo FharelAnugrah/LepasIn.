@@ -1,10 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Users,
   Search,
   Edit2,
   Trash2,
@@ -12,7 +10,6 @@ import {
   Store,
   ShoppingBag,
   GraduationCap,
-  AlertTriangle,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -92,14 +89,14 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
   const getRoleBadge = (role) => {
     if (role === 'admin') {
       return (
-        <Badge variant="primary" size="xs" icon={ShieldCheck}>
+        <Badge variant="navy" size="xs" icon={ShieldCheck}>
           Admin
         </Badge>
       );
     }
     if (role === 'seller') {
       return (
-        <Badge variant="pine" size="xs" icon={Store}>
+        <Badge variant="mint" size="xs" icon={Store}>
           Penjual
         </Badge>
       );
@@ -113,60 +110,69 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-ink tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-bold text-ink tracking-tight">
           Kelola Pengguna
         </h1>
-        <p className="text-xs md:text-sm text-ink-soft mt-1">
+        <p className="text-xs md:text-sm text-ink-muted mt-1">
           Daftar seluruh akun terdaftar (Admin, Penjual, dan Pembeli) di seluruh Indonesia.
         </p>
       </div>
 
-      {/* Filter & Search */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Tab Role */}
-        <div className="flex p-1 bg-surface rounded-xl border border-line overflow-x-auto no-scrollbar">
+        <div
+          role="tablist"
+          aria-label="Filter peran pengguna"
+          className="inline-flex p-1 bg-surface-muted rounded-xl border border-border-subtle overflow-x-auto no-scrollbar"
+        >
           {[
             { id: 'all', label: 'Semua Peran' },
             { id: 'buyer', label: 'Pembeli' },
             { id: 'seller', label: 'Penjual' },
-          
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setRoleFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                roleFilter === tab.id
-                  ? 'bg-canvas text-primary shadow-xs'
-                  : 'text-ink-soft hover:text-ink'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          ].map((tab) => {
+            const active = roleFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setRoleFilter(tab.id)}
+                className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-colors ${
+                  active
+                    ? 'bg-surface text-brand-blue font-bold shadow-xs'
+                    : 'text-ink-subtle font-semibold hover:text-ink'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full md:w-64 lg:w-72">
-          <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="relative w-full md:w-72">
+          <label htmlFor="admin-users-search" className="sr-only">
+            Cari pengguna berdasarkan nama, email, atau kampus
+          </label>
+          <Search
+            className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+            aria-hidden="true"
+          />
           <input
-            type="text"
+            id="admin-users-search"
+            type="search"
             placeholder="Cari nama, email, kampus..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-11 md:h-10 pl-9 pr-4 text-base md:text-sm bg-canvas border border-line rounded-xl focus:border-primary focus:ring-2 focus:ring-primary-50 outline-none transition"
+            className="w-full min-h-[44px] md:min-h-[40px] pl-10 pr-4 text-base md:text-sm bg-surface border border-border-subtle rounded-lg text-ink placeholder:text-ink-muted focus:border-brand-blue transition-colors"
           />
         </div>
       </div>
 
-      {/* Daftar & Tabel Pengguna */}
-      <div className="bg-canvas border border-line rounded-card shadow-card overflow-hidden">
-        {/* Tampilan Kartu Mobile (< md) */}
-        <div className="md:hidden divide-y divide-line/60">
+      <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
+        <div className="md:hidden divide-y divide-border-subtle">
           {filteredUsers.length === 0 ? (
-            <div className="py-8 px-4 text-center text-sm text-ink-soft">
+            <div className="py-10 px-4 text-center text-sm text-ink-muted">
               Tidak ada pengguna yang cocok.
             </div>
           ) : (
@@ -175,7 +181,7 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
               return (
                 <div key={u.id} className="p-4 space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full bg-primary-50 text-primary font-bold text-xs flex items-center justify-center shrink-0 uppercase">
+                    <div className="w-9 h-9 rounded-full bg-brand-blue-soft text-brand-blue font-bold text-xs flex items-center justify-center shrink-0 uppercase">
                       {u.name ? u.name.charAt(0) : 'U'}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -183,40 +189,42 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                         <div className="font-bold text-sm text-ink flex items-center gap-1.5 min-w-0">
                           <span className="truncate">{u.name}</span>
                           {isCurrentAdmin && (
-                            <span className="text-[10px] bg-primary text-white font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                            <span className="text-[11px] bg-navy-900 text-white font-semibold px-2 py-0.5 rounded-full shrink-0">
                               Anda
                             </span>
                           )}
                         </div>
                         <div className="shrink-0">{getRoleBadge(u.role)}</div>
                       </div>
-                      <p className="text-xs text-ink-soft break-all mt-0.5">{u.email}</p>
+                      <p className="text-xs text-ink-muted break-all mt-0.5">{u.email}</p>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-soft pl-12">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-secondary pl-12">
                     {u.campus_short_name && (
-                      <span className="font-semibold text-pine inline-flex items-center gap-1">
-                        <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                      <span className="font-semibold text-navy-900 inline-flex items-center gap-1">
+                        <GraduationCap className="w-3.5 h-3.5 shrink-0 text-brand-blue" aria-hidden="true" />
                         <span>{u.campus_short_name}</span>
                       </span>
                     )}
                     {u.phone && <span className="text-ink tabular-nums">{u.phone}</span>}
                     {u.role === 'seller' && u.seller_status && (
-                      <span className="capitalize">Status: {u.seller_status}</span>
+                      <span className="capitalize text-ink-muted">Status: {u.seller_status}</span>
                     )}
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1">
-                    <Link href={`/admin/users/${u.id}/edit`}>
-                      <Button variant="secondary" size="sm" pill icon={Edit2}>
-                        Edit
-                      </Button>
-                    </Link>
+                    <Button
+                      href={`/admin/users/${u.id}/edit`}
+                      variant="secondary"
+                      size="sm"
+                      icon={Edit2}
+                    >
+                      Edit
+                    </Button>
                     <Button
                       variant="danger"
                       size="sm"
-                      pill
                       icon={Trash2}
                       onClick={() => handleOpenDelete(u)}
                       disabled={isCurrentAdmin}
@@ -231,10 +239,9 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
           )}
         </div>
 
-        {/* Tampilan Tabel Desktop / Tablet (>= md) */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs md:text-sm">
-            <thead className="bg-surface text-ink-soft font-semibold border-b border-line">
+            <thead className="bg-surface-muted text-ink-subtle font-semibold border-b border-border-subtle">
               <tr>
                 <th className="py-3 px-3 xl:px-4">Pengguna</th>
                 <th className="py-3 px-3 xl:px-4">Peran</th>
@@ -243,10 +250,10 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                 <th className="py-3 px-3 xl:px-4 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line/60">
+            <tbody className="divide-y divide-border-subtle">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-ink-soft">
+                  <td colSpan={5} className="py-10 text-center text-ink-muted">
                     Tidak ada pengguna yang cocok.
                   </td>
                 </tr>
@@ -254,24 +261,24 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                 filteredUsers.map((u) => {
                   const isCurrentAdmin = u.id === currentAdminId;
                   return (
-                    <tr key={u.id} className="hover:bg-surface/50 transition-colors">
+                    <tr key={u.id} className="hover:bg-canvas transition-colors">
                       <td className="py-3.5 px-3 xl:px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-primary-50 text-primary font-bold text-xs flex items-center justify-center shrink-0 uppercase">
+                          <div className="w-8 h-8 rounded-full bg-brand-blue-soft text-brand-blue font-bold text-xs flex items-center justify-center shrink-0 uppercase">
                             {u.name ? u.name.charAt(0) : 'U'}
                           </div>
                           <div className="min-w-0">
                             <div className="font-bold text-ink flex items-center gap-1.5 flex-wrap">
                               <span>{u.name}</span>
                               {isCurrentAdmin && (
-                                <span className="text-[10px] bg-primary text-white font-bold px-1.5 py-0.5 rounded-full">
+                                <span className="text-[11px] bg-navy-900 text-white font-semibold px-2 py-0.5 rounded-full">
                                   Anda
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-ink-soft break-all">{u.email}</div>
+                            <div className="text-xs text-ink-muted break-all">{u.email}</div>
                             {u.phone && (
-                              <div className="xl:hidden text-[11px] text-ink tabular-nums mt-0.5">
+                              <div className="xl:hidden text-xs text-ink-secondary tabular-nums mt-0.5">
                                 {u.phone}
                               </div>
                             )}
@@ -281,7 +288,7 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                       <td className="py-3.5 px-3 xl:px-4">
                         {getRoleBadge(u.role)}
                         {u.role === 'seller' && u.seller_status && (
-                          <div className="text-[10px] text-ink-soft capitalize mt-0.5">
+                          <div className="text-[11px] text-ink-muted capitalize mt-1">
                             Status: {u.seller_status}
                           </div>
                         )}
@@ -289,30 +296,32 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
                       <td className="py-3.5 px-3 xl:px-4">
                         {u.campus_short_name ? (
                           <div>
-                            <span className="font-semibold text-pine flex items-center gap-1">
-                              <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                            <span className="font-semibold text-navy-900 flex items-center gap-1">
+                              <GraduationCap className="w-3.5 h-3.5 shrink-0 text-brand-blue" aria-hidden="true" />
                               <span>{u.campus_short_name}</span>
                             </span>
-                            <span className="text-[11px] text-ink-soft">{u.campus_city}</span>
+                            <span className="text-xs text-ink-muted">{u.campus_city}</span>
                           </div>
                         ) : (
-                          <span className="text-ink-soft">-</span>
+                          <span className="text-ink-muted">-</span>
                         )}
                       </td>
                       <td className="hidden xl:table-cell py-3.5 px-4">
-                        <span className="text-ink tabular-nums">{u.phone || '-'}</span>
+                        <span className="text-ink-secondary tabular-nums">{u.phone || '-'}</span>
                       </td>
                       <td className="py-3.5 px-3 xl:px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                          <Link href={`/admin/users/${u.id}/edit`}>
-                            <Button variant="secondary" size="sm" pill icon={Edit2}>
-                              Edit
-                            </Button>
-                          </Link>
+                          <Button
+                            href={`/admin/users/${u.id}/edit`}
+                            variant="secondary"
+                            size="sm"
+                            icon={Edit2}
+                          >
+                            Edit
+                          </Button>
                           <Button
                             variant="danger"
                             size="sm"
-                            pill
                             icon={Trash2}
                             onClick={() => handleOpenDelete(u)}
                             disabled={isCurrentAdmin}
@@ -331,7 +340,6 @@ export default function UsersManager({ initialUsers, currentAdminId }) {
         </div>
       </div>
 
-      {/* Dialog Konfirmasi Hapus Pengguna */}
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, user: null, loading: false })}

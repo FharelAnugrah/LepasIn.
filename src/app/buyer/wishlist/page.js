@@ -1,14 +1,12 @@
 import { requireBuyer } from '@/lib/auth';
 import { query } from '@/lib/db';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import BottomNav from '@/components/layout/BottomNav';
+import BuyerDashboardShell from '@/components/layout/BuyerDashboardShell';
 import WishlistManager from './WishlistManager';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Barang Favorit — LepasIn',
+  title: 'Barang Favorit | LepasIn',
 };
 
 export default async function WishlistPage() {
@@ -18,7 +16,7 @@ export default async function WishlistPage() {
     `SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition,
             c.name AS category_name,
             s.name AS store_name,
-            cp.short_name AS campus_short_name, cp.city AS campus_city,
+            cp.short_name AS campus_short_name, cp.city AS campus_city, cp.name AS campus_name,
             (SELECT pi.url FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.position LIMIT 1) AS image_url,
             COALESCE(r.avg_rating, 0) AS avg_rating,
             COALESCE(r.review_count, 0) AS review_count
@@ -47,15 +45,8 @@ export default async function WishlistPage() {
   const cartTotal = cartRes.rows[0]?.total || 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-canvas text-ink">
-      <Navbar user={buyer} cartCount={cartCount} showSearchBar={false} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 lg:px-8 py-8">
-        <WishlistManager initialProducts={products} user={buyer} />
-      </main>
-
-      <Footer />
-      <BottomNav user={buyer} cartCount={cartCount} cartTotal={cartTotal} />
-    </div>
+    <BuyerDashboardShell user={buyer} cartCount={cartCount} cartTotal={cartTotal}>
+      <WishlistManager initialProducts={products} user={buyer} />
+    </BuyerDashboardShell>
   );
 }

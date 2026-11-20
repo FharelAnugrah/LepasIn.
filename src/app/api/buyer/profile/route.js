@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { validateFullName, validatePhone } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +15,16 @@ export async function PATCH(request) {
     const body = await request.json();
     const { name, phone, campus_id } = body;
 
-    if (!name || name.trim().length < 2) {
-      return NextResponse.json({ error: 'Nama minimal 2 karakter' }, { status: 400 });
+    const nameErr = validateFullName(name);
+    if (nameErr) {
+      return NextResponse.json({ error: nameErr }, { status: 400 });
+    }
+
+    if (phone) {
+      const phoneErr = validatePhone(phone);
+      if (phoneErr) {
+        return NextResponse.json({ error: phoneErr }, { status: 400 });
+      }
     }
 
     const parsedCampusId = campus_id ? Number(campus_id) : null;

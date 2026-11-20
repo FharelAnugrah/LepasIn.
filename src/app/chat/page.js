@@ -2,13 +2,12 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import { query } from '@/lib/db';
 import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
 import ChatClient from './ChatClient';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Ruang Chat — LepasIn',
+  title: 'Ruang Chat | LepasIn',
   description: 'Komunikasi langsung antara penjual dan pembeli untuk koordinasi COD kampus dan detail pesanan',
 };
 
@@ -29,7 +28,6 @@ export default async function ChatPage({ searchParams }) {
     redirect(`/login?next=${encodeURIComponent(redirectUrl)}`);
   }
 
-  // Ambil hitungan cart untuk Navbar
   let cartCount = 0;
   if (user.role === 'buyer') {
     const cartRes = await query(
@@ -42,7 +40,11 @@ export default async function ChatPage({ searchParams }) {
   return (
     <div className="h-dvh flex flex-col bg-canvas text-ink overflow-hidden">
       <Navbar user={user} cartCount={cartCount} showSearchBar={false} />
-      <main className="flex-1 min-h-0 max-w-6xl w-full mx-auto px-0 sm:px-4 md:px-6 py-0 sm:py-2 md:py-3 flex flex-col">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 min-h-0 max-w-6xl w-full mx-auto px-0 sm:px-4 md:px-6 py-0 sm:py-3 flex flex-col outline-none"
+      >
         <ChatClient
           user={user}
           initialOrderId={initialOrderId}

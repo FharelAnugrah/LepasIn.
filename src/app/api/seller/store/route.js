@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { query } from '@/lib/db';
+import { validateStoreName, validateLocation } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +15,21 @@ export async function PATCH(request) {
     const body = await request.json();
     const { name, campus_id, location, description } = body;
 
-    if (!name || name.trim().length < 2) {
-      return NextResponse.json({ error: 'Nama toko minimal 2 karakter' }, { status: 400 });
+    const nameErr = validateStoreName(name);
+    if (nameErr) {
+      return NextResponse.json({ error: nameErr }, { status: 400 });
     }
 
     const parsedCampusId = Number(campus_id);
     if (!parsedCampusId) {
       return NextResponse.json({ error: 'Kampus toko wajib dipilih' }, { status: 400 });
+    }
+
+    if (location) {
+      const locErr = validateLocation(location);
+      if (locErr) {
+        return NextResponse.json({ error: locErr }, { status: 400 });
+      }
     }
 
     const result = await query(

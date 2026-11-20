@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { CheckCircle2, MessageCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
@@ -14,7 +13,6 @@ export default function BuyerOrderActions({ orderId, status, deliveryMethod = 'm
   const [loading, setLoading] = useState(false);
   const [confirmReceivedOpen, setConfirmReceivedOpen] = useState(false);
 
-  // Konfirmasi Pesanan Diterima
   const handleConfirmReceived = async () => {
     setLoading(true);
     try {
@@ -32,7 +30,7 @@ export default function BuyerOrderActions({ orderId, status, deliveryMethod = 'm
         return;
       }
 
-      toast.success(data.message || 'Pesanan berhasil diselesaikan! Silakan beri ulasan barang.');
+      toast.success(data.message || 'Pesanan selesai. Silakan beri ulasan barang.');
       setConfirmReceivedOpen(false);
       setLoading(false);
       router.refresh();
@@ -44,33 +42,28 @@ export default function BuyerOrderActions({ orderId, status, deliveryMethod = 'm
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Tombol Chat Penjual selalu tersedia untuk komunikasi */}
+    <div className="flex flex-wrap items-center gap-2 shrink-0">
       <Button
         href={`/chat?order_id=${orderId}`}
         size="sm"
         variant="secondary"
-        pill
-        className="border border-line shadow-xs"
+        icon={MessageCircle}
       >
-        <MessageCircle className="w-3.5 h-3.5 mr-1 text-primary" />
-        <span>Chat Penjual</span>
+        Chat Penjual
       </Button>
 
-      {/* Tombol Pesanan Diterima jika status 'shipped' */}
+      {/* Tombol Anti-Penipuan Buyer (design2.md 5.6: bg-success-text text-white rounded-lg) */}
       {status === 'shipped' && (
         <>
-          <Button
-            size="sm"
-            variant="primary"
-            pill
-            loading={loading}
+          <button
+            type="button"
+            disabled={loading}
             onClick={() => setConfirmReceivedOpen(true)}
-            className="shadow-sm"
+            className="min-h-[40px] bg-success-text hover:bg-green-800 disabled:opacity-50 text-white font-semibold text-xs md:text-sm px-5 py-2.5 rounded-lg inline-flex items-center justify-center gap-2 transition-colors"
           >
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-white" />
+            <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>Pesanan Diterima</span>
-          </Button>
+          </button>
 
           <ConfirmDialog
             isOpen={confirmReceivedOpen}
@@ -79,12 +72,12 @@ export default function BuyerOrderActions({ orderId, status, deliveryMethod = 'm
             title="Konfirmasi Pesanan Diterima?"
             message={
               deliveryMethod === 'meetup'
-                ? 'Pastikan Anda telah bertemu langsung dengan penjual di kampus dan memeriksa kondisi barang preloved sebelum menyelesaikan transaksi ini demi keamanan bersama.'
-                : 'Pastikan paket barang preloved telah tiba di kost dan kondisinya sesuai deskripsi sebelum menyelesaikan pesanan ini.'
+                ? 'Pastikan kamu telah bertemu langsung dengan penjual di kampus dan memeriksa kondisi barang sebelum menyelesaikan transaksi ini.'
+                : 'Pastikan paket telah tiba di kost dan kondisi barang sesuai deskripsi sebelum menyelesaikan pesanan.'
             }
-            confirmText="Ya, Pesanan Sudah Diterima"
+            confirmText="Ya, Pesanan Diterima"
             cancelText="Periksa Kembali"
-            confirmVariant="primary"
+            confirmVariant="success"
             type="success"
             loading={loading}
           />

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { query, getClient } from '@/lib/db';
+import { validateCategoryName } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,11 +18,9 @@ export async function PATCH(request, { params }) {
     const body = await request.json();
     const name = body.name?.trim();
 
-    if (!name || name.length < 2) {
-      return NextResponse.json(
-        { error: 'Nama kategori minimal 2 karakter' },
-        { status: 400 }
-      );
+    const nameErr = validateCategoryName(name);
+    if (nameErr) {
+      return NextResponse.json({ error: nameErr }, { status: 400 });
     }
 
     // Cek kategori yang akan diedit

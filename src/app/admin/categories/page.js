@@ -5,7 +5,7 @@ import CategoriesManager from './CategoriesManager';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Kategori Produk — Admin LepasIn',
+  title: 'Kategori Produk | Admin LepasIn',
 };
 
 export default async function AdminCategoriesPage() {

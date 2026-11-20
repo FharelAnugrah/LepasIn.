@@ -3,6 +3,16 @@ import { z } from 'zod';
 import { query, withTransaction } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { createSession } from '@/lib/session';
+import {
+  FULL_NAME_REGEX,
+  validateFullName,
+  validateEmail,
+  validatePhone,
+  validatePassword,
+  validateConfirmPassword,
+  validateStoreName,
+  validateLocation,
+} from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +22,13 @@ const registerSchema = z
       .string({ message: 'Nama lengkap wajib diisi' })
       .trim()
       .min(1, 'Nama lengkap wajib diisi')
-      .min(2, 'Nama lengkap minimal 2 karakter')
+      .min(3, 'Nama lengkap minimal 3 karakter')
       .max(100, 'Nama lengkap maksimal 100 karakter'),
     email: z
       .string({ message: 'Alamat email wajib diisi' })
       .trim()
       .min(1, 'Alamat email wajib diisi')
-      .email('Format email tidak valid (contoh: nama@kampus.ac.id)')
+      .email('Format email belum valid. Contoh: nama@gmail.com.')
       .max(255, 'Alamat email maksimal 255 karakter'),
     phone: z
       .string({ message: 'Nomor WhatsApp/HP wajib diisi' })
@@ -36,8 +46,28 @@ const registerSchema = z
     campus_id: z.union([z.number(), z.string()]).nullable().optional(),
     store_name: z.string().trim().max(100).optional(),
     location: z.string().trim().max(150).optional(),
-    id_card_url: z.string().trim().max(500).optional(),
+    id_card_url: z.string().trim().optional(),
   })
+  .refine(
+    (data) => {
+      if (!data.name) return true;
+      return FULL_NAME_REGEX.test(data.name.trim());
+    },
+    {
+      message: 'Nama hanya boleh menggunakan huruf, spasi, titik, dan apostrof.',
+      path: ['name'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (!data.name || data.name.trim().length === 0) return false;
+      return /[a-zA-Z]/.test(data.name);
+    },
+    {
+      message: 'Nama lengkap harus memuat minimal satu huruf alfabet dan tidak boleh hanya berisi spasi, titik, atau apostrof.',
+      path: ['name'],
+    }
+  )
   .refine(
     (data) => {
       const nonSpaceLength = (data.password || '').replace(/\s/g, '').length;
@@ -74,14 +104,11 @@ const registerSchema = z
   })
   .refine(
     (data) => {
-      if (!data.phone || data.phone.trim().length === 0) {
-        return false;
-      }
-      const cleaned = data.phone.trim().replace(/[\s-]/g, '').replace(/^(\+62|62)/, '0');
-      return /^08[0-9]{8,12}$/.test(cleaned);
+      const err = validatePhone(data.phone);
+      return !err;
     },
     {
-      message: 'Nomor WhatsApp/HP tidak valid (harus diawali 08, 10-14 digit, contoh: 081234567890)',
+      message: 'Masukkan nomor WhatsApp dengan format yang benar (diawali 08, 10–15 digit).',
       path: ['phone'],
     }
   )
@@ -93,31 +120,37 @@ const registerSchema = z
       return true;
     },
     {
-      message: 'Penjual wajib memilih kampus tempat berjualan',
+      message: 'Penjual wajib memilih kampus dari daftar perguruan tinggi yang tersedia',
       path: ['campus_id'],
     }
   )
   .refine(
     (data) => {
       if (data.role === 'seller') {
-        return !!data.store_name && data.store_name.trim().length >= 2;
+        const s = data.store_name ? data.store_name.trim() : '';
+        if (s.length < 3) return false;
+        if (!/[a-zA-Z]/.test(s)) return false;
+        return /^[a-zA-Z0-9\s&'.,\-_/]+$/.test(s);
       }
       return true;
     },
     {
-      message: 'Nama toko/lapak wajib diisi untuk penjual (minimal 2 karakter)',
+      message: 'Nama toko/lapak wajib diisi minimal 3 karakter dan tidak boleh hanya berisi angka atau simbol',
       path: ['store_name'],
     }
   )
   .refine(
     (data) => {
       if (data.role === 'seller') {
-        return !!data.location && data.location.trim().length >= 2;
+        const loc = data.location ? data.location.trim() : '';
+        if (loc.length < 5) return false;
+        if (!/[a-zA-Z]/.test(loc)) return false;
+        return /^[a-zA-Z0-9\s&'.,\-_/()]+$/.test(loc);
       }
       return true;
     },
     {
-      message: 'Detail lokasi/area kost wajib diisi untuk penjual (minimal 2 karakter)',
+      message: 'Detail lokasi/area kost wajib diisi minimal 5 karakter dan harus memuat informasi lokasi yang bermakna',
       path: ['location'],
     }
   )
@@ -130,6 +163,25 @@ const registerSchema = z
     },
     {
       message: 'Wajib mengunggah foto selfie dengan memegang KTM atau kartu tanda pengenal lainnya',
+      path: ['id_card_url'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.role === 'seller' && data.id_card_url) {
+        const val = data.id_card_url.trim();
+        return (
+          val.startsWith('/uploads/') ||
+          val.startsWith('/api/uploads/') ||
+          val.startsWith('http://') ||
+          val.startsWith('https://') ||
+          val.startsWith('data:image/')
+        );
+      }
+      return true;
+    },
+    {
+      message: 'Format URL foto identitas tidak valid',
       path: ['id_card_url'],
     }
   );
@@ -218,7 +270,7 @@ export async function POST(request) {
             user.id,
             parsedCampusId,
             store_name.trim(),
-            `Toko mahasiswa ${name} di sekitar kampus.`,
+            `Toko Mahasiswa ${name} di sekitar kampus.`,
             location ? location.trim() : null,
           ]
         );

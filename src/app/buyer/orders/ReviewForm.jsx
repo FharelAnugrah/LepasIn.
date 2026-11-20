@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, MessageSquare } from 'lucide-react';
+import { Star } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 
-export default function ReviewForm({ orderItemId, productId, productName }) {
+export default function ReviewForm({ orderItemId, productName }) {
   const router = useRouter();
   const toast = useToast();
 
@@ -18,6 +18,7 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
     try {
@@ -39,7 +40,7 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
         return;
       }
 
-      toast.success('Terima kasih atas ulasanmu! ⭐');
+      toast.success('Terima kasih atas ulasanmu.');
       setIsOpen(false);
       setLoading(false);
       router.refresh();
@@ -55,11 +56,9 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
       <Button
         variant="secondary"
         size="sm"
-        pill
         onClick={() => setIsOpen(true)}
-        className="text-xs font-bold"
       >
-        <Star className="w-3.5 h-3.5 text-accent fill-accent mr-1" />
+        <Star className="w-3.5 h-3.5 text-campus-gold fill-campus-gold" aria-hidden="true" />
         <span>Beri Ulasan Barang</span>
       </Button>
     );
@@ -70,23 +69,23 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-2 p-3.5 rounded-xl bg-surface border border-line flex flex-col gap-3 animate-in fade-in duration-150"
+      className="mt-2 p-4 rounded-xl bg-canvas border border-border-subtle flex flex-col gap-3"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-bold text-ink">
-          Beri Penilaian untuk &quot;{productName}&quot;
+          Penilaian untuk &ldquo;{productName}&rdquo;
         </span>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="text-xs text-ink-soft hover:text-ink"
+          className="text-xs font-medium text-ink-muted hover:text-ink px-2 py-1 rounded-md"
         >
           Tutup
         </button>
       </div>
 
-      {/* Seleksi Bintang 1 - 5 */}
-      <div className="flex items-center gap-1.5">
+      {/* Pemilih 1-5 Bintang #FBBF24 (design2.md 5.6) */}
+      <div className="flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Pilih rating bintang 1 sampai 5">
         {[1, 2, 3, 4, 5].map((starVal) => (
           <button
             key={starVal}
@@ -94,20 +93,22 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
             onMouseEnter={() => setHoverRating(starVal)}
             onMouseLeave={() => setHoverRating(0)}
             onClick={() => setRating(starVal)}
-            className="p-1 hover:scale-110 transition-transform cursor-pointer"
+            className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-surface transition-colors"
             aria-label={`Beri rating ${starVal} bintang`}
+            aria-pressed={rating === starVal}
           >
             <Star
               className={`w-6 h-6 ${
                 starVal <= activeStar
-                  ? 'text-accent fill-accent'
-                  : 'text-line fill-line'
+                  ? 'text-campus-gold fill-campus-gold'
+                  : 'text-border-subtle fill-border-subtle'
               }`}
+              aria-hidden="true"
             />
           </button>
         ))}
-        <span className="text-xs font-bold text-ink ml-2">
-          {rating === 5 && 'Sangat Bagus!'}
+        <span className="text-xs font-semibold text-ink ml-2">
+          {rating === 5 && 'Sangat Bagus'}
           {rating === 4 && 'Bagus & Sesuai'}
           {rating === 3 && 'Cukup / Lumayan'}
           {rating === 2 && 'Kurang Memuaskan'}
@@ -115,26 +116,31 @@ export default function ReviewForm({ orderItemId, productId, productName }) {
         </span>
       </div>
 
-      <textarea
-        placeholder="Tulis ulasan pengalamanmu (misal: barang masih mulus, penjual ramah, tepat waktu saat COD)..."
-        rows={2}
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        className="w-full p-2.5 rounded-xl bg-canvas text-base md:text-sm border border-line outline-none focus:border-primary"
-      />
+      <div>
+        <label htmlFor={`review-comment-${orderItemId}`} className="sr-only">
+          Komentar ulasan
+        </label>
+        <textarea
+          id={`review-comment-${orderItemId}`}
+          placeholder="Tulis pengalamanmu (misal: barang mulus sesuai foto, penjual tepat waktu saat COD)..."
+          rows={2}
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          className="w-full p-3 rounded-lg bg-surface text-base md:text-sm text-ink placeholder:text-ink-muted border border-border-subtle outline-none focus:border-brand-blue focus:ring-3 focus:ring-brand-blue-soft"
+        />
+      </div>
 
       <div className="flex items-center justify-end gap-2">
         <Button
           type="button"
-          variant="ghost"
+          variant="secondary"
           size="sm"
-          pill
           disabled={loading}
           onClick={() => setIsOpen(false)}
         >
           Batal
         </Button>
-        <Button type="submit" variant="primary" size="sm" pill loading={loading}>
+        <Button type="submit" variant="primary" size="sm" loading={loading}>
           Kirim Ulasan
         </Button>
       </div>

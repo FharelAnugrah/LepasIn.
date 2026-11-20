@@ -6,7 +6,7 @@ import EditProductForm from './EditProductForm';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Edit Barang — Penjual LepasIn',
+  title: 'Edit Barang | Penjual LepasIn',
 };
 
 export default async function EditProductPage({ params }) {
@@ -44,12 +44,12 @@ export default async function EditProductPage({ params }) {
   const images = imagesRes.rows;
 
   const catRes = await query(`
-    SELECT id, name FROM categories 
-    ORDER BY 
-      CASE 
-        WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1 
-        ELSE 0 
-      END ASC, 
+    SELECT id, name FROM categories
+    ORDER BY
+      CASE
+        WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1
+        ELSE 0
+      END ASC,
       id ASC
   `);
   const categories = catRes.rows;

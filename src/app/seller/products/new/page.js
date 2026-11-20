@@ -5,19 +5,19 @@ import NewProductForm from './NewProductForm';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Tambah Barang Baru — Penjual LepasIn',
+  title: 'Tambah Produk | Penjual LepasIn',
 };
 
 export default async function NewProductPage() {
   await requireApprovedSeller('/seller/products/new');
 
   const catRes = await query(`
-    SELECT id, name FROM categories 
-    ORDER BY 
-      CASE 
-        WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1 
-        ELSE 0 
-      END ASC, 
+    SELECT id, name FROM categories
+    ORDER BY
+      CASE
+        WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1
+        ELSE 0
+      END ASC,
       id ASC
   `);
   const categories = catRes.rows;

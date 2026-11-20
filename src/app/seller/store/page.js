@@ -5,7 +5,7 @@ import StoreSettingsClient from './StoreSettingsClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Pengaturan Toko — Penjual LepasIn',
+  title: 'Pengaturan Toko | Penjual LepasIn',
 };
 
 export default async function SellerStorePage() {

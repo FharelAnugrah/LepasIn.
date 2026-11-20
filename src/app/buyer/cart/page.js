@@ -8,7 +8,7 @@ import CartManager from './CartManager';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Keranjang Belanja — LepasIn',
+  title: 'Keranjang Belanja | LepasIn',
 };
 
 export default async function BuyerCartPage() {
@@ -37,7 +37,11 @@ export default async function BuyerCartPage() {
     <div className="min-h-screen flex flex-col bg-canvas text-ink">
       <Navbar user={buyer} cartCount={cartCount} showSearchBar={false} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 lg:px-8 py-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-7 outline-none"
+      >
         <CartManager initialItems={items} />
       </main>
 

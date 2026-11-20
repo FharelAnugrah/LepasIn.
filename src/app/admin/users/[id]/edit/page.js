@@ -6,7 +6,7 @@ import EditUserClient from './EditUserClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Edit Pengguna — Admin LepasIn',
+  title: 'Edit Pengguna | Admin LepasIn',
 };
 
 export default async function AdminEditUserPage({ params }) {

@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Check, Truck, XCircle, Clock, MessageCircle } from 'lucide-react';
+import { Check, Truck, Handshake, XCircle, Clock, MessageCircle } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useToast } from '@/components/ui/Toast';
@@ -31,7 +30,7 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
         return;
       }
 
-      toast.success(data.message || 'Status berhasil diperbarui!');
+      toast.success(data.message || 'Status berhasil diperbarui.');
       setCancelModalOpen(false);
       setLoading(false);
       router.refresh();
@@ -43,16 +42,14 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 pt-2">
+    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border-subtle">
       <Button
         href={`/chat?order_id=${orderId}`}
         size="sm"
         variant="secondary"
-        pill
-        className="border border-line shadow-xs"
+        icon={MessageCircle}
       >
-        <MessageCircle className="w-3.5 h-3.5 mr-1 text-primary" />
-        <span>Chat Pembeli</span>
+        Chat Pembeli
       </Button>
 
       {currentStatus === 'pending_payment' && (
@@ -60,22 +57,20 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
           <Button
             size="sm"
             variant="primary"
-            pill
             loading={loading}
+            icon={Check}
             onClick={() => handleUpdateStatus('processing')}
           >
-            <Check className="w-3.5 h-3.5 mr-1" />
-            <span>Terima & Proses</span>
+            Terima & Proses
           </Button>
           <Button
             size="sm"
             variant="danger"
-            pill
             disabled={loading}
+            icon={XCircle}
             onClick={() => setCancelModalOpen(true)}
           >
-            <XCircle className="w-3.5 h-3.5 mr-1" />
-            <span>Tolak Pesanan</span>
+            Tolak Pesanan
           </Button>
         </>
       )}
@@ -85,35 +80,31 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
           <Button
             size="sm"
             variant="primary"
-            pill
             loading={loading}
+            icon={deliveryMethod === 'meetup' ? Handshake : Truck}
             onClick={() => handleUpdateStatus('shipped')}
           >
-            <Truck className="w-3.5 h-3.5 mr-1" />
-            <span>
-              {deliveryMethod === 'meetup' ? 'Siap Ketemuan di Kampus' : 'Kirim Barang'}
-            </span>
+            {deliveryMethod === 'meetup' ? 'Siap Ketemuan di Kampus' : 'Kirim Barang'}
           </Button>
           <Button
             size="sm"
             variant="danger"
-            pill
             disabled={loading}
+            icon={XCircle}
             onClick={() => setCancelModalOpen(true)}
           >
-            <XCircle className="w-3.5 h-3.5 mr-1" />
-            <span>Batalkan</span>
+            Batalkan
           </Button>
         </>
       )}
 
       {currentStatus === 'shipped' && (
-        <div className="flex items-center gap-1.5 text-xs text-ink-soft bg-surface px-3 py-1.5 rounded-lg border border-line/60">
-          <Clock className="w-3.5 h-3.5 text-primary shrink-0" />
+        <div className="flex items-center gap-2 text-xs text-navy-900 bg-info-bg px-3 py-2 rounded-lg border border-brand-blue-border font-medium">
+          <Clock className="w-4 h-4 text-brand-blue shrink-0" aria-hidden="true" />
           <span>
             {deliveryMethod === 'meetup'
-              ? 'Menunggu pembeli mengonfirmasi penerimaan saat COD di kampus'
-              : 'Menunggu pembeli mengonfirmasi pesanan telah sampai dan diterima'}
+              ? 'Menunggu pembeli menekan Pesanan Diterima saat COD di kampus'
+              : 'Menunggu pembeli menekan Pesanan Diterima setelah paket sampai'}
           </span>
         </div>
       )}
@@ -123,10 +114,11 @@ export default function SellerOrderActions({ orderId, currentStatus, deliveryMet
         onClose={() => setCancelModalOpen(false)}
         onConfirm={() => handleUpdateStatus('cancelled')}
         title="Batalkan Pesanan Ini?"
-        message="Pesanan akan dibatalkan dan stok produk akan secara otomatis dikembalikan ke etalase toko."
+        message="Pesanan akan dibatalkan dan stok produk akan dikembalikan ke etalase tokomu."
         confirmText="Ya, Batalkan Pesanan"
         cancelText="Kembali"
-        danger
+        confirmVariant="danger"
+        type="danger"
         loading={loading}
       />
     </div>

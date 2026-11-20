@@ -11,10 +11,9 @@ import {
   GraduationCap,
   Package,
   Truck,
-  Users,
+  Handshake,
   ArrowLeft,
   ShieldCheck,
-  CheckCircle2,
   CreditCard,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -38,17 +37,26 @@ function CheckoutItemImage({ src, alt }) {
     );
   }
   return (
-    <div className="w-full h-full flex items-center justify-center text-ink-soft">
-      <Package className="w-6 h-6 opacity-40" />
+    <div className="w-full h-full flex items-center justify-center text-ink-muted">
+      <Package className="w-6 h-6" aria-hidden="true" />
     </div>
   );
 }
 
-export default function CheckoutClient({ items, defaultAddress, user }) {
+function formatAddressString(addr) {
+  if (!addr) return '';
+  return `${addr.address_line}, ${addr.city}${addr.postal_code ? ` ${addr.postal_code}` : ''}`;
+}
+
+export default function CheckoutClient({
+  items,
+  defaultAddress,
+  savedAddresses = [],
+  user,
+}) {
   const router = useRouter();
   const toast = useToast();
 
-  // Kelompokkan item per toko
   const groupedByStore = items.reduce((acc, item) => {
     const storeId = item.store_id;
     if (!acc[storeId]) {
@@ -67,19 +75,14 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
 
   const storeGroups = Object.values(groupedByStore);
 
-  // Default address string format
-  const initialAddressStr = defaultAddress
-    ? `${defaultAddress.address_line}, ${defaultAddress.city}${
-        defaultAddress.postal_code ? ' ' + defaultAddress.postal_code : ''
-      }`
-    : '';
+  const initialAddressStr = formatAddressString(defaultAddress);
 
-  // State form untuk tiap toko
   const [storeForms, setStoreForms] = useState(() => {
     const initial = {};
     storeGroups.forEach((g) => {
       initial[g.storeId] = {
         delivery_method: 'meetup',
+        selected_address_id: defaultAddress?.id || '',
         shipping_recipient: defaultAddress?.recipient_name || user?.name || '',
         shipping_phone: defaultAddress?.phone || user?.phone || '',
         shipping_address: initialAddressStr,
@@ -102,14 +105,49 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
     }));
   };
 
-  // Grand total
+  const handleSavedAddressPick = (storeId, addrId) => {
+    if (!addrId) {
+      setStoreForms((prev) => ({
+        ...prev,
+        [storeId]: {
+          ...prev[storeId],
+          selected_address_id: '',
+          shipping_recipient: user?.name || '',
+          shipping_phone: user?.phone || '',
+          shipping_address: '',
+        },
+      }));
+      return;
+    }
+
+    const picked = savedAddresses.find((a) => String(a.id) === String(addrId));
+    if (picked) {
+      setStoreForms((prev) => ({
+        ...prev,
+        [storeId]: {
+          ...prev[storeId],
+          selected_address_id: String(picked.id),
+          shipping_recipient: picked.recipient_name,
+          shipping_phone: picked.phone,
+          shipping_address: formatAddressString(picked),
+        },
+      }));
+    }
+  };
+
   const grandTotal = items.reduce((sum, it) => sum + it.quantity * it.price, 0);
+
+  const handleFormKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target?.tagName === 'INPUT' && e.target.type !== 'radio') {
+      e.preventDefault();
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setFormErrors({});
 
-    // Validasi lokal sebelum kirim
     const errors = {};
     const ordersPayload = [];
 
@@ -169,10 +207,10 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
       const codOrder = createdOrders.find((o) => o.delivery_method === 'meetup');
 
       if (codOrder) {
-        toast.success('Pesanan COD berhasil dibuat! Mengalihkan ke ruang chat untuk koordinasi titik temu...');
+        toast.success('Pesanan COD berhasil dibuat. Mengalihkan ke ruang koordinasi...');
         router.push(`/chat?order_id=${codOrder.id}`);
       } else {
-        toast.success('Pembayaran berhasil! Pesananmu sedang diproses oleh penjual 🎉');
+        toast.success('Pesanan berhasil dibuat dan sedang diproses penjual.');
         router.push('/buyer/orders');
       }
       router.refresh();
@@ -185,29 +223,27 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Tombol Kembali ke Keranjang */}
       <div>
         <Link
           href="/buyer/cart"
-          className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-ink-soft hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-ink-secondary hover:text-brand-blue transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           <span>Kembali ke Keranjang</span>
         </Link>
       </div>
 
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-ink tracking-tight flex items-center gap-2">
-          <ShoppingBag className="w-7 h-7 text-primary" />
-          <span>Konfirmasi Pesanan</span>
+        <h1 className="text-2xl font-bold text-ink tracking-tight flex items-center gap-2">
+          <ShoppingBag className="w-6 h-6 text-brand-blue" aria-hidden="true" />
+          <span>Checkout dan Konfirmasi Pesanan</span>
         </h1>
-        <p className="text-xs md:text-sm text-ink-soft">
-          Pilih metode pengambilan atau pengiriman barang untuk masing-masing toko sekampus.
+        <p className="text-sm text-ink-muted">
+          Pilih metode COD di kampus atau pengiriman ke alamat kost untuk setiap toko.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Kolom Kiri: Form Pesanan per Toko (8 kolom) */}
+      <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 flex flex-col gap-6">
           {storeGroups.map((group) => {
             const form = storeForms[group.storeId];
@@ -217,30 +253,30 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
             );
 
             return (
-              <div
+              <section
                 key={group.storeId}
-                className="bg-canvas border border-line rounded-card p-5 md:p-6 shadow-card flex flex-col gap-5"
+                className="surface-3d rounded-2xl p-5 md:p-6 flex flex-col gap-5"
               >
                 {/* Header Toko */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary-50 text-primary flex items-center justify-center font-bold">
-                      <Store className="w-4 h-4" />
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-brand-blue-soft text-brand-blue flex items-center justify-center">
+                      <Store className="w-4 h-4" aria-hidden="true" />
                     </div>
                     <div>
                       <h2 className="text-sm md:text-base font-bold text-ink">
                         {group.storeName}
                       </h2>
-                      <div className="flex items-center gap-2 text-xs text-ink-soft mt-0.5">
-                        <span className="flex items-center gap-1 font-semibold text-pine">
-                          <GraduationCap className="w-3.5 h-3.5" />
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted mt-0.5">
+                        <span className="inline-flex items-center gap-1 font-semibold text-brand-blue">
+                          <GraduationCap className="w-3.5 h-3.5" aria-hidden="true" />
                           <span>{group.campusShortName}</span>
                         </span>
                         {group.storeLocation && (
                           <>
-                            <span className="text-line">·</span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
+                            <span className="text-border-subtle" aria-hidden="true">|</span>
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
                               <span>{group.storeLocation}</span>
                             </span>
                           </>
@@ -250,21 +286,21 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
                   </div>
                 </div>
 
-                {/* List Barang dari Toko Ini */}
-                <div className="divide-y divide-line/60">
+                {/* List Barang */}
+                <div className="divide-y divide-border-subtle">
                   {group.items.map((it) => (
                     <div key={it.cart_item_id} className="py-3 flex items-center gap-3 sm:gap-4">
-                      <div className="relative w-14 h-14 rounded-xl bg-surface border border-line/60 overflow-hidden shrink-0">
+                      <div className="relative w-14 h-14 rounded-lg bg-surface-muted border border-border-subtle overflow-hidden shrink-0">
                         <CheckoutItemImage src={it.image_url} alt={it.name} />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-sans text-xs md:text-sm font-semibold text-ink truncate">
+                        <h3 className="text-xs md:text-sm font-semibold text-ink truncate">
                           {it.name}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
                           <ConditionBadge condition={it.condition} />
-                          <span className="text-xs text-ink-soft tabular-nums">
+                          <span className="text-xs text-ink-muted tabular-nums">
                             {formatRupiah(it.price)} x {it.quantity}
                           </span>
                         </div>
@@ -279,64 +315,107 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
                   ))}
                 </div>
 
-                {/* Pemilihan Metode Penyerahan Barang */}
-                <div className="pt-3 border-t border-line flex flex-col gap-3">
-                  <label className="text-xs font-bold text-ink uppercase tracking-wider">
-                    Pilih Metode Pengambilan / Pengiriman
-                  </label>
+                {/* Checkout Method Selector (design2.md 5.5: Handshake vs Truck, accessible radio cards) */}
+                <fieldset className="pt-4 border-t border-border-subtle flex flex-col gap-3">
+                  <legend className="text-xs font-bold text-ink-secondary uppercase tracking-wider mb-1">
+                    Metode Penyerahan Barang
+                  </legend>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Opsi 1: COD Meetup */}
-                    <div
-                      onClick={() => handleFieldChange(group.storeId, 'delivery_method', 'meetup')}
-                      className={`p-3.5 rounded-xl border-2 cursor-pointer transition flex flex-col gap-1.5 ${
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <label
+                      className={`p-4 rounded-2xl transition-all flex flex-col gap-1.5 ${
                         form.delivery_method === 'meetup'
-                          ? 'border-primary bg-primary-50/50'
-                          : 'border-line/70 hover:border-line bg-surface/50'
+                          ? 'card-3d-selected -translate-y-0.5'
+                          : 'card-3d'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs md:text-sm font-bold text-ink flex items-center gap-2">
-                          <Users className="w-4 h-4 text-primary" />
-                          <span>COD Ketemuan di Kampus</span>
+                      <input
+                        type="radio"
+                        name={`delivery_method_${group.storeId}`}
+                        value="meetup"
+                        checked={form.delivery_method === 'meetup'}
+                        onChange={() => handleFieldChange(group.storeId, 'delivery_method', 'meetup')}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs md:text-sm font-bold text-ink inline-flex items-center gap-2">
+                          <Handshake className="w-4 h-4 text-brand-blue shrink-0" aria-hidden="true" />
+                          <span>COD / Ketemuan di Kampus</span>
                         </span>
-                        <span className="text-[10px] font-bold text-pine uppercase bg-pine-50 px-2 py-0.5 rounded-full">
-                          Gratis
+                        <span className="text-[11px] font-semibold text-success-text bg-success-bg px-2 py-0.5 rounded-md">
+                          Bebas Ongkir
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-soft leading-relaxed">
-                        Atur tempat ketemuan langsung dengan penjual di area kampus atau sekitar kost.
+                      <p className="text-xs text-ink-secondary leading-relaxed">
+                        Ketemuan langsung di titik aman sekitar kampus, bayar di tempat setelah cek barang.
                       </p>
-                    </div>
+                    </label>
 
-                    {/* Opsi 2: Delivery */}
-                    <div
-                      onClick={() => handleFieldChange(group.storeId, 'delivery_method', 'delivery')}
-                      className={`p-3.5 rounded-xl border-2 cursor-pointer transition flex flex-col gap-1.5 ${
+                    <label
+                      className={`p-4 rounded-2xl transition-all flex flex-col gap-1.5 ${
                         form.delivery_method === 'delivery'
-                          ? 'border-primary bg-primary-50/50'
-                          : 'border-line/70 hover:border-line bg-surface/50'
+                          ? 'card-3d-selected -translate-y-0.5'
+                          : 'card-3d'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs md:text-sm font-bold text-ink flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-primary" />
-                          <span>Kirim ke Alamat Kost</span>
+                      <input
+                        type="radio"
+                        name={`delivery_method_${group.storeId}`}
+                        value="delivery"
+                        checked={form.delivery_method === 'delivery'}
+                        onChange={() => handleFieldChange(group.storeId, 'delivery_method', 'delivery')}
+                        className="sr-only"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs md:text-sm font-bold text-ink inline-flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-brand-blue shrink-0" aria-hidden="true" />
+                          <span>Dikirim ke Alamat</span>
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-soft leading-relaxed">
-                        Penjual mengirimkan barang langsung ke kamar kost atau rumahmu.
+                      <p className="text-xs text-ink-secondary leading-relaxed">
+                        Gunakan alamat kost tersimpan atau masukkan alamat pengiriman baru.
                       </p>
-                    </div>
+                    </label>
                   </div>
 
-                  {/* Formulir Alamat Kirim jika delivery dipilih */}
                   {form.delivery_method === 'delivery' && (
-                    <div className="mt-3 p-4 rounded-xl bg-surface border border-line/70 flex flex-col gap-3 animate-in fade-in duration-150">
-                      <h4 className="text-xs font-bold text-ink flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-primary" />
-                        <span>Detail Alamat Pengiriman</span>
-                      </h4>
+                    <div className="mt-2 p-4 rounded-xl bg-canvas border border-border-subtle flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-xs font-bold text-ink flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />
+                          <span>Alamat Pengiriman Kost</span>
+                        </h3>
+                        <Link
+                          href="/buyer/addresses"
+                          className="text-xs font-semibold text-brand-blue hover:underline"
+                        >
+                          Kelola Alamat
+                        </Link>
+                      </div>
+
+                      {savedAddresses.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <label
+                            htmlFor={`saved-addr-${group.storeId}`}
+                            className="text-xs font-semibold text-ink-secondary"
+                          >
+                            Pilih dari Alamat Tersimpan
+                          </label>
+                          <select
+                            id={`saved-addr-${group.storeId}`}
+                            value={form.selected_address_id}
+                            onChange={(e) => handleSavedAddressPick(group.storeId, e.target.value)}
+                            className="w-full h-11 px-3 rounded-lg bg-surface border border-border-subtle text-sm text-ink outline-none focus:border-brand-blue"
+                          >
+                            {savedAddresses.map((addr) => (
+                              <option key={addr.id} value={addr.id}>
+                                {addr.label} - {addr.recipient_name} ({addr.city})
+                              </option>
+                            ))}
+                            <option value="">Isi alamat baru secara manual</option>
+                          </select>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Input
@@ -363,7 +442,7 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
 
                       <Textarea
                         label="Alamat Lengkap Kost"
-                        placeholder="Contoh: Kost Griya Putri Kamar 12, Jl. Perintis Kemerdekaan KM 10, Tamalanrea, Makassar"
+                        placeholder="Contoh: Kost Griya Putri Kamar 12, Jl. Perintis Kemerdekaan KM 10, Tamalanrea"
                         rows={2}
                         value={form.shipping_address}
                         onChange={(e) =>
@@ -375,72 +454,61 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
                     </div>
                   )}
 
-                  {/* Input Catatan untuk Penjual */}
-                  <div className="mt-2">
+                  <div className="mt-1">
                     <Input
                       label="Catatan untuk Penjual (Opsional)"
-                      placeholder="Contoh: Tolong bungkus rapat / Ketemuan jam 14:00 di Kantin"
+                      placeholder="Contoh: Ketemuan jam 14.00 di Pintu 1 / Tolong bungkus rapi"
                       value={form.note}
                       onChange={(e) => handleFieldChange(group.storeId, 'note', e.target.value)}
                     />
                   </div>
-                </div>
+                </fieldset>
 
-                {/* Subtotal Toko */}
-                <div className="flex items-center justify-between pt-3 border-t border-line/60 text-xs text-ink-soft">
-                  <span>Subtotal Toko:</span>
+                <div className="flex items-center justify-between pt-3 border-t border-border-subtle text-xs text-ink-muted">
+                  <span>Subtotal Toko</span>
                   <span className="font-bold tabular-nums text-ink text-sm">
                     {formatRupiah(storeSubtotal)}
                   </span>
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
 
-        {/* Kolom Kanan: Ringkasan & Konfirmasi (4 kolom) */}
-        <div className="lg:col-span-4 bg-canvas border border-line rounded-card p-6 shadow-card sticky top-20 flex flex-col gap-5">
-          <h2 className="text-base font-bold text-ink border-b border-line pb-3">
+        <aside className="lg:col-span-4 surface-3d rounded-2xl p-6 flex flex-col gap-5 sticky-sidebar-panel">
+          <h2 className="text-base font-bold text-ink border-b border-border-subtle pb-3">
             Ringkasan Pesanan
           </h2>
 
-          <div className="flex flex-col gap-2.5 text-xs md:text-sm">
-            <div className="flex items-center justify-between text-ink-soft">
+          <div className="flex flex-col gap-2.5 text-sm">
+            <div className="flex items-center justify-between text-ink-secondary">
               <span>Total Barang</span>
-              <span className="font-bold text-ink tabular-nums">{items.length} macam barang</span>
+              <span className="font-semibold text-ink tabular-nums">{items.length} jenis</span>
             </div>
-            <div className="flex items-center justify-between text-ink-soft">
+            <div className="flex items-center justify-between text-ink-secondary">
               <span>Jumlah Toko</span>
-              <span className="font-bold text-ink tabular-nums">{storeGroups.length} toko</span>
+              <span className="font-semibold text-ink tabular-nums">{storeGroups.length} toko</span>
             </div>
-            <div className="flex items-center justify-between text-base font-bold text-ink pt-3 border-t border-line">
-              <span className="font-display">Total Tagihan</span>
-              <span className="font-display text-primary text-xl font-bold tabular-nums tracking-tight">
+            <div className="flex items-center justify-between text-base font-bold text-ink pt-3 border-t border-border-subtle">
+              <span>Total Tagihan</span>
+              <span className="text-brand-blue text-xl font-bold tabular-nums tracking-tight">
                 {formatRupiah(grandTotal)}
               </span>
             </div>
           </div>
 
-          {/* Banner Informasi Metode Pembayaran */}
           {Object.values(storeForms).every((f) => f.delivery_method === 'delivery') ? (
-            <div className="p-3.5 rounded-xl bg-pine-50 text-pine text-xs leading-relaxed flex items-start gap-2.5 font-medium">
-              <CreditCard className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-lg bg-info-bg border border-brand-blue-border text-navy-900 text-xs leading-relaxed flex items-start gap-2 font-medium">
+              <CreditCard className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" aria-hidden="true" />
               <span>
-                Kirim ke alamat kost: Pembayaran dilakukan langsung saat checkout dan pesanan akan langsung diproses oleh penjual.
-              </span>
-            </div>
-          ) : Object.values(storeForms).every((f) => f.delivery_method === 'meetup') ? (
-            <div className="p-3.5 rounded-xl bg-primary-50 text-primary text-xs leading-relaxed flex items-start gap-2.5 font-medium">
-              <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
-              <span>
-                Metode COD Kampus: Bayar langsung saat ketemuan di kampus. Kamu akan langsung dialihkan ke ruang chat untuk koordinasi.
+                Kirim ke alamat: pesanan langsung masuk tahap diproses penjual setelah checkout.
               </span>
             </div>
           ) : (
-            <div className="p-3.5 rounded-xl bg-primary-50 text-primary text-xs leading-relaxed flex items-start gap-2.5 font-medium">
-              <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-lg bg-info-bg border border-brand-blue-border text-navy-900 text-xs leading-relaxed flex items-start gap-2 font-medium">
+              <ShieldCheck className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" aria-hidden="true" />
               <span>
-                Terdapat pesanan COD dan Kirim ke Kost. Pesanan kost langsung dibayar saat checkout, dan pesanan COD dibayar saat ketemuan di kampus.
+                Metode COD Kampus: bayar langsung di tempat setelah cek kondisi barang bersama penjual.
               </span>
             </div>
           )}
@@ -449,25 +517,14 @@ export default function CheckoutClient({ items, defaultAddress, user }) {
             type="submit"
             variant="primary"
             size="lg"
-            pill
             loading={loading}
-            className="w-full font-bold"
+            className="w-full rounded-xl"
           >
-            {Object.values(storeForms).every((f) => f.delivery_method === 'delivery') ? (
-              <span className="flex items-center justify-center gap-2">
-                <CreditCard className="w-4 h-4 text-white" />
-                <span>Bayar Sekarang ({formatRupiah(grandTotal)})</span>
-              </span>
-            ) : Object.values(storeForms).every((f) => f.delivery_method === 'meetup') ? (
-              <span>Konfirmasi & Buat Pesanan</span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <CreditCard className="w-4 h-4 text-white" />
-                <span>Bayar Sekarang & Buat Pesanan</span>
-              </span>
-            )}
+            {Object.values(storeForms).every((f) => f.delivery_method === 'delivery')
+              ? `Bayar Sekarang (${formatRupiah(grandTotal)})`
+              : 'Konfirmasi dan Buat Pesanan'}
           </Button>
-        </div>
+        </aside>
       </form>
     </div>
   );

@@ -5,7 +5,7 @@ import CampusesManager from './CampusesManager';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Daftar Perguruan Tinggi — Admin LepasIn',
+  title: 'Daftar Perguruan Tinggi | Admin LepasIn',
 };
 
 export default async function AdminCampusesPage() {

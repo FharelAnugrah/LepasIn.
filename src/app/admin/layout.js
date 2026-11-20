@@ -5,7 +5,7 @@ import AdminSidebar from './AdminSidebar';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Dashboard Admin — LepasIn',
+  title: 'Dashboard Admin | LepasIn',
   description: 'Panel moderasi dan manajemen nasional LepasIn.',
 };
 
@@ -26,7 +26,13 @@ export default async function AdminLayout({ children }) {
     <div className="min-h-screen bg-canvas text-ink flex flex-col lg:flex-row">
       <AdminSidebar user={admin} pendingCount={pendingCount} />
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
-        <main className="p-3.5 sm:p-5 md:p-6 lg:p-8 max-w-6xl w-full mx-auto">{children}</main>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 bg-canvas p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto outline-none"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -50,7 +50,7 @@ export default function ChatClient({
     return null;
   });
 
-  const [activeChat, setActiveChat] = useState(null); // { type, order/store, product, items, messages, partner, currentUser }
+  const [activeChat, setActiveChat] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [loadingList, setLoadingList] = useState(true);
   const [loadingChat, setLoadingChat] = useState(false);
@@ -62,14 +62,12 @@ export default function ChatClient({
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
 
-  // Scroll otomatis ke bawah chat
   const scrollToBottom = (behavior = 'smooth') => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior });
     }
   };
 
-  // Bangun URL endpoint API untuk target percakapan aktif
   const getChatQueryUrl = useCallback((target) => {
     if (!target) return null;
     if (target.type === 'order' && target.orderId) {
@@ -84,7 +82,6 @@ export default function ChatClient({
     return null;
   }, []);
 
-  // Muat daftar percakapan
   const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch('/api/chat');
@@ -99,7 +96,6 @@ export default function ChatClient({
     }
   }, []);
 
-  // Polling chat aktif secara silent untuk pembaruan realtime
   const pollActiveChat = useCallback(
     async (target) => {
       const url = getChatQueryUrl(target);
@@ -125,7 +121,6 @@ export default function ChatClient({
     [getChatQueryUrl]
   );
 
-  // Sinkronisasi target saat prop navigasi luar berubah tanpa cascading render
   const [prevNavParams, setPrevNavParams] = useState({
     orderId: initialOrderId,
     storeId: initialStoreId,
@@ -154,7 +149,6 @@ export default function ChatClient({
     }
   }
 
-  // Inisialisasi awal daftar percakapan
   useEffect(() => {
     let ignore = false;
     async function init() {
@@ -166,7 +160,6 @@ export default function ChatClient({
             const list = data.conversations || [];
             setConversations(list);
 
-            // Jika belum ada activeTarget awal dan terdapat percakapan, pilih percakapan pertama
             setActiveTarget((curr) => {
               if (curr) return curr;
               if (list.length > 0) {
@@ -200,7 +193,6 @@ export default function ChatClient({
     };
   }, []);
 
-  // Muat data ruang chat saat activeTarget berganti
   useEffect(() => {
     const url = getChatQueryUrl(activeTarget);
     if (!url) return;
@@ -237,7 +229,6 @@ export default function ChatClient({
     };
   }, [activeTarget, getChatQueryUrl]);
 
-  // Polling chat aktif setiap 3.5 detik untuk pembaruan realtime
   useEffect(() => {
     if (!activeTarget) return;
     const interval = setInterval(() => {
@@ -247,13 +238,11 @@ export default function ChatClient({
     return () => clearInterval(interval);
   }, [activeTarget, pollActiveChat]);
 
-  // Kirim pesan baru
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     const trimmed = messageText.trim();
     if (!trimmed || !activeTarget || sending) return;
 
-    // Cegah seller mengirim pesan tanpa pembeli di inquiry
     if (activeTarget.type === 'inquiry' && !activeChat?.currentUser?.isBuyer && !activeChat?.partner?.id) {
       toast.error('Belum ada pembeli yang menghubungi toko ini untuk dibalas.');
       return;
@@ -284,12 +273,11 @@ export default function ChatClient({
 
       if (!res.ok) {
         toast.error(data.error || 'Gagal mengirim pesan');
-        setMessageText(trimmed); // kembalikan teks jika gagal
+        setMessageText(trimmed);
         setSending(false);
         return;
       }
 
-      // Tambahkan pesan secara instan ke state obrolan
       if (data.message) {
         setActiveChat((prev) => ({
           ...prev,
@@ -298,7 +286,6 @@ export default function ChatClient({
         setTimeout(() => scrollToBottom('smooth'), 50);
       }
 
-      // Perbarui daftar percakapan di bilah kiri
       fetchConversations();
     } catch (err) {
       console.error('Send message error:', err);
@@ -309,7 +296,6 @@ export default function ChatClient({
     }
   };
 
-  // Pilih percakapan dari daftar samping
   const handleSelectConversation = (conv) => {
     if (conv.order_id) {
       if (activeTarget?.type !== 'order' || activeTarget?.orderId !== conv.order_id) {
@@ -341,12 +327,10 @@ export default function ChatClient({
     }
   };
 
-  // Kirim teks cepat (quick reply)
   const handleSendQuickReply = (text) => {
     setMessageText(text);
   };
 
-  // Bangun daftar percakapan yang ditampilkan (termasuk percakapan baru yang belum tersimpan di DB)
   const displayConversations = [...conversations];
   if (activeTarget?.type === 'inquiry') {
     const alreadyExists = conversations.some(
@@ -392,7 +376,6 @@ export default function ChatClient({
     }
   }
 
-  // Filter daftar percakapan berdasarkan nama toko, pembeli, produk, atau kode
   const filteredConversations = displayConversations.filter((c) => {
     const q = searchFilter.toLowerCase();
     return (
@@ -405,16 +388,13 @@ export default function ChatClient({
     );
   });
 
-  // Template Pesan Cepat: adaptif antara Tanya Produk Pra-Order & Koordinasi Pesanan
   const getObjectiveQuickReplies = () => {
     if (!activeChat) return [];
 
-    // Jika seller berada di inquiry tanpa ada pembeli, jangan tampilkan saran pesan cepat
     if (!activeChat.currentUser?.isBuyer && !activeChat.partner?.id) {
       return [];
     }
 
-    // Jika ini adalah Tanya Produk (Pra-Order)
     if (activeChat.type === 'inquiry' || activeChat.product) {
       const isBuyer = activeChat.currentUser?.isBuyer;
       if (isBuyer) {
@@ -426,15 +406,14 @@ export default function ChatClient({
         ];
       } else {
         return [
-          'Halo kak, barangnya masih ada ya!',
-          'Harga sudah pas/nett ya kak',
-          'Bisa COD di sekitar kampus ya',
-          'Kondisi barang sesuai deskripsi',
+          'Halo kak, barangnya masih ada ya.',
+          'Harga sudah pas/nett ya kak.',
+          'Bisa COD di sekitar kampus ya.',
+          'Kondisi barang sesuai deskripsi.',
         ];
       }
     }
 
-    // Jika ini adalah Percakapan Pesanan yang sudah dibuat
     if (!activeChat.order) return [];
     const isMeetup = activeChat.order.delivery_method === 'meetup';
     const isBuyer = activeChat.currentUser?.isBuyer;
@@ -446,70 +425,72 @@ export default function ChatClient({
           'Siap COD hari ini?',
           campus ? `Ketemuan di Perpustakaan (${campus})?` : 'Ketemuan di Perpustakaan Pusat?',
           campus ? `Ketemuan di Gerbang Utama (${campus})?` : 'Ketemuan di Pintu Gerbang Utama?',
-          'Saya sudah di titik temu COD',
+          'Saya sudah di titik temu COD.',
         ];
       } else {
         return [
-          'Barang siap untuk COD hari ini',
+          'Barang siap untuk COD hari ini.',
           'Bisa ketemuan jam berapa?',
-          campus ? `Standby di Perpustakaan (${campus})` : 'Standby di Perpustakaan Pusat',
-          'Saya sudah di titik temu COD',
+          campus ? `Standby di Perpustakaan (${campus}).` : 'Standby di Perpustakaan Pusat.',
+          'Saya sudah di titik temu COD.',
         ];
       }
     } else {
       if (isBuyer) {
         return [
           'Kapan paket dikirim ke kost?',
-          'Sudah lunas saat checkout ya kak',
-          'Apakah ada info kurir/resi?',
-          'Paket sudah tiba, terima kasih',
+          'Sudah dibayar saat checkout ya kak.',
+          'Apakah ada info pengiriman?',
+          'Paket sudah tiba, terima kasih.',
         ];
       } else {
         return [
-          'Pesanan sedang disiapkan',
-          'Paket segera dikirim ke kost',
-          'Paket sudah diserahkan ke kurir',
-          'Mohon konfirmasi jika barang tiba',
+          'Pesanan sedang disiapkan.',
+          'Paket segera dikirim ke kost.',
+          'Paket sudah dalam perjalanan.',
+          'Mohon konfirmasi jika barang tiba.',
         ];
       }
     }
   };
 
   return (
-    <div className="w-full h-full min-h-0 bg-canvas sm:border border-line sm:rounded-2xl shadow-card flex flex-col md:flex-row overflow-hidden">
-      {/* Kolom Kiri: Daftar Percakapan (Pesanan + Tanya Produk) */}
+    <div className="w-full h-full min-h-0 surface-3d sm:rounded-2xl flex flex-col md:flex-row overflow-hidden">
+      {/* Kolom Kiri: Daftar Percakapan */}
       <div
-        className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-line bg-surface/40 h-full overflow-hidden ${
+        className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-border-subtle bg-canvas h-full overflow-hidden ${
           activeTarget ? 'hidden md:flex' : 'flex'
         }`}
       >
-        {/* Header List */}
-        <div className="p-4 border-b border-line bg-canvas shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-bold text-ink flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-primary" />
-              <span>Pesan & Chat</span>
-            </h2>
-            <span className="text-[11px] font-semibold bg-primary-50 text-primary px-2 py-0.5 rounded-full">
-              {displayConversations.length} Percakapan
+        <div className="p-4 border-b border-border-subtle bg-surface shrink-0">
+          <div className="flex items-center justify-between mb-2.5">
+            <h1 className="text-base font-bold text-ink flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-brand-blue" aria-hidden="true" />
+              <span>Pesan dan Koordinasi</span>
+            </h1>
+            <span className="text-xs font-semibold bg-brand-blue-soft text-brand-blue px-2 py-0.5 rounded-md tabular-nums">
+              {displayConversations.length}
             </span>
           </div>
+          <label htmlFor="chat-search-input" className="sr-only">
+            Cari percakapan
+          </label>
           <input
+            id="chat-search-input"
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             placeholder="Cari toko, barang, atau pembeli..."
-            className="w-full text-base md:text-sm px-3 py-2 bg-surface rounded-xl border border-line focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full h-10 text-base md:text-sm px-3.5 bg-surface-muted text-ink placeholder:text-ink-subtle rounded-lg border border-transparent focus:bg-surface focus:border-brand-blue focus:ring-2 focus:ring-brand-blue-soft outline-none transition-colors"
           />
         </div>
 
-        {/* List Percakapan */}
-        <div className="flex-1 overflow-y-auto divide-y divide-line/40">
+        <div className="flex-1 overflow-y-auto divide-y divide-border-subtle">
           {loadingList ? (
-            <div className="p-8 text-center text-xs text-ink-soft">Memuat percakapan...</div>
+            <div className="p-8 text-center text-xs text-ink-muted">Memuat percakapan...</div>
           ) : filteredConversations.length === 0 ? (
-            <div className="p-8 text-center text-xs text-ink-soft flex flex-col items-center gap-2">
-              <MessageCircle className="w-8 h-8 text-ink-soft/40" />
+            <div className="p-8 text-center text-xs text-ink-muted flex flex-col items-center gap-2">
+              <MessageCircle className="w-8 h-8 text-ink-muted" aria-hidden="true" />
               <span>Tidak ada percakapan ditemukan</span>
             </div>
           ) : (
@@ -521,9 +502,6 @@ export default function ChatClient({
                   activeTarget?.storeId === c.store_id &&
                   (!activeTarget.buyerId || activeTarget.buyerId === c.buyer_id);
 
-              // Tentukan apakah user bertindak sebagai pembeli dalam obrolan spesifik ini:
-              // Jika user memiliki store_id dan c.store_id sama dengan user.store_id, maka user adalah penjual.
-              // Jika bukan, atau jika c.buyer_id === user.id, maka user bertindak sebagai pembeli.
               const isUserTheBuyer =
                 user.store_id && user.store_id === c.store_id ? false : c.buyer_id === user.id;
 
@@ -537,21 +515,21 @@ export default function ChatClient({
                   key={key}
                   type="button"
                   onClick={() => handleSelectConversation(c)}
-                  className={`w-full text-left p-3.5 transition-colors flex items-start gap-3 cursor-pointer ${
-                    isSelected ? 'bg-primary-50/80 border-l-4 border-primary' : 'hover:bg-surface'
+                  className={`w-full text-left p-3.5 transition-colors flex items-start gap-3 ${
+                    isSelected ? 'bg-brand-blue-soft border-l-4 border-brand-blue' : 'hover:bg-surface'
                   }`}
                 >
-                  <div className="w-10 h-10 rounded-full bg-surface-alt border border-line flex items-center justify-center shrink-0 text-primary font-bold">
+                  <div className="w-10 h-10 rounded-xl bg-surface border border-border-subtle flex items-center justify-center shrink-0 text-brand-blue font-bold">
                     {isUserTheBuyer ? (
-                      <Store className="w-5 h-5 text-primary" />
+                      <Store className="w-5 h-5 text-brand-blue" aria-hidden="true" />
                     ) : (
-                      <UserIcon className="w-5 h-5 text-secondary" />
+                      <UserIcon className="w-5 h-5 text-navy-900" aria-hidden="true" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-bold text-ink truncate">{partnerName}</span>
-                      <span className="text-[10px] text-ink-soft tabular-nums shrink-0">
+                      <span className="text-[11px] text-ink-muted tabular-nums shrink-0">
                         {c.last_message_time
                           ? new Date(c.last_message_time).toLocaleTimeString('id-ID', {
                               hour: '2-digit',
@@ -561,26 +539,22 @@ export default function ChatClient({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center flex-wrap gap-1.5 mt-1">
                       {isOrder ? (
                         <>
-                          <span className="text-[10px] font-sans tabular-nums font-semibold tracking-wide text-ink-soft">
+                          <span className="text-[11px] tabular-nums font-semibold text-ink-secondary">
                             #{c.order_code}
                           </span>
                           {c.campus_short_name && (
-                            <>
-                              <span className="text-line text-[10px]">·</span>
-                              <span className="text-[9px] font-semibold text-pine bg-pine-50 px-1.5 py-0.2 rounded-sm">
-                                {c.campus_short_name}
-                              </span>
-                            </>
+                            <span className="text-[11px] font-semibold text-brand-blue bg-brand-blue-soft px-1.5 py-0.5 rounded-md">
+                              {c.campus_short_name}
+                            </span>
                           )}
-                          <span className="text-line text-[10px]">·</span>
                           <span
-                            className={`text-[9px] font-semibold px-1.5 py-0.2 rounded-sm ${
+                            className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${
                               c.delivery_method === 'meetup'
-                                ? 'bg-primary-50 text-primary'
-                                : 'bg-amber-50 text-amber-700'
+                                ? 'bg-info-bg text-navy-900'
+                                : 'bg-warning-bg text-warning-text'
                             }`}
                           >
                             {c.delivery_method === 'meetup' ? 'COD' : 'Kirim'}
@@ -588,33 +562,20 @@ export default function ChatClient({
                         </>
                       ) : (
                         <>
-                          <span className="text-[9px] font-bold text-primary bg-primary-50 px-1.5 py-0.2 rounded-sm">
+                          <span className="text-[11px] font-semibold text-brand-blue bg-brand-blue-soft px-1.5 py-0.5 rounded-md">
                             Tanya Produk
                           </span>
                           {c.product_name && (
-                            <>
-                              <span className="text-line text-[10px]">·</span>
-                              <span className="text-[10px] font-medium text-ink-soft truncate max-w-[120px]">
-                                {c.product_name}
-                              </span>
-                            </>
-                          )}
-                          {c.campus_short_name && (
-                            <>
-                              <span className="text-line text-[10px]">·</span>
-                              <span className="text-[9px] font-semibold text-pine bg-pine-50 px-1.5 py-0.2 rounded-sm">
-                                {c.campus_short_name}
-                              </span>
-                            </>
+                            <span className="text-[11px] font-medium text-ink-muted truncate max-w-[120px]">
+                              {c.product_name}
+                            </span>
                           )}
                         </>
                       )}
                     </div>
 
-                    <p className="text-[11px] text-ink-soft truncate mt-1">
-                      {c.last_message || (
-                        <span className="italic text-ink-soft/70">Mulai obrolan di sini...</span>
-                      )}
+                    <p className="text-xs text-ink-muted truncate mt-1">
+                      {c.last_message || 'Mulai obrolan di sini...'}
                     </p>
                   </div>
                 </button>
@@ -624,101 +585,87 @@ export default function ChatClient({
         </div>
       </div>
 
-      {/* Kolom Kanan: Area Ruang Chat Aktif */}
+      {/* Kolom Kanan: Ruang Chat Aktif */}
       <div
-        className={`flex-1 flex flex-col bg-canvas min-w-0 h-full overflow-hidden ${
+        className={`flex-1 flex flex-col bg-surface min-w-0 h-full overflow-hidden ${
           !activeTarget ? 'hidden md:flex items-center justify-center' : 'flex'
         }`}
       >
         {!activeTarget ? (
           <div className="p-8 text-center max-w-sm flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-primary-50 text-primary flex items-center justify-center mb-4">
-              <MessageCircle className="w-8 h-8" />
+            <div className="w-14 h-14 rounded-xl bg-brand-blue-soft text-brand-blue border border-brand-blue-border flex items-center justify-center mb-4">
+              <MessageCircle className="w-7 h-7" aria-hidden="true" />
             </div>
-            <h3 className="text-base font-bold text-ink mb-1">Pilih Percakapan</h3>
-            <p className="text-xs text-ink-soft mb-4">
-              Pilih salah satu percakapan di daftar kiri untuk mulai berkoordinasi dengan penjual atau pembeli.
+            <h2 className="text-base font-bold text-ink mb-1">Pilih Percakapan</h2>
+            <p className="text-xs text-ink-muted">
+              Pilih salah satu percakapan di daftar kiri untuk koordinasi pesanan atau tanya produk.
             </p>
           </div>
         ) : loadingChat && !activeChat ? (
-          <div className="flex-1 flex items-center justify-center text-xs text-ink-soft">
+          <div className="flex-1 flex items-center justify-center text-xs text-ink-muted">
             Memuat ruang obrolan...
           </div>
         ) : activeChat ? (
           <>
             {/* Top Bar Chat */}
-            <div className="px-4 py-3 border-b border-line flex items-center justify-between gap-3 bg-canvas/90 backdrop-blur-xs shrink-0">
+            <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between gap-3 bg-surface shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
-                {/* Tombol Back pada Tampilan Mobile */}
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTarget(null);
                     router.replace('/chat', { scroll: false });
                   }}
-                  className="md:hidden w-10 h-10 -ml-1.5 rounded-lg hover:bg-surface text-ink-soft hover:text-ink cursor-pointer flex items-center justify-center shrink-0"
+                  className="md:hidden w-11 h-11 -ml-1.5 rounded-lg hover:bg-surface-muted text-ink-secondary hover:text-ink flex items-center justify-center shrink-0"
                   aria-label="Kembali ke daftar pesan"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-5 h-5" aria-hidden="true" />
                 </button>
 
-                <div className="w-9 h-9 rounded-full bg-primary-50 text-primary flex items-center justify-center shrink-0 font-bold">
+                <div className="w-9 h-9 rounded-lg bg-brand-blue-soft text-brand-blue flex items-center justify-center shrink-0 font-bold">
                   {activeChat.currentUser?.isBuyer ? (
-                    <Store className="w-4 h-4" />
+                    <Store className="w-4 h-4" aria-hidden="true" />
                   ) : (
-                    <UserIcon className="w-4 h-4" />
+                    <UserIcon className="w-4 h-4" aria-hidden="true" />
                   )}
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold text-ink truncate">
+                    <h2 className="text-sm font-bold text-ink truncate">
                       {activeChat.partner?.name}
-                    </h3>
+                    </h2>
                     <Badge variant="secondary" size="xs" className="shrink-0">
                       {activeChat.partner?.role === 'seller' ? 'Penjual' : 'Pembeli'}
                     </Badge>
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] text-ink-soft mt-0.5">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted mt-0.5">
                     {activeChat.type === 'order' ? (
                       <>
-                        <span className="font-sans tabular-nums font-semibold tracking-wide">#{activeChat.order?.order_code}</span>
+                        <span className="tabular-nums font-semibold text-ink-secondary">
+                          #{activeChat.order?.order_code}
+                        </span>
                         {activeChat.order?.campus_short_name && (
-                          <>
-                            <span className="text-line">·</span>
-                            <span className="bg-pine-50 text-pine font-bold text-[10px] px-1.5 py-0.2 rounded-sm">
-                              {activeChat.order.campus_short_name}
-                            </span>
-                          </>
+                          <span className="bg-brand-blue-soft text-brand-blue font-semibold text-[11px] px-1.5 py-0.5 rounded-md">
+                            {activeChat.order.campus_short_name}
+                          </span>
                         )}
-                        <span className="text-line">·</span>
                         <OrderStatusBadge
                           status={activeChat.order?.status}
                           deliveryMethod={activeChat.order?.delivery_method}
-                          className="text-[10px] py-0 px-1.5"
+                          className="text-[11px] py-0 px-2"
                         />
                       </>
                     ) : (
                       <>
-                        <span className="bg-primary-50 text-primary font-bold text-[10px] px-1.5 py-0.2 rounded-sm">
+                        <span className="bg-brand-blue-soft text-brand-blue font-semibold text-[11px] px-1.5 py-0.5 rounded-md">
                           Tanya Produk
                         </span>
                         {activeChat.store?.campus_short_name && (
-                          <>
-                            <span className="text-line">·</span>
-                            <span className="bg-pine-50 text-pine font-bold text-[10px] px-1.5 py-0.2 rounded-sm">
-                              {activeChat.store.campus_short_name}
-                            </span>
-                          </>
-                        )}
-                        {activeChat.store?.store_location && (
-                          <>
-                            <span className="text-line">·</span>
-                            <span className="truncate max-w-[120px] sm:max-w-none">
-                              {activeChat.store.store_location}
-                            </span>
-                          </>
+                          <span className="bg-surface-muted text-ink-secondary font-semibold text-[11px] px-1.5 py-0.5 rounded-md">
+                            {activeChat.store.campus_short_name}
+                          </span>
                         )}
                       </>
                     )}
@@ -726,36 +673,35 @@ export default function ChatClient({
                 </div>
               </div>
 
-              {/* Aksi Kanan Top Bar */}
               {activeChat.type === 'order' ? (
                 <button
                   type="button"
                   onClick={() => setIsOrderSummaryOpen(!isOrderSummaryOpen)}
-                  className="flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary-hover px-2.5 py-1.5 rounded-lg hover:bg-primary-50 transition cursor-pointer shrink-0"
+                  className="flex items-center gap-1 min-h-[38px] text-xs font-semibold text-brand-blue hover:bg-brand-blue-soft px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
                 >
                   <span>{isOrderSummaryOpen ? 'Tutup Detail' : 'Detail Pesanan'}</span>
                   {isOrderSummaryOpen ? (
-                    <ChevronUp className="w-3.5 h-3.5" />
+                    <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
                   )}
                 </button>
               ) : activeChat.store?.id ? (
                 <Link
                   href={`/stores/${activeChat.store.id}`}
-                  className="text-xs font-semibold text-ink-soft hover:text-primary px-3 py-1.5 rounded-lg hover:bg-surface border border-line transition cursor-pointer shrink-0 inline-flex items-center gap-1"
+                  className="text-xs font-semibold text-ink-secondary hover:text-brand-blue px-3 py-2 min-h-[38px] rounded-lg hover:bg-canvas border border-border-subtle transition-colors shrink-0 inline-flex items-center gap-1.5"
                 >
-                  <Store className="w-3.5 h-3.5" />
+                  <Store className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Kunjungi Toko</span>
                 </Link>
               ) : null}
             </div>
 
-            {/* Banner Kartu Konteks Produk (Pra-Order / Tanya Produk) */}
+            {/* Banner Konteks Produk (Pra-Order) */}
             {activeChat.type === 'inquiry' && activeChat.product && (
-              <div className="bg-surface/80 border-b border-line px-3.5 sm:px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0 animate-in slide-in-from-top-2 duration-150">
+              <div className="bg-canvas border-b border-border-subtle px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative w-12 h-12 rounded-xl bg-surface-alt border border-line overflow-hidden shrink-0">
+                  <div className="relative w-12 h-12 rounded-lg bg-surface-muted border border-border-subtle overflow-hidden shrink-0">
                     {!productImgError && activeChat.product.image_url ? (
                       <Image
                         src={activeChat.product.image_url}
@@ -766,26 +712,26 @@ export default function ChatClient({
                         className="object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-ink-soft/40">
-                        <Package className="w-5 h-5" />
+                      <div className="w-full h-full flex items-center justify-center text-ink-muted">
+                        <Package className="w-5 h-5" aria-hidden="true" />
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-primary bg-primary-50 px-2 py-0.5 rounded-full">
-                        Produk yang Ditanyakan
+                      <span className="text-[11px] font-semibold text-brand-blue bg-brand-blue-soft px-2 py-0.5 rounded-md">
+                        Produk Ditanyakan
                       </span>
                       {activeChat.product.condition && (
                         <ConditionBadge condition={activeChat.product.condition} />
                       )}
                     </div>
-                    <h4 className="font-sans text-xs md:text-sm font-semibold text-ink truncate mt-0.5">
+                    <h3 className="text-xs md:text-sm font-semibold text-ink truncate mt-1">
                       {activeChat.product.name}
-                    </h4>
+                    </h3>
                     <div className="flex items-center gap-2 mt-1">
                       <PricePill amount={activeChat.product.price} size="sm" />
-                      <span className="text-[11px] text-ink-soft">
+                      <span className="text-xs text-ink-muted tabular-nums">
                         Stok: <strong className="text-ink">{activeChat.product.stock}</strong>
                       </span>
                     </div>
@@ -794,33 +740,33 @@ export default function ChatClient({
 
                 <Link
                   href={`/products/${activeChat.product.id}`}
-                  className="text-xs font-semibold text-primary hover:text-white px-3 py-1.5 rounded-full border border-primary/30 bg-primary-50/60 hover:bg-primary transition shrink-0 inline-flex items-center justify-center gap-1 self-start sm:self-auto"
+                  className="text-xs font-semibold text-brand-blue hover:bg-brand-blue hover:text-white px-3 py-2 min-h-[38px] rounded-lg border border-brand-blue-border bg-brand-blue-soft transition-colors shrink-0 inline-flex items-center justify-center gap-1 self-start sm:self-auto"
                 >
                   <span>Lihat Produk</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3" aria-hidden="true" />
                 </Link>
               </div>
             )}
 
-            {/* Dropdown Banner Ringkasan Pesanan & Alert COD (Khusus Pesanan) */}
+            {/* Banner Ringkasan Pesanan */}
             {activeChat.type === 'order' && isOrderSummaryOpen && (
-              <div className="bg-surface/70 border-b border-line px-4 py-3 text-xs flex flex-col gap-2.5 transition animate-in slide-in-from-top-2 duration-150 shrink-0">
+              <div className="bg-canvas border-b border-border-subtle px-4 py-3 text-xs flex flex-col gap-2.5 shrink-0">
                 {activeChat.order?.delivery_method === 'meetup' && (
-                  <div className="bg-primary-50/70 border border-primary/20 rounded-xl p-2.5 flex items-start gap-2 text-ink">
-                    <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <div className="flex-1 text-[11px] leading-relaxed">
-                      <strong className="text-primary font-bold block mb-0.5">
-                        📍 Rekomendasi Titik Temu COD Kampus {activeChat.order?.campus_name ? `(${activeChat.order.campus_name})` : ''}:
+                  <div className="bg-info-bg border border-brand-blue-border rounded-lg p-3 flex items-start gap-2 text-ink">
+                    <MapPin className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" aria-hidden="true" />
+                    <div className="flex-1 text-xs leading-relaxed">
+                      <strong className="text-navy-900 font-bold block mb-0.5">
+                        Titik Temu COD Kampus {activeChat.order?.campus_name ? `(${activeChat.order.campus_name})` : ''}
                       </strong>
-                      Sepakati titik temu yang aman dan ramai di lingkungan kampus (seperti Perpustakaan Pusat, Pintu Gerbang Utama, Gedung Rektorat, atau Kantin Fakultas). Periksa kelayakan fisik dan fungsi barang secara langsung sebelum menyelesaikan transaksi.
+                      Sepakati titik temu yang aman dan ramai di area kampus (Perpustakaan, Pintu Gerbang Utama, atau Kantin Fakultas) dan cek kondisi barang sebelum menyelesaikan pesanan.
                     </div>
                   </div>
                 )}
 
                 {activeChat.order?.delivery_method === 'delivery' && (
-                  <div className="bg-surface border border-line rounded-xl p-2.5 flex items-center justify-between gap-2 text-[11px] text-ink">
+                  <div className="bg-surface border border-border-subtle rounded-lg p-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-ink">
                     <div className="flex items-center gap-2">
-                      <Package className="w-4 h-4 text-primary shrink-0" />
+                      <Package className="w-4 h-4 text-brand-blue shrink-0" aria-hidden="true" />
                       <span>
                         Tujuan Kost:{' '}
                         <strong>
@@ -828,15 +774,15 @@ export default function ChatClient({
                         </strong>
                       </span>
                     </div>
-                    <span className="text-[10px] font-semibold text-pine bg-pine-50 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[11px] font-semibold text-success-text bg-success-bg px-2.5 py-0.5 rounded-md">
                       Lunas saat Checkout
                     </span>
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-line/40 text-[11px]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1 border-t border-border-subtle text-xs">
                   <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto">
-                    <span className="text-ink-soft">Barang:</span>
+                    <span className="text-ink-muted">Barang:</span>
                     {activeChat.items?.map((it, idx) => (
                       <span key={idx} className="font-semibold text-ink whitespace-nowrap">
                         {it.product_name} (x{it.quantity})
@@ -844,40 +790,43 @@ export default function ChatClient({
                       </span>
                     ))}
                   </div>
-                  <div className="font-bold text-ink">
-                    Total: <span className="font-display text-primary font-bold tabular-nums">{formatRupiah(activeChat.order?.total_amount)}</span>
+                  <div className="font-bold text-ink tabular-nums">
+                    Total:{' '}
+                    <span className="text-brand-blue font-bold">
+                      {formatRupiah(activeChat.order?.total_amount)}
+                    </span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Area Pesan Obrolan (Bubbles) */}
+            {/* Area Pesan Obrolan */}
             <div
               ref={messagesContainerRef}
               className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-canvas"
             >
               {activeChat.messages?.length === 0 ? (
                 <div className="my-auto text-center p-6 flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-primary-50 text-primary flex items-center justify-center mb-2">
+                  <div className="w-12 h-12 rounded-xl bg-brand-blue-soft text-brand-blue border border-brand-blue-border flex items-center justify-center mb-3">
                     {activeChat.type === 'inquiry' ? (
-                      <MessageCircle className="w-6 h-6" />
+                      <MessageCircle className="w-6 h-6" aria-hidden="true" />
                     ) : (
-                      <MessageSquare className="w-6 h-6" />
+                      <MessageSquare className="w-6 h-6" aria-hidden="true" />
                     )}
                   </div>
-                  <p className="text-xs font-bold text-ink">
+                  <p className="text-sm font-bold text-ink">
                     {!activeChat.currentUser?.isBuyer && !activeChat.partner?.id
                       ? 'Belum Ada Calon Pembeli yang Bertanya'
                       : activeChat.type === 'inquiry'
                       ? 'Mulai Tanya Produk ke Penjual'
                       : 'Mulai Percakapan Pesanan'}
                   </p>
-                  <p className="text-[11px] text-ink-soft max-w-xs mt-1">
+                  <p className="text-xs text-ink-muted max-w-xs mt-1">
                     {!activeChat.currentUser?.isBuyer && !activeChat.partner?.id
-                      ? 'Ketika ada pembeli yang menghubungi tokomu untuk menanyakan produk, pesan akan muncul di sini.'
+                      ? 'Ketika ada pembeli menghubungi tokomu, pesan akan tampil di sini.'
                       : activeChat.type === 'inquiry'
-                      ? 'Tanyakan ketersediaan barang, detail kondisi, atau kesepakatan COD sebelum membeli.'
-                      : 'Silakan sapa dan sepakati waktu serta lokasi ketemuan COD di kampus secara aman.'}
+                      ? 'Tanyakan ketersediaan barang, detail kondisi, atau titik temu COD.'
+                      : 'Sepakati waktu dan titik ketemuan COD di kampus secara aman.'}
                   </p>
                 </div>
               ) : (
@@ -891,25 +840,25 @@ export default function ChatClient({
                   return (
                     <div
                       key={msg.id}
-                      className={`flex flex-col max-w-[80%] md:max-w-[70%] ${
+                      className={`flex flex-col max-w-[82%] md:max-w-[70%] ${
                         isMe ? 'self-end items-end' : 'self-start items-start'
                       }`}
                     >
                       {!isMe && (
-                        <span className="text-[10px] font-semibold text-ink-soft ml-1 mb-0.5">
+                        <span className="text-[11px] font-semibold text-ink-muted ml-1 mb-0.5">
                           {msg.sender_name}
                         </span>
                       )}
                       <div
-                        className={`px-3.5 py-2.5 rounded-2xl text-xs md:text-sm leading-relaxed shadow-xs break-words whitespace-pre-wrap ${
+                        className={`px-3.5 py-2.5 rounded-xl text-sm leading-relaxed break-words whitespace-pre-wrap ${
                           isMe
-                            ? 'bg-primary text-white rounded-br-xs'
-                            : 'bg-surface-alt text-ink border border-line rounded-bl-xs'
+                            ? 'bg-navy-900 text-white rounded-br-none'
+                            : 'bg-surface text-ink border border-border-subtle rounded-bl-none'
                         }`}
                       >
                         {msg.message}
                       </div>
-                      <span className="text-[9px] text-ink-soft/80 tabular-nums mt-1 px-1">
+                      <span className="text-[11px] text-ink-muted tabular-nums mt-1 px-1">
                         {timeFormatted}
                       </span>
                     </div>
@@ -919,10 +868,10 @@ export default function ChatClient({
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Rekomendasi Pesan Cepat - Chip Bulat Natural Sebaris */}
+            {/* Pesan Cepat */}
             {getObjectiveQuickReplies().length > 0 && (
-              <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 px-3 sm:px-4 py-2 border-t border-line bg-canvas shrink-0 overflow-x-auto no-scrollbar">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft mr-1 shrink-0">
+              <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 px-3 sm:px-4 py-2 border-t border-border-subtle bg-surface shrink-0 overflow-x-auto no-scrollbar">
+                <span className="text-xs font-semibold text-ink-muted shrink-0">
                   Pesan Cepat:
                 </span>
                 {getObjectiveQuickReplies().map((chip, idx) => (
@@ -930,7 +879,7 @@ export default function ChatClient({
                     key={idx}
                     type="button"
                     onClick={() => handleSendQuickReply(chip)}
-                    className="w-auto px-3.5 py-1.5 text-xs font-medium rounded-full bg-surface text-ink border border-line hover:bg-primary-50 hover:text-primary hover:border-primary/30 transition cursor-pointer shrink-0 whitespace-nowrap"
+                    className="min-h-[34px] px-3 py-1 text-xs font-medium rounded-lg bg-canvas text-ink-secondary border border-border-subtle hover:bg-brand-blue-soft hover:text-brand-blue hover:border-brand-blue-border transition-colors shrink-0 whitespace-nowrap"
                   >
                     {chip}
                   </button>
@@ -938,12 +887,16 @@ export default function ChatClient({
               </div>
             )}
 
-            {/* Input Form Kirim Pesan - Konsisten Tinggi h-11 */}
+            {/* Form Kirim Pesan */}
             <form
               onSubmit={handleSendMessage}
-              className="flex items-center gap-2 p-2.5 sm:p-3 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:pb-3 bg-canvas border-t border-line shrink-0"
+              className="flex items-center gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3 bg-surface border-t border-border-subtle shrink-0"
             >
+              <label htmlFor="chat-message-input" className="sr-only">
+                Ketik pesan
+              </label>
               <input
+                id="chat-message-input"
                 type="text"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
@@ -955,7 +908,7 @@ export default function ChatClient({
                     ? 'Ketik pertanyaan tentang produk ini...'
                     : 'Ketik pesan untuk koordinasi...'
                 }
-                className="flex-1 min-w-0 h-11 px-3.5 bg-surface border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-base md:text-sm text-ink transition-colors disabled:opacity-50 disabled:bg-surface-alt"
+                className="flex-1 min-w-0 h-11 px-3.5 bg-canvas border border-border-subtle rounded-lg focus:outline-none focus:ring-3 focus:ring-brand-blue-soft focus:border-brand-blue text-base md:text-sm text-ink transition-colors disabled:opacity-60 disabled:bg-surface-muted"
               />
               <button
                 type="submit"
@@ -964,9 +917,9 @@ export default function ChatClient({
                   sending ||
                   Boolean(!activeChat.currentUser?.isBuyer && !activeChat.partner?.id)
                 }
-                className="h-11 px-4 md:px-5 rounded-xl bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-white font-display text-xs md:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm transition shrink-0 cursor-pointer"
+                className="h-11 px-4 md:px-5 rounded-lg bg-brand-blue hover:bg-brand-blue-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-white text-xs md:text-sm font-semibold inline-flex items-center justify-center gap-1.5 transition-colors shrink-0"
               >
-                <Send className="w-4 h-4 text-white" />
+                <Send className="w-4 h-4" aria-hidden="true" />
                 <span>Kirim</span>
               </button>
             </form>

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query, withTransaction } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import { extractAndProcessImages } from '@/lib/image-util';
+import { createProductNameSchema } from '@/lib/product-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,9 +77,11 @@ const updateStockValidator = z
       .optional()
   );
 
+const productNameValidator = createProductNameSchema(z);
+
 const updateProductSchema = z
   .object({
-    name: z.string().trim().min(3, 'Nama barang minimal 3 karakter').max(150, 'Nama barang maksimal 150 karakter').optional(),
+    name: productNameValidator.optional(),
     description: z.string().trim().min(10, 'Deskripsi minimal 10 karakter').optional(),
     price: updatePriceValidator,
     original_price: updateOriginalPriceValidator,

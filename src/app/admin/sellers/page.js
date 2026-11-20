@@ -5,7 +5,7 @@ import SellersManager from './SellersManager';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Verifikasi Penjual — Admin LepasIn',
+  title: 'Verifikasi Penjual | Admin LepasIn',
 };
 
 export default async function AdminSellersPage({ searchParams }) {

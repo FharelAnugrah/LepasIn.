@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import { query } from '@/lib/db';
+import {
+  validateCampusName,
+  validateCampusShortName,
+  validateCityOrProvince,
+} from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,12 +19,17 @@ export async function POST(request) {
     const body = await request.json();
     const { name, short_name, city, province } = body;
 
-    if (!name?.trim() || !short_name?.trim() || !city?.trim() || !province?.trim()) {
-      return NextResponse.json(
-        { error: 'Nama, singkatan, kota, dan provinsi wajib diisi' },
-        { status: 400 }
-      );
-    }
+    const nameErr = validateCampusName(name);
+    if (nameErr) return NextResponse.json({ error: nameErr }, { status: 400 });
+
+    const shortNameErr = validateCampusShortName(short_name);
+    if (shortNameErr) return NextResponse.json({ error: shortNameErr }, { status: 400 });
+
+    const cityErr = validateCityOrProvince(city, 'Kota');
+    if (cityErr) return NextResponse.json({ error: cityErr }, { status: 400 });
+
+    const provErr = validateCityOrProvince(province, 'Provinsi');
+    if (provErr) return NextResponse.json({ error: provErr }, { status: 400 });
 
     const existing = await query(`SELECT id FROM campuses WHERE LOWER(name) = LOWER($1)`, [
       name.trim(),
