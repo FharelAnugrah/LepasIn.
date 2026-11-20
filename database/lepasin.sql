@@ -282,7 +282,7 @@ INSERT INTO stores (id, user_id, campus_id, name, description, location) VALUES
   (2, 3, 2, 'Rizky Preloved UI',    'Elektronik dan alat kuliah bekas pribadi, semua sudah dicek dan masih berfungsi.',             'Kukusan Teknik, Depok'),
   (3, 4, 3, 'Alya Kos ITB',         'Perabot kamar kost dan perlengkapan gambar teknik preloved terawat.',                        'Cisitu Lama, Bandung'),
   (4, 5, 4, 'Dimas Preloved UGM',   'Buku kuliah, meja lipat, dan peralatan kost siap COD sekitar Pogung.',                     'Pogung Baru, Sleman'),
-  (5, 6, 7, 'Fajar Thrift UB',      'Perlengkapan kost & olahraga mahasiswa Brawijaya. Siap COD Gerbang Watugong.',              'Sumbersari, Malang'),
+  (5, 6, 7, 'Fajar Thrift UB',      'Perlengkapan kost & olahraga Mahasiswa Brawijaya. Siap COD Gerbang Watugong.',              'Sumbersari, Malang'),
   (6, 7, 8, 'Tari Preloved UNDIP',  'Perabot dapur & elektronik kamar kost Tembalang siap pakai.',                              'Tembalang, Semarang'),
   (7, 8, 1, 'Salsa Thrift',         'Pakaian dan aksesori preloved mahasiswi.',                                                    'BTP Tamalanrea, Makassar'),
   (8, 9, 5, 'Bayu Garage ITS',      'Perabot dan barang bekas anak kost.',                                                         'Keputih, Surabaya');
