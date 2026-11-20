@@ -11,17 +11,17 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const productId = Number(id);
-  if (!productId) return { title: 'Produk Tidak Ditemukan — LepasIn' };
+  if (!productId) return { title: 'Produk Tidak Ditemukan | LepasIn' };
 
   try {
     const res = await query(`SELECT name FROM products WHERE id = $1`, [productId]);
-    if (res.rows.length === 0) return { title: 'Produk Tidak Ditemukan — LepasIn' };
+    if (res.rows.length === 0) return { title: 'Produk Tidak Ditemukan | LepasIn' };
     return {
-      title: `${res.rows[0].name} — LepasIn`,
+      title: `${res.rows[0].name} | LepasIn`,
       description: `Beli preloved ${res.rows[0].name} di LepasIn sekampus.`,
     };
   } catch {
-    return { title: 'Detail Produk — LepasIn' };
+    return { title: 'Detail Produk | LepasIn' };
   }
 }
 
@@ -35,7 +35,6 @@ export default async function ProductDetailPage({ params }) {
 
   const user = await getCurrentUser();
 
-  // 1. Query Produk
   const productRes = await query(
     `SELECT p.id, p.name, p.description, p.price, p.original_price, p.stock, p.condition, p.created_at,
             c.id AS category_id, c.name AS category_name,
@@ -62,13 +61,11 @@ export default async function ProductDetailPage({ params }) {
 
   const product = productRes.rows[0];
 
-  // 2. Query Galeri Foto
   const imagesRes = await query(
     `SELECT id, url, position FROM product_images WHERE product_id = $1 ORDER BY position ASC`,
     [productId]
   );
 
-  // 3. Query Ulasan
   const reviewsRes = await query(
     `SELECT rv.id, rv.rating, rv.comment, rv.created_at,
             u.name AS buyer_name, u.avatar_url AS buyer_avatar
@@ -79,7 +76,6 @@ export default async function ProductDetailPage({ params }) {
     [productId]
   );
 
-  // 4. Cek Wishlist & Keranjang
   let isWishlisted = false;
   let cartCount = 0;
   let cartTotal = 0;
@@ -106,7 +102,11 @@ export default async function ProductDetailPage({ params }) {
     <div className="min-h-screen flex flex-col bg-canvas text-ink">
       <Navbar user={user} cartCount={cartCount} showSearchBar={true} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 lg:px-8 py-6">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 outline-none"
+      >
         <ProductDetailClient
           product={product}
           images={imagesRes.rows}

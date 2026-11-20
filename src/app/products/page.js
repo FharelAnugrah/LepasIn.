@@ -9,7 +9,7 @@ import ProductCatalog from './ProductCatalog';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Katalog Produk Preloved Mahasiswa — LepasIn',
+  title: 'Katalog Produk Preloved Mahasiswa | LepasIn',
   description: 'Jelajahi kasur kost, rice cooker, laptop, buku kuliah, dan barang preloved lainnya di seluruh kampus Indonesia.',
 };
 
@@ -29,13 +29,11 @@ export default async function ProductsPage({ searchParams }) {
   const limit = 12;
   const offset = (page - 1) * limit;
 
-  // Sorting
   let orderBy = 'p.created_at DESC';
   if (sort === 'price_asc') orderBy = 'p.price ASC';
   if (sort === 'price_desc') orderBy = 'p.price DESC';
   if (sort === 'rating_desc') orderBy = 'COALESCE(r.avg_rating, 0) DESC, p.created_at DESC';
 
-  // 1. Query Produk: mendukung pencarian berdasarkan nama produk atau nama toko
   const sql = `
     SELECT p.id, p.name, p.price, p.original_price, p.stock, p.condition, p.created_at,
            c.id AS category_id,
@@ -86,17 +84,16 @@ export default async function ProductsPage({ searchParams }) {
 
   const filterParams = [q, campus, category, condition, minPrice, maxPrice, store];
 
-  // Eksekusi query produk, kategori, kampus, dan daftar semua toko
   const [productsRes, countRes, categoriesRes, campusesRes, allStoresRes] = await Promise.all([
     query(sql, [...filterParams, limit, offset]),
     query(countSql, filterParams),
     query(`
-      SELECT id, name FROM categories 
-      ORDER BY 
-        CASE 
-          WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1 
-          ELSE 0 
-        END ASC, 
+      SELECT id, name FROM categories
+      ORDER BY
+        CASE
+          WHEN LOWER(name) = 'lainnya' OR LOWER(name) = 'lain-lain' THEN 1
+          ELSE 0
+        END ASC,
         id ASC
     `),
     query(`SELECT id, name, short_name, city, province FROM campuses ORDER BY name ASC`),
@@ -114,7 +111,6 @@ export default async function ProductsPage({ searchParams }) {
   const totalPages = Math.ceil(total / limit);
   const allStores = allStoresRes.rows;
 
-  // 2. Jika ada query pencarian kata kunci, cari juga toko yang cocok
   let matchedStores = [];
   if (q && q.trim()) {
     const storeSearchRes = await query(
@@ -133,7 +129,6 @@ export default async function ProductsPage({ searchParams }) {
     matchedStores = storeSearchRes.rows;
   }
 
-  // 3. Detail toko yang sedang difilter (jika ada)
   let selectedStoreObj = null;
   if (store) {
     const sRes = await query(
@@ -146,7 +141,6 @@ export default async function ProductsPage({ searchParams }) {
     selectedStoreObj = sRes.rows[0] || null;
   }
 
-  // Keranjang & Wishlist jika Buyer
   let cartCount = 0;
   let cartTotal = 0;
   let wishlistIds = [];
@@ -174,10 +168,15 @@ export default async function ProductsPage({ searchParams }) {
         user={user}
         cartCount={cartCount}
         selectedCampus={selectedCampusObj}
+        campuses={campusesRes.rows}
         showSearchBar={false}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 lg:px-8 py-6">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 outline-none"
+      >
         <ProductCatalog
           initialProducts={products}
           pagination={{ page, limit, total, totalPages }}

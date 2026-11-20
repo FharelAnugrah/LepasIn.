@@ -5,7 +5,7 @@ import PendingSellerClient from './PendingSellerClient';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Menunggu Verifikasi Toko — LepasIn',
+  title: 'Status Verifikasi Penjual | LepasIn',
   description: 'Status verifikasi akun penjual LepasIn.',
 };
 
@@ -25,7 +25,11 @@ export default async function PendingSellerPage() {
   }
 
   return (
-    <main className="min-h-screen bg-canvas flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="min-h-screen bg-canvas py-10 px-4 sm:px-6 lg:px-8 outline-none"
+    >
       <PendingSellerClient user={user} />
     </main>
   );

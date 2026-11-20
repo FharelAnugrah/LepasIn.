@@ -8,18 +8,35 @@ import {
   SlidersHorizontal,
   X,
   RotateCcw,
-  GraduationCap,
   ChevronDown,
-  Filter,
   Check,
   Store,
   Loader2,
 } from 'lucide-react';
-import CampusSelector from '@/components/ui/CampusSelector';
 import Button from '@/components/ui/Button';
 import ProductCard from '@/components/product/ProductCard';
 import Modal from '@/components/ui/Modal';
-import { formatRupiah } from '@/components/ui/Badge';
+
+const MAX_FILTER_PRICE = 1000000000;
+
+function sanitizePriceInput(value) {
+  return String(value ?? '').replace(/\D/g, '');
+}
+
+function validatePriceRange(minVal, maxVal) {
+  const hasMin = minVal !== '' && minVal !== null && minVal !== undefined;
+  const hasMax = maxVal !== '' && maxVal !== null && maxVal !== undefined;
+
+  if ((hasMin && Number(minVal) > MAX_FILTER_PRICE) || (hasMax && Number(maxVal) > MAX_FILTER_PRICE)) {
+    return 'Nominal harga maksimal Rp 1.000.000.000.';
+  }
+
+  if (hasMin && hasMax && Number(minVal) > Number(maxVal)) {
+    return 'Harga minimum tidak boleh lebih besar dari harga maksimum.';
+  }
+
+  return '';
+}
 
 export default function ProductCatalog({
   initialProducts,
@@ -38,7 +55,6 @@ export default function ProductCatalog({
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  // Local state for filters
   const [q, setQ] = useState(filters.q || '');
   const [prevFilterQ, setPrevFilterQ] = useState(filters.q || '');
   if ((filters.q || '') !== prevFilterQ) {
@@ -55,20 +71,58 @@ export default function ProductCatalog({
     setCampus(campuses.find((c) => c.id === Number(filters.campus)) || null);
   }
   const [category, setCategory] = useState(filters.category ? Number(filters.category) : null);
-  const [store, setStore] = useState(filters.store ? Number(filters.store) : null);
-  const [condition, setCondition] = useState(filters.condition || null);
-  const [minPrice, setMinPrice] = useState(filters.minPrice || '');
-  const [maxPrice, setMaxPrice] = useState(filters.maxPrice || '');
-  const [sort, setSort] = useState(filters.sort || 'latest');
+  const [prevFilterCategory, setPrevFilterCategory] = useState(filters.category || null);
+  if ((filters.category || null) !== prevFilterCategory) {
+    setPrevFilterCategory(filters.category || null);
+    setCategory(filters.category ? Number(filters.category) : null);
+  }
 
-  // Toko yang relevan sesuai kampus terpilih
+  const [store, setStore] = useState(filters.store ? Number(filters.store) : null);
+  const [prevFilterStore, setPrevFilterStore] = useState(filters.store || null);
+  if ((filters.store || null) !== prevFilterStore) {
+    setPrevFilterStore(filters.store || null);
+    setStore(filters.store ? Number(filters.store) : null);
+  }
+
+  const [condition, setCondition] = useState(filters.condition || null);
+  const [prevFilterCondition, setPrevFilterCondition] = useState(filters.condition || null);
+  if ((filters.condition || null) !== prevFilterCondition) {
+    setPrevFilterCondition(filters.condition || null);
+    setCondition(filters.condition || null);
+  }
+
+  const [minPrice, setMinPrice] = useState(filters.minPrice ?? '');
+  const [prevFilterMinPrice, setPrevFilterMinPrice] = useState(filters.minPrice ?? '');
+  if ((filters.minPrice ?? '') !== prevFilterMinPrice) {
+    setPrevFilterMinPrice(filters.minPrice ?? '');
+    setMinPrice(filters.minPrice ?? '');
+  }
+
+  const [maxPrice, setMaxPrice] = useState(filters.maxPrice ?? '');
+  const [prevFilterMaxPrice, setPrevFilterMaxPrice] = useState(filters.maxPrice ?? '');
+  if ((filters.maxPrice ?? '') !== prevFilterMaxPrice) {
+    setPrevFilterMaxPrice(filters.maxPrice ?? '');
+    setMaxPrice(filters.maxPrice ?? '');
+  }
+
+  const [sort, setSort] = useState(filters.sort || 'latest');
+  const [prevFilterSort, setPrevFilterSort] = useState(filters.sort || 'latest');
+  if ((filters.sort || 'latest') !== prevFilterSort) {
+    setPrevFilterSort(filters.sort || 'latest');
+    setSort(filters.sort || 'latest');
+  }
+  const [priceError, setPriceError] = useState('');
+
   const relevantStores = campus
     ? stores.filter((s) => s.campus_id === campus.id)
     : stores;
 
   const currentStoreObj = selectedStore || stores.find((s) => s.id === store);
+  const storeOptions =
+    currentStoreObj && !relevantStores.some((s) => s.id === currentStoreObj.id)
+      ? [currentStoreObj, ...relevantStores]
+      : relevantStores;
 
-  // Pastikan kategori "Lainnya" selalu berada di urutan paling akhir
   const sortedCategories = [...(categories || [])].sort((a, b) => {
     const isALainnya = /^(lainnya|lain-lain|lainnya \/ other)$/i.test(a.name?.trim());
     const isBLainnya = /^(lainnya|lain-lain|lainnya \/ other)$/i.test(b.name?.trim());
@@ -91,9 +145,11 @@ export default function ProductCatalog({
     { id: 'rating_desc', label: 'Rating: Tertinggi' },
   ];
 
-  // Fungsi navigasi memperbarui URL params
   const applyFilters = (newParams = {}, isPush = true) => {
     const params = new URLSearchParams();
+
+    const appliedMinPrice = filters.minPrice ?? '';
+    const appliedMaxPrice = filters.maxPrice ?? '';
 
     const currentFilters = {
       q: newParams.q !== undefined ? newParams.q : q,
@@ -101,8 +157,8 @@ export default function ProductCatalog({
       category: newParams.category !== undefined ? newParams.category : category,
       store: newParams.store !== undefined ? newParams.store : store,
       condition: newParams.condition !== undefined ? newParams.condition : condition,
-      minPrice: newParams.minPrice !== undefined ? newParams.minPrice : minPrice,
-      maxPrice: newParams.maxPrice !== undefined ? newParams.maxPrice : maxPrice,
+      minPrice: newParams.minPrice !== undefined ? newParams.minPrice : appliedMinPrice,
+      maxPrice: newParams.maxPrice !== undefined ? newParams.maxPrice : appliedMaxPrice,
       sort: newParams.sort !== undefined ? newParams.sort : sort,
       page: newParams.page !== undefined ? newParams.page : 1,
     };
@@ -122,10 +178,10 @@ export default function ProductCatalog({
     if (currentFilters.condition) {
       params.set('condition', currentFilters.condition);
     }
-    if (currentFilters.minPrice) {
+    if (currentFilters.minPrice !== '' && currentFilters.minPrice !== null && currentFilters.minPrice !== undefined) {
       params.set('minPrice', currentFilters.minPrice);
     }
-    if (currentFilters.maxPrice) {
+    if (currentFilters.maxPrice !== '' && currentFilters.maxPrice !== null && currentFilters.maxPrice !== undefined) {
       params.set('maxPrice', currentFilters.maxPrice);
     }
     if (currentFilters.sort && currentFilters.sort !== 'latest') {
@@ -135,7 +191,8 @@ export default function ProductCatalog({
       params.set('page', currentFilters.page);
     }
 
-    const targetUrl = `${pathname}?${params.toString()}`;
+    const queryString = params.toString();
+    const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
     if (isPush) {
       router.push(targetUrl);
     } else {
@@ -144,9 +201,8 @@ export default function ProductCatalog({
     setMobileFilterOpen(false);
   };
 
-  // Konsep Live Search / Instant Search: memfilter otomatis saat pengguna mengetik (debounce 300ms)
   useEffect(() => {
-    if (q === (filters.q || '')) return;
+    if (q.trim() === (filters.q || '').trim()) return;
 
     const timer = setTimeout(() => {
       const params = new URLSearchParams(window.location.search);
@@ -156,11 +212,60 @@ export default function ProductCatalog({
         params.delete('q');
       }
       params.set('page', '1');
-      router.replace(`${pathname}?${params.toString()}`);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
     }, 300);
 
     return () => clearTimeout(timer);
   }, [q, filters.q, pathname, router]);
+
+  const handlePriceKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      return;
+    }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && ['e', 'E', '+', '-', '.', ','].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handleMinPriceChange = (e) => {
+    setMinPrice(sanitizePriceInput(e.target.value));
+    if (priceError) setPriceError('');
+  };
+
+  const handleMaxPriceChange = (e) => {
+    setMaxPrice(sanitizePriceInput(e.target.value));
+    if (priceError) setPriceError('');
+  };
+
+  const handleApplyPriceFilter = () => {
+    const err = validatePriceRange(minPrice, maxPrice);
+    if (err) {
+      setPriceError(err);
+      return;
+    }
+    setPriceError('');
+    const nextMin = minPrice !== '' ? String(Number(minPrice)) : '';
+    const nextMax = maxPrice !== '' ? String(Number(maxPrice)) : '';
+    setMinPrice(nextMin);
+    setMaxPrice(nextMax);
+    applyFilters({ minPrice: nextMin, maxPrice: nextMax, page: 1 });
+  };
+
+  const handleApplyMobileFilters = () => {
+    const err = validatePriceRange(minPrice, maxPrice);
+    if (err) {
+      setPriceError(err);
+      return;
+    }
+    setPriceError('');
+    const nextMin = minPrice !== '' ? String(Number(minPrice)) : '';
+    const nextMax = maxPrice !== '' ? String(Number(maxPrice)) : '';
+    setMinPrice(nextMin);
+    setMaxPrice(nextMax);
+    applyFilters({ minPrice: nextMin, maxPrice: nextMax, page: 1 });
+  };
 
   const handleResetFilters = () => {
     setQ('');
@@ -170,6 +275,7 @@ export default function ProductCatalog({
     setCondition(null);
     setMinPrice('');
     setMaxPrice('');
+    setPriceError('');
     setSort('latest');
     router.push(pathname);
     setMobileFilterOpen(false);
@@ -181,33 +287,49 @@ export default function ProductCatalog({
   };
 
   const activeFiltersCount = [
-    q,
+    q.trim(),
     campus,
     category,
     store,
     condition,
-    minPrice,
-    maxPrice,
+    minPrice !== '' && minPrice !== null && minPrice !== undefined ? String(minPrice) : '',
+    maxPrice !== '' && maxPrice !== null && maxPrice !== undefined ? String(maxPrice) : '',
   ].filter(Boolean).length;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Bar Atas: Pencarian (Live / Instant Search), Selektor Sort, dan Tombol Filter Mobile */}
-      <div className="bg-canvas border border-line rounded-card p-4 shadow-card flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Form Pencarian Instant Search */}
-        <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <Search className="w-4 h-4 text-ink-soft absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* Header Judul Katalog */}
+      <div>
+        <h1 className="text-2xl font-bold text-ink tracking-tight">
+          Katalog Barang Kost & Kampus
+        </h1>
+        <p className="text-xs md:text-sm text-ink-muted mt-1">
+          Saring produk berdasarkan perguruan tinggi, kategori, kondisi barang, atau rentang harga.
+        </p>
+      </div>
+
+      {/* Bar Pencarian, Sort, dan Tombol Filter Mobile */}
+      <div className="surface-3d rounded-2xl p-3.5 md:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1" role="search">
+          <label htmlFor="catalog-search" className="sr-only">
+            Cari nama barang atau nama toko
+          </label>
+          <Search
+            className="w-4 h-4 text-ink-subtle absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+            aria-hidden="true"
+          />
           <input
+            id="catalog-search"
             type="text"
             placeholder="Cari nama barang atau nama toko..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="w-full h-11 pl-10 pr-14 text-base md:text-sm bg-surface rounded-full border border-line/80 focus:bg-canvas focus:border-primary focus:ring-4 focus:ring-primary-50 outline-none transition"
+            className="input-3d w-full h-11 pl-10 pr-14 text-base md:text-sm bg-surface-muted/80 text-ink placeholder:text-ink-subtle rounded-full border border-border-subtle/80 focus:bg-surface focus:border-brand-blue outline-none"
           />
           {q && (
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
               {q !== (filters.q || '') && (
-                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 text-brand-blue animate-spin" aria-hidden="true" />
               )}
               <button
                 type="button"
@@ -215,40 +337,43 @@ export default function ProductCatalog({
                   setQ('');
                   applyFilters({ q: '', page: 1 }, true);
                 }}
-                className="text-ink-soft hover:text-ink p-1 cursor-pointer"
+                className="text-ink-subtle hover:text-ink p-1.5 rounded-full"
+                aria-label="Hapus kata kunci pencarian"
                 title="Hapus pencarian"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           )}
         </form>
 
-        <div className="flex items-center gap-2">
-          {/* Tombol Buka Filter di Mobile */}
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={() => setMobileFilterOpen(true)}
-            className="lg:hidden flex-1 md:flex-none flex items-center justify-center gap-2 h-11 px-4 rounded-full border border-line bg-surface text-ink text-xs font-bold hover:bg-surface-alt transition"
+            className="lg:hidden btn-3d btn-3d-secondary flex-1 md:flex-none flex items-center justify-center gap-2 h-11 px-4 rounded-xl text-xs font-semibold"
           >
-            <SlidersHorizontal className="w-4 h-4 text-primary" />
+            <SlidersHorizontal className="w-4 h-4 text-brand-blue" aria-hidden="true" />
             <span>Filter</span>
             {activeFiltersCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-primary text-white font-sans text-[10px] font-bold tabular-nums flex items-center justify-center">
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-brand-blue text-white text-[11px] font-bold tabular-nums flex items-center justify-center">
                 {activeFiltersCount}
               </span>
             )}
           </button>
 
-          {/* Pemilih Urutan (Sorting) */}
-          <div className="relative flex-1 md:flex-none">
+          <div className="relative flex-1 md:flex-none min-w-0">
+            <label htmlFor="catalog-sort" className="sr-only">
+              Urutkan produk
+            </label>
             <select
+              id="catalog-sort"
               value={sort}
               onChange={(e) => {
                 setSort(e.target.value);
                 applyFilters({ sort: e.target.value, page: 1 });
               }}
-              className="w-full md:w-auto h-11 pl-4 pr-9 rounded-full bg-surface border border-line/80 text-xs md:text-sm font-semibold text-ink appearance-none cursor-pointer outline-none focus:border-primary focus:ring-2 focus:ring-primary-50 transition"
+              className="input-3d select-custom-arrow w-full md:w-auto h-11 pl-3.5 pr-9 rounded-xl bg-surface border border-border-subtle text-xs md:text-sm font-medium text-ink cursor-pointer outline-none focus:border-brand-blue"
             >
               {sortOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>
@@ -256,71 +381,57 @@ export default function ProductCatalog({
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-ink-soft absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown
+              className="w-4 h-4 text-ink-muted absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
+              aria-hidden="true"
+            />
           </div>
         </div>
       </div>
 
       {/* Konten Utama: Sidebar Filter Desktop + Grid Produk */}
       <div className="flex items-start gap-6">
-        {/* Sidebar Filter Desktop (Lebar 270px) */}
-        <aside className="hidden lg:flex flex-col gap-6 w-68 shrink-0 bg-canvas border border-line rounded-card p-5 shadow-card">
-          <div className="flex items-center justify-between border-b border-line pb-3">
+        <aside
+          aria-label="Filter katalog produk"
+          className="hidden lg:flex flex-col gap-5 w-64 xl:w-68 shrink-0 surface-3d rounded-2xl p-5 sticky-sidebar-panel"
+        >
+          <div className="flex items-center justify-between border-b border-border-subtle pb-3">
             <div className="flex items-center gap-2 font-bold text-ink text-sm">
-              <SlidersHorizontal className="w-4 h-4 text-primary" />
+              <SlidersHorizontal className="w-4 h-4 text-brand-blue" aria-hidden="true" />
               <span>Filter Produk</span>
             </div>
             {activeFiltersCount > 0 && (
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs text-primary font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs text-brand-blue font-semibold hover:underline flex items-center gap-1"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3 h-3" aria-hidden="true" />
                 <span>Reset</span>
               </button>
             )}
           </div>
 
-          {/* Filter 1: Kampus Se-Indonesia */}
+          {/* Filter 1: Kategori */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-ink flex items-center gap-1.5 uppercase tracking-wider">
-              <GraduationCap className="w-4 h-4 text-pine" />
-              <span>Kampus Indonesia</span>
-            </label>
-            <CampusSelector
-              value={campus}
-              onChange={(c) => {
-                setCampus(c);
-                applyFilters({ campus: c, page: 1 });
-              }}
-              campuses={campuses}
-              allowAll={true}
-              allLabel="Seluruh Kampus Indonesia"
-              className="w-full"
-            />
-          </div>
-
-          {/* Filter 2: Kategori */}
-          <div className="flex flex-col gap-2 border-t border-line/60 pt-4">
-            <label className="text-xs font-bold text-ink uppercase tracking-wider">
+            <span className="text-xs font-semibold text-ink-secondary">
               Kategori Belanja
-            </label>
-            <div className="flex flex-col gap-1 max-h-52 overflow-y-auto pr-1">
+            </span>
+            <div className="flex flex-col gap-1 max-h-56 overflow-y-auto pr-1">
               <button
                 type="button"
                 onClick={() => {
                   setCategory(null);
                   applyFilters({ category: null, page: 1 });
                 }}
-                className={`flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg text-left transition ${
+                className={`flex items-center justify-between text-xs py-2 px-2.5 rounded-lg text-left transition-colors ${
                   category === null
-                    ? 'bg-primary-50 text-primary font-bold'
-                    : 'text-ink-soft hover:text-ink hover:bg-surface'
+                    ? 'bg-brand-blue-soft text-brand-blue font-semibold'
+                    : 'text-ink-secondary hover:text-ink hover:bg-canvas'
                 }`}
               >
                 <span>Semua Kategori</span>
-                {category === null && <Check className="w-3.5 h-3.5 text-primary" />}
+                {category === null && <Check className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />}
               </button>
               {sortedCategories.map((cat) => {
                 const isSelected = category === cat.id;
@@ -332,25 +443,25 @@ export default function ProductCatalog({
                       setCategory(cat.id);
                       applyFilters({ category: cat.id, page: 1 });
                     }}
-                    className={`flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg text-left transition ${
+                    className={`flex items-center justify-between text-xs py-2 px-2.5 rounded-lg text-left transition-colors ${
                       isSelected
-                        ? 'bg-primary-50 text-primary font-bold'
-                        : 'text-ink-soft hover:text-ink hover:bg-surface'
+                        ? 'bg-brand-blue-soft text-brand-blue font-semibold'
+                        : 'text-ink-secondary hover:text-ink hover:bg-canvas'
                     }`}
                   >
                     <span>{cat.name}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />}
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Filter 3: Toko Penjual */}
-          <div className="flex flex-col gap-2 border-t border-line/60 pt-4">
+          {/* Filter 2: Toko */}
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
-                <Store className="w-3.5 h-3.5 text-primary" />
+              <label htmlFor="desktop-store-filter" className="text-xs font-semibold text-ink-secondary flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />
                 <span>Toko Penjual</span>
               </label>
               {store && (
@@ -360,23 +471,24 @@ export default function ProductCatalog({
                     setStore(null);
                     applyFilters({ store: null, page: 1 });
                   }}
-                  className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                  className="text-xs text-brand-blue font-semibold hover:underline"
                 >
                   Semua
                 </button>
               )}
             </div>
             <select
+              id="desktop-store-filter"
               value={store || ''}
               onChange={(e) => {
                 const val = e.target.value ? Number(e.target.value) : null;
                 setStore(val);
                 applyFilters({ store: val, page: 1 });
               }}
-              className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs font-medium text-ink outline-none focus:border-primary transition cursor-pointer"
+              className="input-3d w-full h-10 px-3 rounded-xl bg-surface border border-border-subtle text-xs font-medium text-ink outline-none focus:border-brand-blue"
             >
               <option value="">Semua Toko ({relevantStores.length})</option>
-              {relevantStores.map((st) => (
+              {storeOptions.map((st) => (
                 <option key={st.id} value={st.id}>
                   {st.name} ({st.campus_short_name})
                 </option>
@@ -384,11 +496,11 @@ export default function ProductCatalog({
             </select>
           </div>
 
-          {/* Filter 4: Kondisi Barang */}
-          <div className="flex flex-col gap-2 border-t border-line/60 pt-4">
-            <label className="text-xs font-bold text-ink uppercase tracking-wider">
+          {/* Filter 3: Kondisi */}
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
+            <span className="text-xs font-semibold text-ink-secondary">
               Kondisi Barang
-            </label>
+            </span>
             <div className="flex flex-col gap-1">
               <button
                 type="button"
@@ -396,14 +508,14 @@ export default function ProductCatalog({
                   setCondition(null);
                   applyFilters({ condition: null, page: 1 });
                 }}
-                className={`flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg text-left transition ${
+                className={`flex items-center justify-between text-xs py-2 px-2.5 rounded-lg text-left transition-colors ${
                   condition === null
-                    ? 'bg-primary-50 text-primary font-bold'
-                    : 'text-ink-soft hover:text-ink hover:bg-surface'
+                    ? 'bg-brand-blue-soft text-brand-blue font-semibold'
+                    : 'text-ink-secondary hover:text-ink hover:bg-canvas'
                 }`}
               >
                 <span>Semua Kondisi</span>
-                {condition === null && <Check className="w-3.5 h-3.5 text-primary" />}
+                {condition === null && <Check className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />}
               </button>
               {conditionsList.map((cond) => {
                 const isSelected = condition === cond.id;
@@ -415,14 +527,14 @@ export default function ProductCatalog({
                       setCondition(cond.id);
                       applyFilters({ condition: cond.id, page: 1 });
                     }}
-                    className={`flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg text-left transition ${
+                    className={`flex items-center justify-between text-xs py-2 px-2.5 rounded-lg text-left transition-colors ${
                       isSelected
-                        ? 'bg-primary-50 text-primary font-bold'
-                        : 'text-ink-soft hover:text-ink hover:bg-surface'
+                        ? 'bg-brand-blue-soft text-brand-blue font-semibold'
+                        : 'text-ink-secondary hover:text-ink hover:bg-canvas'
                     }`}
                   >
                     <span>{cond.label}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-primary" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />}
                   </button>
                 );
               })}
@@ -430,34 +542,47 @@ export default function ProductCatalog({
           </div>
 
           {/* Filter 4: Rentang Harga */}
-          <div className="flex flex-col gap-2 border-t border-line/60 pt-4">
-            <label className="text-xs font-bold text-ink uppercase tracking-wider">
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
+            <span className="text-xs font-semibold text-ink-secondary">
               Rentang Harga (Rp)
-            </label>
+            </span>
             <div className="flex items-center gap-2">
+              <label htmlFor="min-price-desktop" className="sr-only">Harga minimum</label>
               <input
-                type="number"
+                id="min-price-desktop"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Min"
                 value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                onWheel={(e) => e.currentTarget.blur()}
-                className="w-full h-9 px-3 rounded-lg bg-surface border border-line text-xs outline-none focus:border-primary"
+                onChange={handleMinPriceChange}
+                onKeyDown={handlePriceKeyDown}
+                className="w-full h-9 px-2.5 rounded-lg bg-canvas border border-border-subtle text-xs tabular-nums text-ink outline-none focus:bg-surface focus:border-brand-blue"
               />
-              <span className="text-ink-soft text-xs">-</span>
+              <span className="text-ink-muted text-xs">-</span>
+              <label htmlFor="max-price-desktop" className="sr-only">Harga maksimum</label>
               <input
-                type="number"
+                id="max-price-desktop"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Maks"
                 value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                onWheel={(e) => e.currentTarget.blur()}
-                className="w-full h-9 px-3 rounded-lg bg-surface border border-line text-xs outline-none focus:border-primary"
+                onChange={handleMaxPriceChange}
+                onKeyDown={handlePriceKeyDown}
+                className="w-full h-9 px-2.5 rounded-lg bg-canvas border border-border-subtle text-xs tabular-nums text-ink outline-none focus:bg-surface focus:border-brand-blue"
               />
             </div>
+            {priceError && (
+              <p role="alert" className="text-xs text-danger-text font-medium">
+                {priceError}
+              </p>
+            )}
             <Button
+              type="button"
               variant="secondary"
               size="sm"
-              pill
-              onClick={() => applyFilters({ minPrice, maxPrice, page: 1 })}
+              onClick={handleApplyPriceFilter}
               className="mt-1 w-full"
             >
               Terapkan Harga
@@ -467,21 +592,20 @@ export default function ProductCatalog({
 
         {/* Kolom Kanan: Daftar Produk & Pagination */}
         <div className="flex-1 flex flex-col gap-5 min-w-0">
-          {/* Header Jumlah Hasil & Filter Aktif Ringkas */}
-          <div className="flex items-center justify-between text-xs text-ink-soft">
-            <div className="flex items-center flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
+            <div className="flex items-center flex-wrap gap-1.5 tabular-nums">
               <span>
-                Menampilkan <strong className="font-bold text-ink">{initialProducts.length}</strong> dari{' '}
-                <strong className="font-bold text-ink">{pagination.total}</strong> produk
+                Menampilkan <strong className="font-semibold text-ink">{initialProducts.length}</strong> dari{' '}
+                <strong className="font-semibold text-ink">{pagination.total}</strong> produk
               </span>
               {campus && (
                 <span>
-                  {' '}di <span className="font-bold text-pine">{campus.short_name}</span>
+                  di <span className="font-semibold text-brand-blue">{campus.short_name}</span>
                 </span>
               )}
               {currentStoreObj && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 text-primary text-[11px] font-semibold">
-                  <Store className="w-3 h-3" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-brand-blue-soft text-brand-blue text-xs font-semibold">
+                  <Store className="w-3 h-3" aria-hidden="true" />
                   <span>{currentStoreObj.name}</span>
                   <button
                     type="button"
@@ -489,10 +613,10 @@ export default function ProductCatalog({
                       setStore(null);
                       applyFilters({ store: null, page: 1 });
                     }}
-                    className="hover:text-danger ml-0.5 cursor-pointer font-bold"
-                    title="Hapus filter toko"
+                    className="hover:text-danger-text ml-0.5 font-bold p-0.5"
+                    aria-label="Hapus filter toko"
                   >
-                    ×
+                    <X className="w-3 h-3" aria-hidden="true" />
                   </button>
                 </span>
               )}
@@ -501,7 +625,7 @@ export default function ProductCatalog({
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-primary font-bold hover:underline cursor-pointer"
+                className="text-brand-blue font-semibold hover:underline"
               >
                 Reset Semua Filter
               </button>
@@ -510,44 +634,44 @@ export default function ProductCatalog({
 
           {/* Toko Terkait Sesuai Pencarian */}
           {matchedStores && matchedStores.length > 0 && (
-            <div className="bg-canvas border border-line rounded-card p-4 shadow-card">
+            <div className="surface-3d rounded-2xl p-4">
               <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-ink uppercase tracking-wider">
-                  <Store className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-2 text-xs font-bold text-ink">
+                  <Store className="w-4 h-4 text-brand-blue" aria-hidden="true" />
                   <span>Toko Ditemukan ({matchedStores.length})</span>
                 </div>
                 {q && (
-                  <span className="text-xs text-ink-soft">
-                    Hasil toko untuk &ldquo;{q}&rdquo;
+                  <span className="text-xs text-ink-muted">
+                    Hasil untuk &ldquo;{q}&rdquo;
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
                 {matchedStores.map((st) => (
                   <div
                     key={st.id}
-                    className="p-3 rounded-2xl bg-surface border border-line flex flex-col justify-between gap-2.5 hover:border-primary/50 transition shadow-xs"
+                    className="p-3.5 rounded-2xl card-3d flex flex-col justify-between gap-3"
                   >
                     <div>
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <h4 className="font-display font-bold text-sm text-ink truncate" title={st.name}>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <h2 className="font-semibold text-sm text-ink truncate" title={st.name}>
                           {st.name}
-                        </h4>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pine-50 text-pine shrink-0">
+                        </h2>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-brand-blue-soft text-brand-blue shrink-0">
                           {st.campus_short_name}
                         </span>
                       </div>
-                      <p className="text-xs text-ink-soft line-clamp-1">
+                      <p className="text-xs text-ink-muted line-clamp-1">
                         {st.location || 'Area sekitar kampus'}
                       </p>
-                      <p className="text-[11px] text-ink-soft mt-1">
-                        <strong className="text-ink font-semibold tabular-nums">{st.products_count}</strong> produk aktif
+                      <p className="text-xs text-ink-secondary mt-1 tabular-nums">
+                        <strong className="text-ink font-semibold">{st.products_count}</strong> produk aktif
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 pt-2 border-t border-line/60">
+                    <div className="flex items-center gap-2 pt-2 border-t border-border-subtle">
                       <Link
                         href={`/stores/${st.id}`}
-                        className="flex-1 text-center py-1.5 px-2 rounded-xl bg-primary text-white font-display text-xs font-semibold hover:bg-primary-hover transition"
+                        className="btn-3d btn-3d-primary flex-1 text-center py-2 px-2.5 rounded-xl text-xs font-semibold"
                       >
                         Kunjungi Toko
                       </Link>
@@ -557,8 +681,7 @@ export default function ProductCatalog({
                           setStore(st.id);
                           applyFilters({ store: st.id, page: 1 });
                         }}
-                        className="py-1.5 px-2 rounded-xl bg-canvas border border-line text-ink text-xs font-semibold hover:bg-surface-alt transition cursor-pointer"
-                        title="Filter barang hanya dari toko ini"
+                        className="btn-3d btn-3d-secondary py-2 px-2.5 rounded-xl text-xs font-semibold"
                       >
                         Lihat Barang
                       </button>
@@ -571,22 +694,22 @@ export default function ProductCatalog({
 
           {/* Grid Produk */}
           {initialProducts.length === 0 ? (
-            <div className="bg-canvas border border-line rounded-card p-12 text-center flex flex-col items-center justify-center shadow-card">
-              <div className="w-16 h-16 rounded-full bg-primary-50 text-primary flex items-center justify-center mb-4">
-                <Search className="w-8 h-8 stroke-[1.5]" />
+            <div className="surface-3d rounded-2xl p-10 text-center flex flex-col items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl icon-plinth-3d text-brand-blue flex items-center justify-center mb-4">
+                <Search className="w-7 h-7" aria-hidden="true" />
               </div>
               <h2 className="text-base font-bold text-ink">
                 Produk Tidak Ditemukan
               </h2>
-              <p className="text-xs md:text-sm text-ink-soft max-w-sm mt-1 mb-5 leading-relaxed">
-                Tidak ada barang preloved yang cocok dengan kriteria filter kampus atau pencarianmu.
+              <p className="text-xs md:text-sm text-ink-muted max-w-sm mt-1 mb-5 leading-relaxed">
+                Tidak ada barang preloved yang cocok dengan kriteria filter kampus atau kata kunci pencarianmu.
               </p>
-              <Button variant="primary" pill onClick={handleResetFilters}>
+              <Button variant="primary" onClick={handleResetFilters}>
                 Bersihkan Filter
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4.5">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {initialProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -598,13 +721,12 @@ export default function ProductCatalog({
             </div>
           )}
 
-          {/* Pagination */}
+          {/* Pagination Bernomor (PRD PUB-3, design2.md 6.3) */}
           {pagination.totalPages > 1 && (
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-6">
+            <nav aria-label="Navigasi halaman katalog" className="flex flex-wrap items-center justify-center gap-2 pt-4">
               <Button
                 variant="secondary"
                 size="sm"
-                pill
                 disabled={pagination.page <= 1}
                 onClick={() => applyFilters({ page: pagination.page - 1 })}
               >
@@ -625,14 +747,15 @@ export default function ProductCatalog({
                     const isGap = prev && p - prev > 1;
                     return (
                       <div key={p} className="flex items-center gap-1">
-                        {isGap && <span className="text-ink-soft px-1">...</span>}
+                        {isGap && <span className="text-ink-muted px-1">...</span>}
                         <button
                           type="button"
                           onClick={() => applyFilters({ page: p })}
-                          className={`w-10 h-10 rounded-full text-xs font-bold tabular-nums transition cursor-pointer ${
+                          aria-current={pagination.page === p ? 'page' : undefined}
+                          className={`min-w-[40px] h-10 px-3 rounded-xl text-xs font-bold tabular-nums ${
                             pagination.page === p
-                              ? 'bg-primary text-white shadow-sm'
-                              : 'bg-surface text-ink hover:bg-surface-alt'
+                              ? 'chip-3d-active'
+                              : 'chip-3d'
                           }`}
                         >
                           {p}
@@ -645,48 +768,33 @@ export default function ProductCatalog({
               <Button
                 variant="secondary"
                 size="sm"
-                pill
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => applyFilters({ page: pagination.page + 1 })}
               >
-                Selanjutnya
+                Berikutnya
               </Button>
-            </div>
+            </nav>
           )}
         </div>
       </div>
 
-      {/* Modal Filter untuk Mobile (Bottom Sheet) */}
+      {/* Modal Filter untuk Mobile */}
       <Modal
         isOpen={mobileFilterOpen}
         onClose={() => setMobileFilterOpen(false)}
-        title="Filter & Urutkan Produk"
+        title="Filter Produk"
       >
-        <div className="flex flex-col gap-5 py-2">
-          {/* Kampus */}
+        <div className="flex flex-col gap-5 py-1">
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-ink">Kampus di Seluruh Indonesia</label>
-            <CampusSelector
-              value={campus}
-              onChange={setCampus}
-              campuses={campuses}
-              allowAll={true}
-              allLabel="Seluruh Kampus Indonesia"
-              className="w-full"
-            />
-          </div>
-
-          {/* Kategori */}
-          <div className="flex flex-col gap-2 border-t border-line pt-3">
-            <label className="text-xs font-bold text-ink">Kategori</label>
-            <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto">
+            <span className="text-xs font-semibold text-ink-secondary">Kategori</span>
+            <div className="grid grid-cols-2 gap-2 max-h-44 overflow-y-auto">
               <button
                 type="button"
                 onClick={() => setCategory(null)}
-                className={`p-2 rounded-xl text-xs text-left border ${
+                className={`min-h-[40px] px-3 py-2 rounded-lg text-xs text-left border transition-colors ${
                   category === null
-                    ? 'border-primary bg-primary-50 text-primary font-bold'
-                    : 'border-line text-ink'
+                    ? 'border-brand-blue bg-brand-blue-soft text-brand-blue font-semibold'
+                    : 'border-border-subtle bg-canvas text-ink-secondary'
                 }`}
               >
                 Semua Kategori
@@ -696,10 +804,10 @@ export default function ProductCatalog({
                   key={c.id}
                   type="button"
                   onClick={() => setCategory(c.id)}
-                  className={`p-2 rounded-xl text-xs text-left border ${
+                  className={`min-h-[40px] px-3 py-2 rounded-lg text-xs text-left border transition-colors ${
                     category === c.id
-                      ? 'border-primary bg-primary-50 text-primary font-bold'
-                      : 'border-line text-ink'
+                      ? 'border-brand-blue bg-brand-blue-soft text-brand-blue font-semibold'
+                      : 'border-border-subtle bg-canvas text-ink-secondary'
                   }`}
                 >
                   {c.name}
@@ -708,30 +816,30 @@ export default function ProductCatalog({
             </div>
           </div>
 
-          {/* Toko */}
-          <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-ink flex items-center gap-1.5">
-                <Store className="w-3.5 h-3.5 text-primary" />
+              <label htmlFor="mobile-store-filter" className="text-xs font-semibold text-ink-secondary flex items-center gap-1.5">
+                <Store className="w-3.5 h-3.5 text-brand-blue" aria-hidden="true" />
                 <span>Pilih Toko</span>
               </label>
               {store && (
                 <button
                   type="button"
                   onClick={() => setStore(null)}
-                  className="text-xs text-primary font-semibold hover:underline cursor-pointer"
+                  className="text-xs text-brand-blue font-semibold hover:underline"
                 >
                   Semua Toko
                 </button>
               )}
             </div>
             <select
+              id="mobile-store-filter"
               value={store || ''}
               onChange={(e) => setStore(e.target.value ? Number(e.target.value) : null)}
-              className="w-full h-10 px-3 rounded-xl bg-surface border border-line text-xs font-medium text-ink outline-none"
+              className="w-full h-11 px-3 rounded-lg bg-canvas border border-border-subtle text-sm font-medium text-ink focus:bg-surface focus:border-brand-blue focus:ring-2 focus:ring-brand-blue-soft transition-colors"
             >
               <option value="">Semua Toko ({relevantStores.length})</option>
-              {relevantStores.map((st) => (
+              {storeOptions.map((st) => (
                 <option key={st.id} value={st.id}>
                   {st.name} ({st.campus_short_name})
                 </option>
@@ -739,17 +847,16 @@ export default function ProductCatalog({
             </select>
           </div>
 
-          {/* Kondisi */}
-          <div className="flex flex-col gap-2 border-t border-line pt-3">
-            <label className="text-xs font-bold text-ink">Kondisi Barang</label>
-            <div className="grid grid-cols-2 gap-1.5">
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+            <span className="text-xs font-semibold text-ink-secondary">Kondisi Barang</span>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setCondition(null)}
-                className={`p-2 rounded-xl text-xs text-left border ${
+                className={`min-h-[40px] px-3 py-2 rounded-lg text-xs text-left border transition-colors ${
                   condition === null
-                    ? 'border-primary bg-primary-50 text-primary font-bold'
-                    : 'border-line text-ink'
+                    ? 'border-brand-blue bg-brand-blue-soft text-brand-blue font-semibold'
+                    : 'border-border-subtle bg-canvas text-ink-secondary'
                 }`}
               >
                 Semua Kondisi
@@ -759,10 +866,10 @@ export default function ProductCatalog({
                   key={cond.id}
                   type="button"
                   onClick={() => setCondition(cond.id)}
-                  className={`p-2 rounded-xl text-xs text-left border ${
+                  className={`min-h-[40px] px-3 py-2 rounded-lg text-xs text-left border transition-colors ${
                     condition === cond.id
-                      ? 'border-primary bg-primary-50 text-primary font-bold'
-                      : 'border-line text-ink'
+                      ? 'border-brand-blue bg-brand-blue-soft text-brand-blue font-semibold'
+                      : 'border-border-subtle bg-canvas text-ink-secondary'
                   }`}
                 >
                   {cond.label}
@@ -771,44 +878,55 @@ export default function ProductCatalog({
             </div>
           </div>
 
-          {/* Harga */}
-          <div className="flex flex-col gap-2 border-t border-line pt-3">
-            <label className="text-xs font-bold text-ink">Rentang Harga (Rp)</label>
+          <div className="flex flex-col gap-2 border-t border-border-subtle pt-3">
+            <span className="text-xs font-semibold text-ink-secondary">Rentang Harga (Rp)</span>
             <div className="flex items-center gap-2">
+              <label htmlFor="min-price-mobile" className="sr-only">Harga minimum</label>
               <input
-                type="number"
+                id="min-price-mobile"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Min"
                 value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                onWheel={(e) => e.currentTarget.blur()}
-                className="w-full h-11 px-3 rounded-xl bg-surface border border-line text-base md:text-sm outline-none"
+                onChange={handleMinPriceChange}
+                onKeyDown={handlePriceKeyDown}
+                className="w-full h-11 px-3 rounded-lg bg-canvas border border-border-subtle text-base md:text-sm tabular-nums text-ink focus:bg-surface focus:border-brand-blue focus:ring-2 focus:ring-brand-blue-soft transition-colors"
               />
-              <span className="text-ink-soft">-</span>
+              <span className="text-ink-muted">-</span>
+              <label htmlFor="max-price-mobile" className="sr-only">Harga maksimum</label>
               <input
-                type="number"
+                id="max-price-mobile"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="Maks"
                 value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                onWheel={(e) => e.currentTarget.blur()}
-                className="w-full h-11 px-3 rounded-xl bg-surface border border-line text-base md:text-sm outline-none"
+                onChange={handleMaxPriceChange}
+                onKeyDown={handlePriceKeyDown}
+                className="w-full h-11 px-3 rounded-lg bg-canvas border border-border-subtle text-base md:text-sm tabular-nums text-ink focus:bg-surface focus:border-brand-blue focus:ring-2 focus:ring-brand-blue-soft transition-colors"
               />
             </div>
+            {priceError && (
+              <p role="alert" className="text-xs text-danger-text font-medium">
+                {priceError}
+              </p>
+            )}
           </div>
 
-          {/* Tombol Aksi Modal Mobile */}
-          <div className="flex items-center gap-3 pt-3 border-t border-line">
+          <div className="flex items-center gap-3 pt-3 border-t border-border-subtle">
             <Button
+              type="button"
               variant="secondary"
-              pill
               onClick={handleResetFilters}
               className="flex-1"
             >
               Reset
             </Button>
             <Button
+              type="button"
               variant="primary"
-              pill
-              onClick={() => applyFilters()}
+              onClick={handleApplyMobileFilters}
               className="flex-1"
             >
               Terapkan Filter
